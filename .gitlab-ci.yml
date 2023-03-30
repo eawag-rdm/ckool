@@ -1,0 +1,35 @@
+image: python:slim-buster
+
+stages:
+  - style
+  - build
+  - deploy
+
+style-check:
+  stage: style
+  before_script:
+    - apt update && apt install make -y
+  script:
+    - make style-check
+
+build-docs:
+  stage: build
+  script:
+    - apt update && apt install make -y
+    - pip install -r docs/requirements.txt
+    - make -C docs html
+  artifacts:
+    paths:
+      - docs/build/html
+    expire_in: 1 week
+
+
+deploy-docs:
+  stage: deploy
+  script:
+    - apt update && apt install make lftp -y
+    - pip install -r docs/requirements.txt
+    - make -C docs html
+    - mkdir ~/.lftp && echo "set ssl:verify-certificate no" > ~/.lftp/rc
+    - lftp -e "mirror -R ./docs/build/html/ ./" -u "$FTP_INTERNAL_USR","$FTP_INTERNAL_PW" "$FTP_HOST"
+

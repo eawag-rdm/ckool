@@ -1,0 +1,15 @@
+venv
+_build
+htmlcov
+__pycache__
+
+.idea
+.benchmarks
+.ipynb_checkpoints
+.vscode
+.coverage
+.pytest_cache
+.tox
+
+*.ipynb
+*.egg-info

@@ -1,0 +1,124 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "erol"
+version = "0.1.0"
+description = "ERIC Tool, in short erol! A tool for working with ERIC, the Eawag Research Data Institutional Repository."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+keywords = ["ckan", "data management", "eawag", "eric", "open data"]
+authors = [
+    {email = "christian.foerster@eawag.ch"},
+    {name = "Christian Foerster"}
+]
+maintainers = [
+    {name = "Christian Foerster", email = "christian.foerster@eawag.ch"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python"
+]
+
+dependencies = [
+    "requests",
+    "requests_toolbelt",
+    "tqdm",
+    "typer"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov[all]",
+    "pytest-unordered",
+    "pyinstrument",
+    "tox<4",
+    "tox-pyenv",
+    "ckanapi",
+    #"webtest",
+    "isort",
+    "black",
+    "ruff",
+    "sphinx-book-theme" # https://sphinx-book-theme.readthedocs.io/en/latest/tutorials/get-started.html
+]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:'cgi' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
+]
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py38,py39,py310,py311
+isolated_build = True
+tox_pyenv_fallback=False
+
+[testenv]
+deps =
+    pip
+    format: black
+    pytest
+commands =
+    pip install .[dev]
+    pytest
+"""
+
+[tool.ruff]
+fix = true
+fix-only = true
+show-fixes = true
+src = ["src", "tests"]
+
+#format = "json"
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Same as Black.
+line-length = 88
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+# Always generate Python 3.7-compatible code.
+target-version = "py37"
+
+
+#[project.urls]
+#homepage = "https://example.com"
+#documentation = "https://readthedocs.org"
+#repository = "https://github.com"
+#changelog = "https://github.com/me/spam/blob/master/CHANGELOG.md"
+
+#[project.scripts]
+#spam-cli = "spam:main_cli"
+
+#[project.gui-scripts]
+#spam-gui = "spam:main_gui"
+
+#[project.entry-points."spam.magical"]
+#tomatoes = "spam:main_tomatoes"
