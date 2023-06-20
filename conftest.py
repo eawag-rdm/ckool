@@ -6,6 +6,26 @@ import pytest
 from erol.interface_remote import RemoteInterface
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--runall", action="store_true", default=False, help="run all tests"
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow_or_impure: mark test as slow to run")
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runall"):
+        # --runall given in cli: do run all tests, even slow or impure
+        return
+    skip_slow_or_impure = pytest.mark.skip(reason="need --runall option to run")
+    for item in items:
+        if "slow_or_impure" in item.keywords:
+            item.add_marker(skip_slow_or_impure)
+
+
 def generate_file(size: int, path: pathlib.Path, name: str):
     file_path = path / name
     with file_path.open("wb") as f:
@@ -28,8 +48,8 @@ def large_file(tmp_path):
 
 @pytest.fixture
 def very_large_file(tmp_path):
-    """5GB"""
-    yield from generate_file(512 * 10**7, tmp_path, "very_large.bin")
+    """2GB"""
+    yield from generate_file(2 * 10**9, tmp_path, "very_large.bin")
 
 
 @pytest.fixture

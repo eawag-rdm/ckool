@@ -32,6 +32,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest",
+    "pytest-env",
     "pytest-cov[all]",
     "pytest-unordered",
     "pyinstrument",
@@ -48,6 +49,11 @@ dev = [
 [tool.pytest.ini_options]
 filterwarnings = [
     "ignore:'cgi' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
+]
+env =[
+    # required by: test_upload:test_upload_large
+    "CKAN_URL=http://192.168.55.44/",
+    "CKAN_API=100e0159-b776-4a2e-bf72-4fb85be2637a"
 ]
 
 [tool.tox]
