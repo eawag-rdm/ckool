@@ -2,13 +2,15 @@ test:
 	python -m pytest
 
 test-all:
+	# To use multiple pyenv versions you need to set all required local versions via:
+    # pyenv local 3.8.16 3.9.16 3.10.11 3.11.3
 	python -m tox
 
 install:
 	python -m pip install --upgrade .
 
 install-dev:
-	python -m pip install --upgrade -e .[doc,test,lint]
+	python -m pip install --upgrade -e .[dev]
 
 .PHONY: docs
 clean:

@@ -1,7 +1,7 @@
 import pathlib
+from tarfile import TarFile, TarInfo
 from typing import Literal
 from zipfile import ZipFile
-from tarfile import TarFile, TarInfo
 
 
 def glob_files(folder: pathlib.Path, pattern: str = "**/*"):

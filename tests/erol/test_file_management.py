@@ -1,11 +1,12 @@
 import pytest
 from pytest_unordered import unordered
+
 from erol.file_management import (
-    glob_files,
-    zip_files,
-    tar_files,
-    prepare_for_package_upload,
     generate_archive_dest,
+    glob_files,
+    prepare_for_package_upload,
+    tar_files,
+    zip_files,
 )
 
 
@@ -98,10 +99,9 @@ def test_prepare_for_package_upload_single_file(tmp_path, my_package_dir):
 
 
 def test_prepare_for_package_upload_empty_folder(tmp_path, my_package_dir):
-    assert prepare_for_package_upload(my_package_dir / "test_folder3" / "test_folder3") == {
-        'files': [],
-        'created': []
-    }
+    assert prepare_for_package_upload(
+        my_package_dir / "test_folder3" / "test_folder3"
+    ) == {"files": [], "created": []}
 
 
 def test_prepare_for_package_upload_invalid(tmp_path, my_package_dir):

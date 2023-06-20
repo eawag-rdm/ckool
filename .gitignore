@@ -1,5 +1,6 @@
 venv
 _build
+build
 htmlcov
 __pycache__
 
@@ -10,6 +11,7 @@ __pycache__
 .coverage
 .pytest_cache
 .tox
+.python-version
 
 *.ipynb
 *.egg-info
