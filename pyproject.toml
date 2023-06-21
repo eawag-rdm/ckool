@@ -53,7 +53,8 @@ filterwarnings = [
 env =[
     # required by: test_upload:test_upload_large
     "CKAN_URL=http://192.168.55.44/",
-    "CKAN_API=100e0159-b776-4a2e-bf72-4fb85be2637a"
+    "CKAN_API=100e0159-b776-4a2e-bf72-4fb85be2637a",
+    "TEST_PACKAGE_NAME=test_package"
 ]
 
 [tool.tox]
