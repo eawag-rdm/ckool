@@ -25,7 +25,7 @@ def test_upload_large(remote_interface, tmp_path, large_file):
     response.raise_for_status()
 
 
-#@pytest.mark.slow_or_impure
+@pytest.mark.slow_or_impure
 def test_upload_very_large(remote_interface, tmp_path, very_large_file):
     file = very_large_file
 
