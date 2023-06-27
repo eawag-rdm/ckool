@@ -1,35 +1,22 @@
-import pathlib
-import os
+
 import pytest
 
 from erol.upload import upload_large_resource
 
-CKAN_URL = os.environ.get('CKAN_URL')
-API_KEY = os.environ.get('CKAN_API')
-PACKAGE_NAME = os.environ.get('TEST_PACKAGE_NAME')
-
 
 @pytest.mark.slow_or_impure
-def test_upload_small(remote_interface, tmp_path, small_file,):
-    file = small_file
-
-    response = upload_large_resource(file, PACKAGE_NAME, CKAN_URL, API_KEY, "Dataset", "public")
+def test_upload_small(ckan_api, ckan_url, ckan_package_name, small_file):
+    response = upload_large_resource(small_file, ckan_package_name, ckan_url, ckan_api, "Dataset", "public")
     response.raise_for_status()
 
 
 @pytest.mark.slow_or_impure
-def test_upload_large(remote_interface, tmp_path, large_file):
-    file = large_file
-
-    response = upload_large_resource(file, PACKAGE_NAME, CKAN_URL, API_KEY, "Dataset", "public")
+def test_upload_large(ckan_api, ckan_url, ckan_package_name, large_file):
+    response = upload_large_resource(large_file, ckan_package_name, ckan_url, ckan_api, "Dataset", "public")
     response.raise_for_status()
 
 
-#@pytest.mark.slow_or_impure
-def test_upload_very_large(remote_interface, tmp_path, very_large_file):
-    file = very_large_file
-
-    response = upload_large_resource(file, PACKAGE_NAME, CKAN_URL, API_KEY, "Dataset", "public")
+@pytest.mark.slow_or_impure
+def test_upload_very_large(ckan_api, ckan_url, ckan_package_name, very_large_file):
+    response = upload_large_resource(very_large_file, ckan_package_name, ckan_url, ckan_api, "Dataset", "public")
     response.raise_for_status()
-
-

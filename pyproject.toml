@@ -52,9 +52,9 @@ filterwarnings = [
 ]
 env =[
     # required by: test_upload:test_upload_large
-    "CKAN_URL=...",
-    "CKAN_API=...",
-    "TEST_PACKAGE_NAME=..."
+    "CKAN_URL=http://192.168.55.44/",
+    "CKAN_API=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJha3haSGVIUTZUSERRalVzRDlWSXVMRnQ3UG5LRWFNMHhHSXBZWnpMa1RJazNwajNWUXZzNnprZ2hYVHN3OFNrNE91M2Y2ZTdYQXpKMmxVZSIsImlhdCI6MTY4Nzg3MDIyN30.3fwcdQm5bnns2Nn0Yo7TiwWWPhxMV0s1YYXBCbQ6QvA",
+    "TEST_PACKAGE_NAME=test_package"
 ]
 
 [tool.tox]

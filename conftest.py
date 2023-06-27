@@ -90,8 +90,22 @@ def cache_file(tmp_path):
     return tmp_path / "cache.json"
 
 
+@pytest.fixture()
+def ckan_url():
+    return os.environ.get('CKAN_URL')
+
+
+@pytest.fixture()
+def ckan_api():
+    return os.environ.get('CKAN_API')
+
+
+@pytest.fixture()
+def ckan_package_name():
+    return os.environ.get('TEST_PACKAGE_NAME')
+
+
 @pytest.fixture
 def remote_interface():
-    token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiIxUVRGZk9ub3F0QzNkQmNVUE1xWUhoVzNoc3ZjbnRuSjFxU1ZoUkdsMVJjIiwiaWF0IjoxNjc5OTA5NzY3fQ.C-FjyA4UJbs2Z0Fbtv5aRW9DsgE0QGygxiWgNYtfQwk"
-    with RemoteInterface("http://159.89.215.168", apikey=token) as remote:
+    with RemoteInterface(ckan_url, apikey=ckan_api) as remote:
         yield remote
