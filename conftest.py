@@ -26,10 +26,16 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_slow_or_impure)
 
 
-def generate_file(size: int, path: pathlib.Path, name: str):
+def generate_file(size: int, path: pathlib.Path, name: str, chunk_size: int = 1024**3):
     file_path = path / name
+    chunks = []
+    while size > chunk_size:
+        chunks.append(chunk_size)
+        size -= chunk_size
+    chunks.append(size)
     with file_path.open("wb") as f:
-        f.write(os.urandom(size))
+        for chunk in chunks:
+            f.write(os.urandom(chunk))
     yield file_path
     file_path.unlink()
 
@@ -37,19 +43,19 @@ def generate_file(size: int, path: pathlib.Path, name: str):
 @pytest.fixture
 def small_file(tmp_path):
     """100KB"""
-    yield from generate_file(1024 * 10**2, tmp_path, "small.bin")
+    yield from generate_file(100 * 1024, tmp_path, "small.bin")
 
 
 @pytest.fixture
 def large_file(tmp_path):
     """100MB"""
-    yield from generate_file(1024 * 10**5, tmp_path, "large.bin")
+    yield from generate_file(100 * 1024 ** 2, tmp_path, "large.bin")
 
 
 @pytest.fixture
 def very_large_file(tmp_path):
-    """2GB"""
-    yield from generate_file(2 * 10**9, tmp_path, "very_large.bin")
+    """10GB"""
+    yield from generate_file(10 * 1024 ** 3, tmp_path, "very_large.bin")
 
 
 @pytest.fixture
