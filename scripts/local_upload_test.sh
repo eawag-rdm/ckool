@@ -27,7 +27,7 @@ response=$(curl -X POST -H "Content-Type: multipart/form-data" -H "Authorization
 -F "name=test_resource_to_be_large" \
 -F "resource_type=Dataset" \
 -F "restricted_level=public" \
--F "upload=@/home/vagrant/file.empty" \
+-F "upload=@file.empty" \
 http://localhost/api/3/action/resource_create)
 
 url=$(get_url "$response")
