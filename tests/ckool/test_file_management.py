@@ -1,7 +1,7 @@
 import pytest
 from pytest_unordered import unordered
 
-from erol.file_management import (
+from ckool.file_management import (
     generate_archive_dest,
     glob_files,
     prepare_for_package_upload,

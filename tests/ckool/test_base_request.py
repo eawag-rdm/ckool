@@ -1,6 +1,6 @@
 import pytest
 
-from erol.base_request import base_get, base_post
+from ckool.base_request import base_get, base_post
 
 
 @pytest.mark.slow_or_impure

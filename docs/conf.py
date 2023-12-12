@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "erol"
+project = "ckool"
 copyright = "2023, Christian Foerster"
 author = "Christian Foerster"
 release = "0.0.1"

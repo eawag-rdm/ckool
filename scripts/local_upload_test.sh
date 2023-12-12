@@ -20,7 +20,7 @@ get_resource_path() {
 
 touch file.empty
 echo "test" > file.empty
-fallocate -l 1G random_file.bin
+fallocate -l 10G random_file.bin
 
 response=$(curl -X POST -H "Content-Type: multipart/form-data" -H "Authorization: $api_key" \
 -F "package_id=test_package" \
@@ -39,6 +39,8 @@ echo "Resource id $resource_string"
 echo "Resource path $resource_path"
 
 mv random_file.bin $resource_path
+
+chown www-data:www-data $resource_path
 
 update_response=$(curl -X POST -H "Content-Type: multipart/form-data" -H "Authorization: $api_key" \
 -F "package_id=test_package" \

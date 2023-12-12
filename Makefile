@@ -14,7 +14,7 @@ install-dev:
 
 .PHONY: docs
 clean:
-	rm -rdf __pycache__ .pytest_cache htmlcov .coverage build .ruff_cache .benchmarks tests/erol/.benchmarks .tox
+	rm -rdf __pycache__ .pytest_cache htmlcov .coverage build .ruff_cache .benchmarks tests/*/.benchmarks .tox
 	make -C docs clean
 
 lint:

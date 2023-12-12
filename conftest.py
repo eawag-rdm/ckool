@@ -3,7 +3,7 @@ import pathlib
 
 import pytest
 
-from erol.interface_remote import RemoteInterface
+from ckool.interface_remote import RemoteInterface
 
 
 def pytest_addoption(parser):
