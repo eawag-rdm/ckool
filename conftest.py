@@ -5,6 +5,7 @@ import pytest
 
 from ckool.ckan.interfaces import RemoteCKANInterface
 from ckool.datacite.datacite import DataCiteAPI
+from ckool.ckan.ckan import CKAN
 
 
 @pytest.fixture
@@ -17,6 +18,20 @@ def load_env_file():
                 continue
             key, value = line.split("=", 1)
             os.environ[key.rstrip()] = value.lstrip().rstrip("\n")
+
+
+@pytest.fixture
+def ckan_instance(load_env_file):
+    return CKAN(
+        server=os.environ["CKAN_URL"],
+        apikey=os.environ["CKAN_APIKEY"],
+        verify_certificate=False
+    )
+
+
+@pytest.fixture
+def ckan_test_package(load_env_file):
+    return os.environ["CKAN_TEST_PACKAGE_NAME"]
 
 
 @pytest.fixture
