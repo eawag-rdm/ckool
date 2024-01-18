@@ -33,6 +33,16 @@ You can run test in your local venv via:
 python -m pytest
 ```
 
+For some tests environment variables are required. Create an .env file called `.env` in the directory that contains the `conftest.py` file.
+The file should contain:
+```env
+TEST_DATACITE_PASSWORD=YOUR-PASSWORD
+TEST_DATACITE_URL=https://api.test.datacite.org
+TEST_DATACITE_USER=YOUR-USERNAME
+TEST_DATACITE_PREFIX=YOUR-PREFIX
+TEST_DATACITE_OFFSET=0
+```
+
 Or you can use tox to run tests for multiple python versions. A the moment python 3.8 - 3.11 are configured.
 Using pyenv to manage the different py-envs once must install these versions and the make them accessible via:
 `pyenv local 3.8.x 3.9.x 3.10.x 3.11.x` in your project folder. Once that is done you can run tox:

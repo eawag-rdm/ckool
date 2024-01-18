@@ -24,7 +24,12 @@ class TqdmProgressCallback:
 
 
 def upload_large_resource(
-    file_path: pathlib.Path, package_id: str, ckan_url: str, api_key: str, resource_type: str = "Dataset", restricted_level: str = "public"
+    file_path: pathlib.Path,
+    package_id: str,
+    ckan_url: str,
+    api_key: str,
+    resource_type: str = "Dataset",
+    restricted_level: str = "public",
 ):
     file_name = file_path.name
     file_size = file_path.stat().st_size
@@ -38,7 +43,7 @@ def upload_large_resource(
                 "mimetype": "application/octet-stream",
                 "size": str(file_size),
                 "resource_type": resource_type,
-                "restricted_level": restricted_level
+                "restricted_level": restricted_level,
             }
         )
 

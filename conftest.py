@@ -3,7 +3,31 @@ import pathlib
 
 import pytest
 
-from ckool.interface_remote import RemoteInterface
+from ckool.ckan.interfaces import RemoteCKANInterface
+from ckool.datacite.datacite import DataCiteAPI
+
+
+@pytest.fixture
+def load_env_file():
+    with (pathlib.Path(__file__).parent.resolve() / ".env").open() as env:
+        for line in env:
+            if line.startswith("#"):
+                continue
+            if "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            os.environ[key.rstrip()] = value.lstrip().rstrip("\n")
+
+
+@pytest.fixture
+def datacite_instance(load_env_file):
+    return DataCiteAPI(
+        username=os.environ["TEST_DATACITE_USER"],
+        password=os.environ["TEST_DATACITE_PASSWORD"],
+        prefix=os.environ["TEST_DATACITE_PREFIX"],
+        host=os.environ["TEST_DATACITE_URL"],
+        offset=os.environ["TEST_DATACITE_OFFSET"],
+    )
 
 
 def pytest_addoption(parser):
@@ -26,7 +50,9 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_slow_or_impure)
 
 
-def generate_file(size: int, path: pathlib.Path, name: str, chunk_size: int = 1024**3):
+def generate_file(
+    size: int, path: pathlib.Path, name: str, chunk_size: int = 1024**3
+):
     file_path = path / name
     chunks = []
     while size > chunk_size:
@@ -49,13 +75,13 @@ def small_file(tmp_path):
 @pytest.fixture
 def large_file(tmp_path):
     """100MB"""
-    yield from generate_file(100 * 1024 ** 2, tmp_path, "large.bin")
+    yield from generate_file(100 * 1024**2, tmp_path, "large.bin")
 
 
 @pytest.fixture
 def very_large_file(tmp_path):
     """10GB"""
-    yield from generate_file(10 * 1024 ** 3, tmp_path, "very_large.bin")
+    yield from generate_file(10 * 1024**3, tmp_path, "very_large.bin")
 
 
 @pytest.fixture
@@ -92,20 +118,20 @@ def cache_file(tmp_path):
 
 @pytest.fixture()
 def ckan_url():
-    return os.environ.get('CKAN_URL')
+    return os.environ.get("CKAN_URL")
 
 
 @pytest.fixture()
 def ckan_api():
-    return os.environ.get('CKAN_API')
+    return os.environ.get("CKAN_API")
 
 
 @pytest.fixture()
 def ckan_package_name():
-    return os.environ.get('TEST_PACKAGE_NAME')
+    return os.environ.get("TEST_PACKAGE_NAME")
 
 
 @pytest.fixture
 def remote_interface():
-    with RemoteInterface(ckan_url, apikey=ckan_api) as remote:
+    with RemoteCKANInterface(ckan_url, apikey=ckan_api) as remote:
         yield remote

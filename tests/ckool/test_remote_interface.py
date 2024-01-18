@@ -16,6 +16,6 @@ def test_remote_interface(remote_interface, tmp_path):
         restricted_level="public",
         format="txt",
         size="1024",
-        upload=(test_file.name, test_file.open('rb'))
+        upload=(test_file.name, test_file.open("rb")),
     )
     assert response["url"].endswith(test_file.name)

@@ -14,7 +14,7 @@ def glob_files(folder: pathlib.Path, pattern: str = "**/*"):
 def generate_archive_dest(
     folder_to_zip: pathlib.Path,
     root_folder: pathlib.Path,
-    tmp_dir_name: str = "__tmp_eric__",
+    tmp_dir_name: str = ".ckool",
 ) -> pathlib.Path:
     tmp_folder = root_folder / tmp_dir_name
     tmp_folder.mkdir(exist_ok=True)
@@ -45,7 +45,7 @@ def prepare_for_package_upload(
     candidate: pathlib.Path,
     pattern: str = "**/*",
     compression_type: Literal["zip", "tar"] = "zip",
-    tmp_dir_name: str = "__tmp_eric__",
+    tmp_dir_name: str = ".ckool",
 ) -> dict:
     compress = {"zip": zip_files, "tar": tar_files}.get(compression_type)
 
@@ -72,7 +72,7 @@ def prepare_for_package_upload(
 
     else:
         # designed to deal with sub folders archiving /some/folder/with/subfolders/there/*
-        created = []
+        archives = []
         to_upload = []
         if candidate.name == "*":
             if not candidate.parent.exists():
@@ -104,6 +104,6 @@ def prepare_for_package_upload(
                 archive_destination,
                 files_to_compress,
             )
-            created.append(archive)
+            archives.append(archive)
 
-        return {"files": to_upload + created, "created": created}
+        return {"files": to_upload + archives, "created": archives}

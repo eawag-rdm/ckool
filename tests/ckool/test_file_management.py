@@ -33,14 +33,14 @@ def test_iter_files(tmp_path, my_package_dir):
 
 
 def test_generate_tmp_file_paths(tmp_path, my_package_dir):
-    assert generate_archive_dest(
-        my_package_dir, tmp_path, tmp_dir_name="__tmp_eric__"
-    ) == (my_package_dir.parent / "__tmp_eric__" / my_package_dir.name)
+    assert generate_archive_dest(my_package_dir, tmp_path, tmp_dir_name=".ckool") == (
+        my_package_dir.parent / "ckool" / my_package_dir.name
+    )
 
 
 def test_zip_files(tmp_path, my_package_dir):
     archive_file = generate_archive_dest(
-        my_package_dir, tmp_path, tmp_dir_name="__tmp_eric__"
+        my_package_dir, tmp_path, tmp_dir_name=".ckool"
     )
 
     file = zip_files(
@@ -52,7 +52,7 @@ def test_zip_files(tmp_path, my_package_dir):
 
 def test_tar_files(tmp_path, my_package_dir):
     archive_file = generate_archive_dest(
-        my_package_dir, tmp_path, tmp_dir_name="__tmp_eric__"
+        my_package_dir, tmp_path, tmp_dir_name=".ckool"
     )
 
     file = tar_files(

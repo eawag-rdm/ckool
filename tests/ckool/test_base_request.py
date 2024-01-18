@@ -6,7 +6,7 @@ from ckool.base_request import base_get, base_post
 @pytest.mark.slow_or_impure
 def test_base_get(ckan_url, ckan_api):
     get = base_get(ckan_url, ckan_api)
-    assert get('/api/3/action/package_list')["success"]
+    assert get("/api/3/action/package_list")["success"]
 
 
 @pytest.mark.slow_or_impure
@@ -17,7 +17,7 @@ def test_base_post(ckan_url, ckan_api, tmp_path):
 
     post = base_post(ckan_url, ckan_api)
     response = post(
-        '/api/3/action/resource_create',
+        "/api/3/action/resource_create",
         {
             "package_id": "test_package",
             "name": "pytest_resource",
@@ -26,8 +26,6 @@ def test_base_post(ckan_url, ckan_api, tmp_path):
             "format": "txt",
             "size": "1024",
         },
-        files={
-            "upload": (test_file.name, test_file.open('rb').read())
-        }
+        files={"upload": (test_file.name, test_file.open("rb").read())},
     )
     print(response)

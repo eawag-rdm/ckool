@@ -24,9 +24,12 @@ classifiers = [
 
 dependencies = [
     "requests",
+    "ckanapi",
+    "base32_crockford",
     "requests_toolbelt",
     "tqdm",
-    "typer"
+    "typer",
+    "paramiko"
 ]
 
 [project.optional-dependencies]
@@ -38,7 +41,6 @@ dev = [
     "pyinstrument",
     "tox<4",
     "tox-pyenv",
-    "ckanapi",
     #"webtest",
     "isort",
     "black",
@@ -51,10 +53,6 @@ filterwarnings = [
     "ignore:'cgi' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
 ]
 env =[
-    # required by: test_upload:test_upload_large
-    "CKAN_URL=http://192.168.55.44/",
-    "CKAN_API=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJ1SVBLWUE2Ym1jYXRtbktCcE10a1NGd05FbDFWdmN6S2pqUnJQRVo3cUJkQ0tjZ091M1RyMGdWcVM2S25jYlg0ZGZCMUJyQ0RMYUNiSVNUVSIsImlhdCI6MTY5NTMwNzA1Nn0.jGnNWRA-_MQP5CPhFMJRKkMLvZ6giUrtkhIQ67H0epE",
-    "TEST_PACKAGE_NAME=test_package"
 ]
 
 [tool.tox]
