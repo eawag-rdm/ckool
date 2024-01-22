@@ -1,3 +1,4 @@
+import json
 import os
 import pathlib
 
@@ -6,6 +7,26 @@ import pytest
 from ckool.ckan.interfaces import RemoteCKANInterface
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.ckan.ckan import CKAN
+
+
+@pytest.fixture
+def data_directory():
+    return pathlib.Path(__file__).parent.resolve() / "tests" / "ckool" / "data"
+
+
+@pytest.fixture
+def valid_outputs():
+    return pathlib.Path(__file__).parent.resolve() / "tests" / "ckool" / "valid_outputs"
+
+
+@pytest.fixture
+def json_test_data(data_directory):
+    data = {}
+    for file in data_directory.iterdir():
+        if file.is_file() and file.suffix == ".json":
+            with file.open() as f:
+                data[file.with_suffix("").name] = json.load(f)
+    return data
 
 
 @pytest.fixture

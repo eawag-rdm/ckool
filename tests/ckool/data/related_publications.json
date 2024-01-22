@@ -1,0 +1,20 @@
+[
+  {"relatedIdentifier":
+    {"val": "10.1007/s10726-021-09725-2",
+     "att": {
+              "resourceTypeGeneral": "Text",
+              "relatedIdentifierType": "DOI",
+              "relationType": "IsSupplementTo"
+            }
+    }
+  },
+  {"relatedIdentifier":
+    {"val": "10.1007/s10726-021-09725-2",
+     "att": {
+              "resourceTypeGeneral": "Text",
+              "relatedIdentifierType": "DOI",
+              "relationType": "IsSupplementedBy"
+            }
+    }
+  }
+]

@@ -1,0 +1,101 @@
+{
+  "author": [
+    "Foerster, Christian <christian.foerster@eawag.ch>"
+  ],
+  "author_email": null,
+  "creator_user_id": "12dcde9d-3c58-4b95-9195-7d53722c3d39",
+  "geographic_name": [],
+  "has_part": "",
+  "id": "6c1a0b7e-2c47-4c82-b34c-16c10743a8dc",
+  "id_external": "",
+  "is_part_of": "",
+  "isopen": false,
+  "license_id": null,
+  "license_title": null,
+  "maintainer": "someone",
+  "maintainer_email": null,
+  "metadata_created": "2024-01-18T12:13:21.837488",
+  "metadata_modified": "2024-01-18T14:04:00.367656",
+  "name": "test_package",
+  "notes": "this is a test",
+  "notes-2": "",
+  "num_resources": 1,
+  "num_tags": 1,
+  "open_data": "true",
+  "organization": {
+    "id": "1300a267-cca2-4efd-9f93-2f9e65549c03",
+    "name": "sandbox",
+    "title": "Sandbox",
+    "type": "organization",
+    "description": "Below this organization we test stuff.",
+    "image_url": "",
+    "created": "2021-11-19T16:40:40.661970",
+    "is_organization": true,
+    "approval_status": "approved",
+    "state": "active"
+  },
+  "owner_org": "1300a267-cca2-4efd-9f93-2f9e65549c03",
+  "private": false,
+  "publicationlink": "",
+  "review_level": "none",
+  "reviewed_by": "",
+  "spatial": "",
+  "state": "active",
+  "status": "incomplete",
+  "substances": [],
+  "substances_generic": [],
+  "systems": [],
+  "tags_string": "test",
+  "taxa": [],
+  "taxa_generic": [],
+  "timerange": [
+    "*"
+  ],
+  "title": "test_package",
+  "type": "dataset",
+  "url": null,
+  "usage_contact": "foerstch",
+  "variables": [
+    "alkalinity"
+  ],
+  "version": null,
+  "resources": [
+    {
+      "allowed_users": "",
+      "cache_last_updated": null,
+      "cache_url": null,
+      "citation": "",
+      "created": "2024-01-18T12:14:28.364736",
+      "datastore_active": false,
+      "description": null,
+      "format": "",
+      "hash": "",
+      "id": "0bc4ec92-48e4-41f1-a993-ff643a3c9069",
+      "last_modified": null,
+      "metadata_modified": "2024-01-18T12:14:28.505664",
+      "mimetype": null,
+      "mimetype_inner": null,
+      "name": "search?q=test&tbm=isch&ved=2ahUKEwj28PTg9OaDAxVsg_0HHbqsDXkQ2-cCegQIABAA&oq=test&gs_lcp=CgNpbWcQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQ6CggAEIAEEIoFEEM6CAgAEIAEELEDUNcFWMcIYOsKaABwAHgAgAFNiAHPApIBATWYAQCgAQGqAQtnd3Mtd2l6LWltZ8ABAQ&sclient=img&ei=AhapZfbnNOyG9u8Putm2yAc&bih=1052&biw=960&client=firefox-b-e",
+      "package_id": "6c1a0b7e-2c47-4c82-b34c-16c10743a8dc",
+      "position": 0,
+      "resource_type": "Dataset",
+      "restricted_level": "public",
+      "size": null,
+      "state": "active",
+      "url": "https://www.google.com/search?q=test&tbm=isch&ved=2ahUKEwj28PTg9OaDAxVsg_0HHbqsDXkQ2-cCegQIABAA&oq=test&gs_lcp=CgNpbWcQAzIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQyBQgAEIAEMgUIABCABDIFCAAQgAQ6CggAEIAEEIoFEEM6CAgAEIAEELEDUNcFWMcIYOsKaABwAHgAgAFNiAHPApIBATWYAQCgAQGqAQtnd3Mtd2l6LWltZ8ABAQ&sclient=img&ei=AhapZfbnNOyG9u8Putm2yAc&bih=1052&biw=960&client=firefox-b-e",
+      "url_type": null
+    }
+  ],
+  "tags": [
+    {
+      "display_name": "test",
+      "id": "b8a0739b-4121-477a-a0a1-9a567cac708f",
+      "name": "test",
+      "state": "active",
+      "vocabulary_id": null
+    }
+  ],
+  "groups": [],
+  "relationships_as_subject": [],
+  "relationships_as_object": []
+}

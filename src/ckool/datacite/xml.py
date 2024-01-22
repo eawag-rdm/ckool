@@ -1,4 +1,5 @@
 import json
+import pathlib
 import re
 import sys
 from datetime import datetime
@@ -53,7 +54,7 @@ def _converttime(solrtimerange):
         return isotimerange
 
 
-class CKANExtract:
+class MetaDataFormatter:
     @staticmethod
     def elements():
         return [
@@ -77,23 +78,63 @@ class CKANExtract:
             (18, "geolocations"),
             (19, "fundingReferences"),
         ]
-
+    #TODO check with Stuart if resource_type is "freetext"
     def __init__(
         self,
-        ckan_metadata: dict,
+        package_metadata: dict,
         doi: str,
-        outfile: str,
-        affils: dict = None,
+        outfile: str | pathlib.Path,
+        affiliations: dict = None,
         orcids: dict = None,
-        relids: dict = None,
+        related_publications: dict = None,
+        author_is_organization: bool = False,
+        resource_type: str = "Publication Data Package",
+        resource_type_general: str = "Collection",
+        version: str = "1.0",
     ):
-        self.ckanmeta = ckan_metadata  # from here CKAN.get_package_metadata
+        """
+        package_metadata: dict,
+            Metadata from ckan package from package show api call.
+        doi: str,
+            doi string.
+        outfile: str | pathlib.Path,
+            filepath for output file.
+        affiliations: dict | None,
+            affiliations of authors.
+        orcids: dict | None,
+            Orcid ids of authors, if available.
+        related_publications: dict | None,
+            other data publications that are related to this one.
+        author_is_organization: bool,
+            The package author is an organization.
+        resource_type: str,
+            Free text to describe the resource type default is 'Publication Data Package'.
+        resource_type_general: str,
+            resource type general (default is 'Collection') possible inputs: [
+                "Audiovisual",
+                "Collection",
+                "Dataset",
+                "Image",
+                "Model",
+                "Software",
+                "Sound",
+                "Text",
+                "Other",
+            ]
+        version: str,
+            Version of the data package, default is '1.0'.
+        """
+        self.package_metadata = package_metadata  # from here CKAN.get_package_metadata
         self.doi = doi
         self.output = {"resource": []}
         self.outfile = outfile
-        self.affils = affils
+        self.affiliations = affiliations
         self.orcids = orcids
-        self.related_identifiers_from_file = relids
+        self.related_identifiers_from_file = related_publications,
+        self.author_is_organization = author_is_organization
+        self.resource_type = resource_type
+        self.resource_type_general = resource_type_general
+        self.version = version
 
     def xs_identifier(self):
         self.output["resource"].append(
@@ -108,11 +149,9 @@ class CKANExtract:
             else:
                 print(
                     'WARNING: Author "{}" doesn\'t have standard'
-                    " format (no comma).".format(author)
+                    " format (no comma). If the author is an organization you can use the parameter 'author_is_organization' to indicate this.".format(author)
                 )
-                isorga = input("Author is organization? (y|N)")
-                isorga = True if isorga in ["Y", "y", "1"] else False
-                if not isorga:
+                if not self.author_is_organization:
                     sys.exit("ABORT: illegal author name")
                 else:
                     return "Organizational"
@@ -143,17 +182,7 @@ class CKANExtract:
             return (first, last, email)
 
         def add_orcid(first, last, creator):
-            fullname = "{}, {}".format(last, first)
-            if not self.orcids:
-                orcid = input(
-                    "Author: |{}| email:|{}| : ORCID: ".format(fullname, email)
-                )
-            else:
-                try:
-                    orcid = self.orcids[fullname]
-                    print('Found ORCID {} for "{}"'.format(orcid, fullname))
-                except KeyError:
-                    orcid = None
+            orcid = self.orcids.get(f"{last}, {first}")
             if orcid:
                 creator.append(
                     {
@@ -170,27 +199,14 @@ class CKANExtract:
             return creator
 
         def add_affiliation(first, last, creator):
-            fullname = "{}, {}".format(last, first)
-            if not self.affils:
-                eawag = input("{}: Affiliation Eawag? [Y/n]".format(fullname))
-                eawag = True if eawag in ["", "Y", "y", "1"] else False
-                affiliation = DEFAULT_AFFILIATION if eawag else None
-            else:
-                try:
-                    affiliation = self.affils[fullname]
-                    print(
-                        'Found affiliation "{}" for "{}"'.format(affiliation, fullname)
-                    )
-                except KeyError:
-                    affiliation = None
+            affiliation = self.affiliations.get(f"{last}, {first}")
             if affiliation:
                 creator.append({"affiliation": affiliation})
-
             return creator
 
         # main loop starts here
         creators = {"creators": []}
-        for author in self.ckanmeta["author"]:
+        for author in self.package_metadata["author"]:
             namtype = get_nametype(author)
             if namtype == "Organizational":
                 creator = [
@@ -207,7 +223,7 @@ class CKANExtract:
         self.output["resource"].append(creators)
 
     def xs_titles(self):
-        title = self.ckanmeta["title"]
+        title = self.package_metadata["title"]
         self.output["resource"].append(
             {"titles": [{"title": {"val": title, "att": {"lang": "en"}}}]}
         )
@@ -217,38 +233,27 @@ class CKANExtract:
 
     def xs_publicationYear(self):
         # We assume publication happened in the same year as metadata was created.
-        pubyear = _date_from_iso(self.ckanmeta["metadata_created"]).year
+        pubyear = _date_from_iso(self.package_metadata["metadata_created"]).year
         self.output["resource"].append({"publicationYear": str(pubyear)})
 
     def xs_resourceType(self):
-        restype = input("ResourceType [Publication Data Package]: ")
-        restype = "Publication Data Package" if restype == "" else restype
-        restype_general = False
-        while not restype_general:
-            restype_general = input(
-                "ResourceTypeGeneral [Collection]"
-                "(Audiovisual, Dataset, Image, Model,"
-                " Software, Sound, Text, Other) : "
-            )
-            restype_general = "Collection" if restype_general == "" else restype_general
-            if not restype_general in [
-                "Audiovisual",
-                "Collection",
-                "Dataset",
-                "Image",
-                "Model",
-                "Software",
-                "Sound",
-                "Text",
-                "Other",
-            ]:
-                print("Illegal ResourceTypeGeneral [{}]\n".format(restype_general))
-                restype_general = False
+        if self.resource_type_general not in [
+            "Audiovisual",
+            "Collection",
+            "Dataset",
+            "Image",
+            "Model",
+            "Software",
+            "Sound",
+            "Text",
+            "Other",
+        ]:
+            raise ValueError("Illegal ResourceTypeGeneral [{}]\n".format(self.resource_type_general))
         self.output["resource"].append(
             {
                 "resourceType": {
-                    "val": restype,
-                    "att": {"resourceTypeGeneral": restype_general},
+                    "val": self.resource_type,
+                    "att": {"resourceTypeGeneral": self.resource_type_general},
                 }
             }
         )
@@ -258,11 +263,11 @@ class CKANExtract:
         # a specific ontology. It also needs to change if
         # CKAN metadata schema changes in any of the fields suitable
         # as keywords
-        generic = self.ckanmeta.get("generic-terms") or []
-        taxa = self.ckanmeta.get("taxa") or []
-        substances = self.ckanmeta.get("substances") or []
-        systems = self.ckanmeta.get("systems") or []
-        tags = [t["display_name"] for t in self.ckanmeta.get("tags")]
+        generic = self.package_metadata.get("generic-terms") or []
+        taxa = self.package_metadata.get("taxa") or []
+        substances = self.package_metadata.get("substances") or []
+        systems = self.package_metadata.get("systems") or []
+        tags = [t["display_name"] for t in self.package_metadata.get("tags")]
         keywords = generic + taxa + substances + systems + tags
         keywords = [k for k in keywords if k not in ["none"]]
         subjects = [{"subject": {"val": k, "att": {"lang": "en"}}} for k in keywords]
@@ -281,7 +286,7 @@ class CKANExtract:
         # /include/datacite-dateType-v4.1.xsd) would have to be added.
 
         # Also: Everything is UTC everywhere.
-        submitted = _date_from_iso(self.ckanmeta["metadata_modified"])
+        submitted = _date_from_iso(self.package_metadata["metadata_modified"])
         submitted = [
             {
                 "date": {
@@ -292,7 +297,7 @@ class CKANExtract:
         ]
         collected = [
             {"date": {"val": _converttime(t), "att": {"dateType": "Collected"}}}
-            for t in self.ckanmeta["timerange"]
+            for t in self.package_metadata["timerange"]
         ]
 
         self.output["resource"].append({"dates": submitted + collected})
@@ -310,37 +315,38 @@ class CKANExtract:
         # for a simple custom format
         descriptions = [
             (r.get("url"), r.get("description"), r.get("resource_type"))
-            for r in self.ckanmeta["resources"]
+            for r in self.package_metadata["resources"]
         ]
         relatedIdentifiers = []
         for d in descriptions:
-            lines = re.split(r"\s*\r\n", d[1])
-            lines = [l.strip() for l in lines]
-            if lines[0] == "relatedIdentifier":
-                rel_types = re.sub(r"relationTypes:\s*", "", lines[2])
-                rel_types = rel_types.split(",")
-                rel_types = [rt.strip() for rt in rel_types]
-                rel_id_type = re.sub(r"relatedIdentifierType:\s*", "", lines[1])
-                rel_id_type = rel_id_type.strip()
+            if d[1] is not None:  #TODO This allows empty resource descriptions, check with Stuart
+                lines = re.split(r"\s*\r\n", d[1])
+                lines = [l.strip() for l in lines]
+                if lines[0] == "relatedIdentifier":
+                    rel_types = re.sub(r"relationTypes:\s*", "", lines[2])
+                    rel_types = rel_types.split(",")
+                    rel_types = [rt.strip() for rt in rel_types]
+                    rel_id_type = re.sub(r"relatedIdentifierType:\s*", "", lines[1])
+                    rel_id_type = rel_id_type.strip()
 
-                relatedIdentifiers += [
-                    {
-                        "relatedIdentifier": {
-                            "val": d[0],
-                            "att": {
-                                "resourceTypeGeneral": d[2],
-                                "relatedIdentifierType": rel_id_type,
-                                "relationType": rt,
-                            },
+                    relatedIdentifiers += [
+                        {
+                            "relatedIdentifier": {
+                                "val": d[0],
+                                "att": {
+                                    "resourceTypeGeneral": d[2],
+                                    "relatedIdentifierType": rel_id_type,
+                                    "relationType": rt,
+                                },
+                            }
                         }
-                    }
-                    for rt in rel_types
-                ]
+                        for rt in rel_types
+                    ]
 
         if self.related_identifiers_from_file:
             relatedIdentifiers += self.related_identifiers_from_file
         else:
-            publicationlink = self.ckanmeta.get("publicationlink")
+            publicationlink = self.package_metadata.get("publicationlink")
             if publicationlink:
                 paperdoi = Dora._doi_from_publicationlink(publicationlink)
                 relatedIdentifiers += [
@@ -378,9 +384,7 @@ class CKANExtract:
         return
 
     def xs_version(self):
-        version = input("Version [1.0]: ")
-        version = "1.0" if version == "" else version
-        self.output["resource"].append({"version": version})
+        self.output["resource"].append({"version": self.version})
 
     def xs_rightslist(self):
         self.output["resource"].append(
@@ -403,7 +407,7 @@ class CKANExtract:
 
     def xs_descriptions(self):
         # We only consider descriptionType "Abstract"
-        abstract = self.ckanmeta["notes"]
+        abstract = self.package_metadata["notes"]
         text, children = _description_parse(abstract)
         descriptions = {
             "descriptions": [
@@ -419,6 +423,7 @@ class CKANExtract:
         self.output["resource"].append(descriptions)
 
     def xs_geolocations(self):
+        # TODO Check how this deals with Polygon. Is this in line with what the frontend supports?
         # Currently only implemented:
         # + geoLocationPoint
         # + geoLocationPlace
@@ -433,12 +438,13 @@ class CKANExtract:
 
         geo_locations = []
 
-        geonames = self.ckanmeta.get("geographic_name")
+        geonames = self.package_metadata.get("geographic_name")
         for nam in geonames:
             geo_locations.append({"geoLocation": [{"geoLocationPlace": nam}]})
 
-        spatial = json.loads(self.ckanmeta.get("spatial"))
+        spatial = self.package_metadata.get("spatial")
         if spatial:
+            spatial = json.loads(self.package_metadata.get("spatial"))
             if spatial["type"] == "Point":
                 lon = spatial["coordinates"][0]
                 lat = spatial["coordinates"][1]
@@ -463,19 +469,5 @@ class CKANExtract:
         for f in funcnames:
             getattr(self, f)()
         with open(self.outfile, "w") as f_out:
-            json.dump(self.output, f_out)
+            json.dump(self.output, f_out, indent=2)
 
-
-if __name__ == "__main__":
-    args = docopt(__doc__, argv=sys.argv[1:])
-    print(args)
-    C = CKANExtract(
-        args["<package_name>"],
-        args["<doi>"],
-        args["<outputfile>"],
-        args["--server"],
-        args["--affils"],
-        args["--orcids"],
-        args["--related_identifiers"],
-    )
-    C.main()

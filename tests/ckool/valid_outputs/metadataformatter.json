@@ -1,0 +1,151 @@
+{
+  "resource": [
+    {
+      "identifier": {
+        "val": "this is some doi",
+        "att": {
+          "identifierType": "DOI"
+        }
+      }
+    },
+    {
+      "creators": [
+        {
+          "creator": [
+            {
+              "creatorName": {
+                "val": "Foerster, Christian",
+                "att": {
+                  "nameType": "Personal"
+                }
+              }
+            },
+            {
+              "givenName": "Christian"
+            },
+            {
+              "familyName": "Foerster"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "titles": [
+        {
+          "title": {
+            "val": "test_package",
+            "att": {
+              "lang": "en"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "publisher": "Eawag: Swiss Federal Institute of Aquatic Science and Technology"
+    },
+    {
+      "publicationYear": "2024"
+    },
+    {
+      "resourceType": {
+        "val": "Publication Data Package",
+        "att": {
+          "resourceTypeGeneral": "Collection"
+        }
+      }
+    },
+    {
+      "subjects": [
+        {
+          "subject": {
+            "val": "test",
+            "att": {
+              "lang": "en"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "dates": [
+        {
+          "date": {
+            "val": "2024-01-18",
+            "att": {
+              "dateType": "Submitted"
+            }
+          }
+        },
+        {
+          "date": {
+            "val": "/",
+            "att": {
+              "dateType": "Collected"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "language": "en"
+    },
+    {
+      "relatedIdentifiers": [
+        [
+          {
+            "relatedIdentifier": {
+              "val": "10.1007/s10726-021-09725-2",
+              "att": {
+                "resourceTypeGeneral": "Text",
+                "relatedIdentifierType": "DOI",
+                "relationType": "IsSupplementTo"
+              }
+            }
+          },
+          {
+            "relatedIdentifier": {
+              "val": "10.1007/s10726-021-09725-2",
+              "att": {
+                "resourceTypeGeneral": "Text",
+                "relatedIdentifierType": "DOI",
+                "relationType": "IsSupplementedBy"
+              }
+            }
+          }
+        ]
+      ]
+    },
+    {
+      "version": "1.0"
+    },
+    {
+      "rightsList": [
+        {
+          "rights": {
+            "val": "CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+            "att": {
+              "rightsURI": "https://creativecommons.org/publicdomain/zero/1.0/",
+              "lang": "en"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "descriptions": [
+        {
+          "description": {
+            "val": "this is a test",
+            "att": {
+              "descriptionType": "Abstract",
+              "lang": "en"
+            },
+            "children": []
+          }
+        }
+      ]
+    }
+  ]
+}
