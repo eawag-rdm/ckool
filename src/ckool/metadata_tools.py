@@ -11,7 +11,6 @@ from ckool.interfaces.mixed_requests import get_citation_from_doi
 
 def fix_publication_link(publication_link):
     # TODO: This needs refactoring
-    print("Fixing publicationlink : {}".format(publication_link))
     if not publication_link:
         return {}
     elif re.search(r"lib4ri", publication_link):
@@ -51,10 +50,6 @@ def fix_publication_link(publication_link):
 
 
 ######## META DATA UPDATES
-
-
-def getuser(username, conn):
-    return conn.call_action("user_show", data_dict={"id": username})
 
 
 def mogrify_pkg(
