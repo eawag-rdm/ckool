@@ -46,19 +46,19 @@ class Prod2Ext:
             pass
         return dn
 
-    #def getpkg(self, pkgname, conn):
+    # def getpkg(self, pkgname, conn):
     #    res = conn.call_action("package_show", data_dict={"id": pkgname})
     #    return res
 
-    #def getproject(self, projname, conn):
+    # def getproject(self, projname, conn):
     #    res = conn.call_action("group_show", data_dict={"id": projname})
     #    return res
 
-    #def getuser(self, username, conn):
+    # def getuser(self, username, conn):
     #    rec = self.srcconn.call_action("user_show", data_dict={"id": username})
     #    return rec
 
-    #def get_citation(self, doi):
+    # def get_citation(self, doi):
     #    if not doi:
     #        return None
     #    # distinguish DataCite DOI (more precisely: our prefix) from others

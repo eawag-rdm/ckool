@@ -4,8 +4,8 @@ import pathlib
 
 import pytest
 
-from ckool.datacite.datacite import DataCiteAPI
 from ckool.ckan.ckan import CKAN
+from ckool.datacite.datacite import DataCiteAPI
 
 
 @pytest.fixture
@@ -46,7 +46,7 @@ def secure_interface_input_args(load_env_file):
         "host": os.environ.get("SECURE_INTERFACE_HOST"),
         "port": os.environ.get("SECURE_INTERFACE_PORT"),
         "username": os.environ.get("SECURE_INTERFACE_USERNAME"),
-        "ssh_key": os.environ.get("SECURE_INTERFACE_SSH_KEY")
+        "ssh_key": os.environ.get("SECURE_INTERFACE_SSH_KEY"),
     }
 
 
@@ -55,7 +55,7 @@ def ckan_instance(load_env_file):
     return CKAN(
         server=os.environ["CKAN_URL"],
         apikey=os.environ["CKAN_APIKEY"],
-        verify_certificate=False
+        verify_certificate=False,
     )
 
 

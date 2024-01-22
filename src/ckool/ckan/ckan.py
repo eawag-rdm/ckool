@@ -13,7 +13,13 @@ https://docs.ckan.org/en/2.9/api/index.html#action-api-reference
 
 
 class CKAN:
-    def __init__(self, server: str, apikey: str=None, secret: str=None, verify_certificate: bool=True):
+    def __init__(
+        self,
+        server: str,
+        apikey: str = None,
+        secret: str = None,
+        verify_certificate: bool = True,
+    ):
         self.server = server
         self.apikey = apikey if apikey is not None else get_secret(secret)
         self.verify = verify_certificate
@@ -32,7 +38,7 @@ class CKAN:
             data = conn.call_action(
                 "package_show",
                 data_dict={"id": package_name},
-                requests_kwargs={"verify": self.verify}
+                requests_kwargs={"verify": self.verify},
             )
 
         if filter_fields is not None:
@@ -45,7 +51,7 @@ class CKAN:
             return conn.call_action(
                 "group_show",
                 data_dict={"id": project_name},
-                requests_kwargs={"verify": self.verify}
+                requests_kwargs={"verify": self.verify},
             )
 
     def get_user(self, username):
@@ -53,11 +59,15 @@ class CKAN:
             return conn.call_action(
                 "group_show",
                 data_dict={"id": username},
-                requests_kwargs={"verify": self.verify}
+                requests_kwargs={"verify": self.verify},
             )
 
-    def download_resource(self, url: str, destination_file_path: str | pathlib.Path, chunk_size=8192):
-        with requests.get(url, headers={"X-CKAN-API-Key": self.apikey}, stream=True) as req:
+    def download_resource(
+        self, url: str, destination_file_path: str | pathlib.Path, chunk_size=8192
+    ):
+        with requests.get(
+            url, headers={"X-CKAN-API-Key": self.apikey}, stream=True
+        ) as req:
             req.raise_for_status()
             with open(destination_file_path, "wb") as f:
                 for chunk in req.iter_content(chunk_size=chunk_size):
@@ -70,7 +80,7 @@ class CKAN:
             return conn.call_action(
                 "package_update",
                 data_dict=package_data,
-                requests_kwargs={"verify": self.verify}
+                requests_kwargs={"verify": self.verify},
             )
 
     def patch_package_metadata(self, package_name: str, package_data_to_update: dict):
@@ -84,7 +94,9 @@ class CKAN:
             package_data_file = pathlib.Path(package_data_file)
 
         if not package_data_file.exists():
-            raise FileNotFoundError(f"The file '{package_data_file.absolute().as_posix()}' can not be found.")
+            raise FileNotFoundError(
+                f"The file '{package_data_file.absolute().as_posix()}' can not be found."
+            )
 
         with package_data_file.open() as meta:
             metadata = json.load(meta)
@@ -93,12 +105,13 @@ class CKAN:
 
     def update_doi(self, package_name, doi, citation):
         """Inserts DOI and citation (retrieved from DataCite) into
-        target-host metadata. Use from ckool.interfaces.mixed_requests import get_citation_from_doi"""
+        target-host metadata. Use from ckool.interfaces.mixed_requests import get_citation_from_doi
+        """
         with self.connection() as conn:
             return conn.call_action(
                 "package_patch",
                 data_dict={"id": package_name, "doi": doi, "citation": citation},
-                requests_kwargs={"verify": self.verify}
+                requests_kwargs={"verify": self.verify},
             )
 
     def update_linked_resource_url(self, resource_id, url):
@@ -106,7 +119,7 @@ class CKAN:
             return conn.call_action(
                 "resource_patch",
                 data_dict={"id": resource_id, "url": url},
-                requests_kwargs={"verify": self.verify}
+                requests_kwargs={"verify": self.verify},
             )
 
     def delete_all_resources_from_package(self, package_name):
@@ -116,6 +129,8 @@ class CKAN:
             with self.connection() as conn:
                 return conn.call_action(
                     "resource_delete",
-                    data_dict={"id": resource_id,},
-                    requests_kwargs={"verify": self.verify}
+                    data_dict={
+                        "id": resource_id,
+                    },
+                    requests_kwargs={"verify": self.verify},
                 )

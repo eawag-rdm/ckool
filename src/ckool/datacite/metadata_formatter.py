@@ -78,7 +78,8 @@ class MetaDataFormatter:
             (18, "geolocations"),
             (19, "fundingReferences"),
         ]
-    #TODO check with Stuart if resource_type is "freetext"
+
+    # TODO check with Stuart if resource_type is "freetext"
     def __init__(
         self,
         package_metadata: dict,
@@ -130,7 +131,7 @@ class MetaDataFormatter:
         self.outfile = outfile
         self.affiliations = affiliations
         self.orcids = orcids
-        self.related_identifiers_from_file = related_publications,
+        self.related_identifiers_from_file = (related_publications,)
         self.author_is_organization = author_is_organization
         self.resource_type = resource_type
         self.resource_type_general = resource_type_general
@@ -149,7 +150,9 @@ class MetaDataFormatter:
             else:
                 print(
                     'WARNING: Author "{}" doesn\'t have standard'
-                    " format (no comma). If the author is an organization you can use the parameter 'author_is_organization' to indicate this.".format(author)
+                    " format (no comma). If the author is an organization you can use the parameter 'author_is_organization' to indicate this.".format(
+                        author
+                    )
                 )
                 if not self.author_is_organization:
                     sys.exit("ABORT: illegal author name")
@@ -248,7 +251,9 @@ class MetaDataFormatter:
             "Text",
             "Other",
         ]:
-            raise ValueError("Illegal ResourceTypeGeneral [{}]\n".format(self.resource_type_general))
+            raise ValueError(
+                "Illegal ResourceTypeGeneral [{}]\n".format(self.resource_type_general)
+            )
         self.output["resource"].append(
             {
                 "resourceType": {
@@ -319,7 +324,9 @@ class MetaDataFormatter:
         ]
         relatedIdentifiers = []
         for d in descriptions:
-            if d[1] is not None:  #TODO This allows empty resource descriptions, check with Stuart
+            if (
+                d[1] is not None
+            ):  # TODO This allows empty resource descriptions, check with Stuart
                 lines = re.split(r"\s*\r\n", d[1])
                 lines = [l.strip() for l in lines]
                 if lines[0] == "relatedIdentifier":
@@ -470,4 +477,3 @@ class MetaDataFormatter:
             getattr(self, f)()
         with open(self.outfile, "w") as f_out:
             json.dump(self.output, f_out, indent=2)
-
