@@ -1,6 +1,6 @@
 import pytest
 
-from ckool.base_request import base_get, base_post
+from ckool.interfaces.base_request import base_get, base_post
 
 
 @pytest.mark.slow_or_impure

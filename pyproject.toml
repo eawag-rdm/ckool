@@ -29,7 +29,8 @@ dependencies = [
     "requests_toolbelt",
     "tqdm",
     "typer",
-    "paramiko"
+    "paramiko",
+    "scp"
 ]
 
 [project.optional-dependencies]

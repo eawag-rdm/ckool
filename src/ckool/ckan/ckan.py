@@ -5,6 +5,11 @@ import ckanapi
 
 from ..utilities import get_secret
 
+"""
+API Documentation:
+https://docs.ckan.org/en/2.9/api/index.html#action-api-reference
+"""
+
 
 class CKAN:
     def __init__(self, server: str, apikey: str=None, secret: str=None, verify_certificate: bool=True):

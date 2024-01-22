@@ -2,7 +2,7 @@ import json
 from ckool.datacite.xml import MetaDataFormatter
 
 
-def test_init_metadataformatter(tmp_path, json_test_data):
+def test_init_metadata_formatter(tmp_path, json_test_data):
     MetaDataFormatter(doi="this is some doi", outfile=tmp_path / "out.txt", **json_test_data)
 
 

@@ -4,7 +4,6 @@ import pathlib
 
 import pytest
 
-from ckool.ckan.interfaces import RemoteCKANInterface
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.ckan.ckan import CKAN
 
@@ -39,6 +38,16 @@ def load_env_file():
                 continue
             key, value = line.split("=", 1)
             os.environ[key.rstrip()] = value.lstrip().rstrip("\n")
+
+
+@pytest.fixture
+def secure_interface_input_args(load_env_file):
+    return {
+        "host": os.environ.get("SECURE_INTERFACE_HOST"),
+        "port": os.environ.get("SECURE_INTERFACE_PORT"),
+        "username": os.environ.get("SECURE_INTERFACE_USERNAME"),
+        "ssh_key": os.environ.get("SECURE_INTERFACE_SSH_KEY")
+    }
 
 
 @pytest.fixture
@@ -165,9 +174,3 @@ def ckan_api():
 @pytest.fixture()
 def ckan_package_name():
     return os.environ.get("TEST_PACKAGE_NAME")
-
-
-@pytest.fixture
-def remote_interface():
-    with RemoteCKANInterface(ckan_url, apikey=ckan_api) as remote:
-        yield remote
