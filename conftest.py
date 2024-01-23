@@ -10,12 +10,16 @@ from ckool.datacite.datacite import DataCiteAPI
 
 @pytest.fixture
 def data_directory():
-    return pathlib.Path(__file__).parent.resolve() / "tests" / "ckool" / "data" / "inputs"
+    return (
+        pathlib.Path(__file__).parent.resolve() / "tests" / "ckool" / "data" / "inputs"
+    )
 
 
 @pytest.fixture
 def valid_outputs():
-    return pathlib.Path(__file__).parent.resolve() / "tests" / "ckool" / "data" / "outputs"
+    return (
+        pathlib.Path(__file__).parent.resolve() / "tests" / "ckool" / "data" / "outputs"
+    )
 
 
 @pytest.fixture
