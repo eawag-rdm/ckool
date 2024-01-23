@@ -112,17 +112,17 @@ class MetaDataToXMLConverter:
         self.attribute_map = None
         self.root = None
 
-    def _validate(self):
-        valid = self.official_datacite_schema.validate(
+    def _validate(self, official_datacite_schema):
+        valid = official_datacite_schema.validate(
             ET.fromstring(ET.tostring(self.root))
         )
         if not valid:
-            print(self.official_datacite_schema.error_log)
+            print(official_datacite_schema.error_log)
+            raise ValueError(f"The generated schema is not a valid '{self.typ}' schema.")
 
     def _build_tree(self, d=None):
         """Traverses the json-metadata and builds the corresponding lxml-tree"""
         d = d or self.meta
-        print(d)
         assert len(d) == 1
         k = list(d.keys())[0]
         v = list(d.values())[0]
@@ -166,7 +166,7 @@ class MetaDataToXMLConverter:
         self.attribute_map = generate_attribute_map(self.typ)
 
         self.root = self._build_tree()
-        self._validate()
+        self._validate(self.official_datacite_schema)
 
         return ET.tostring(
             self.root, encoding="utf-8", xml_declaration=True, pretty_print=pretty_print

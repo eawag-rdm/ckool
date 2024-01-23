@@ -27,7 +27,8 @@ def test_generate_attribute_defaults():
     assert generate_attribute_defaults("abc") == {}
 
 
-def test_metadata_to_xml_converter(json_test_data):
-    md_converter = MetaDataToXMLConverter(json_test_data["package_metadata"])
-    md_converter.convert_json_to_xml()
-    # TODO: get test files for published data package
+def test_metadata_to_xml_converter(json_test_data, data_directory):
+    md_converter = MetaDataToXMLConverter(json_test_data["enriched_package_metadata"], typ="datacite4.1")
+    xml = md_converter.convert_json_to_xml(pretty_print=False).replace("\n", "")
+    xml_correct = (data_directory / "enriched_package_metadata.xml").read_text().replace("\n", "")
+    assert xml_correct == xml
