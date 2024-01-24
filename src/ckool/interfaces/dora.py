@@ -57,8 +57,7 @@ class Dora:
     # This relies on the current position of the
     # Data-Link in DORA-MODS. Not robust.
     @classmethod
-    def _get_paper_doi_from_dora(cls, dora_id):
-        ns, root = cls._get_dora_record(dora_id)
+    def _get_paper_doi_from_dora(cls, ns, root):
         related_items = root.findall("./nsdefault:identifier[@type='doi']", ns)
         paperdoi = related_items[0].text
         return paperdoi
@@ -73,7 +72,8 @@ class Dora:
                 dora_id = re.match(
                     r"^https?://(www.)?interfaces.lib4ri.ch.*/(.*)$", publication_link
                 ).group(2)
-                doi = cls._get_paper_doi_from_dora(dora_id)
+                ns, root = cls._get_dora_record(dora_id)
+                doi = cls._get_paper_doi_from_dora(ns, root)
             except Exception as e:
                 print(
                     f"WARNING: publicationlink ({publication_link}) neither recognized as DOI nor as DORA-link"

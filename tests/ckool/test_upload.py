@@ -1,6 +1,6 @@
 import pytest
 
-from ckool.upload import upload_large_resource
+from ckool.ckan.upload import upload_large_resource
 
 
 @pytest.mark.slow_or_impure

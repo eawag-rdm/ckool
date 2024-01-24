@@ -1,6 +1,9 @@
 import json
 import os
 import pathlib
+import random
+import string
+import time
 
 import pytest
 
@@ -99,7 +102,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_slow_or_impure)
 
 
-def generate_file(
+def _generate_binary_file(
     size: int, path: pathlib.Path, name: str, chunk_size: int = 1024**3
 ):
     file_path = path / name
@@ -111,26 +114,33 @@ def generate_file(
     with file_path.open("wb") as f:
         for chunk in chunks:
             f.write(os.urandom(chunk))
-    yield file_path
+    return file_path
+
+
+def generate_binary_file(
+    size: int, path: pathlib.Path, name: str, chunk_size: int = 1024**3
+):
+    file_path = path / name
+    yield _generate_binary_file(size, path, name, chunk_size)
     file_path.unlink()
 
 
 @pytest.fixture
 def small_file(tmp_path):
     """100KB"""
-    yield from generate_file(100 * 1024, tmp_path, "small.bin")
+    yield from generate_binary_file(100 * 1024, tmp_path, "small.bin")
 
 
 @pytest.fixture
 def large_file(tmp_path):
     """100MB"""
-    yield from generate_file(100 * 1024**2, tmp_path, "large.bin")
+    yield from generate_binary_file(100 * 1024**2, tmp_path, "large.bin")
 
 
 @pytest.fixture
 def very_large_file(tmp_path):
     """10GB"""
-    yield from generate_file(10 * 1024**3, tmp_path, "very_large.bin")
+    yield from generate_binary_file(10 * 1024**3, tmp_path, "very_large.bin")
 
 
 @pytest.fixture
@@ -138,16 +148,36 @@ def my_package_dir(tmp_path):
     (tmp_path / "my_data_package").mkdir()
     (tmp_path / "my_data_package" / "test_folder1").mkdir()
     (tmp_path / "my_data_package" / "test_folder2").mkdir()
-    (tmp_path / "my_data_package" / "test_folder3").mkdir()
-    (tmp_path / "my_data_package" / "test_folder3" / "test_folder3").mkdir()
+    (tmp_path / "my_data_package" / "test_folder_empty").mkdir()
     (
-        tmp_path / "my_data_package" / "test_folder3" / "test_folder3" / "test_folder3"
-    ).mkdir()
+        tmp_path
+        / "my_data_package"
+        / "test_folder_empty_nested"
+        / "empty_nested"
+        / "empty_nested"
+    ).mkdir(parents=True)
     (tmp_path / "my_data_package" / "test_folder1" / "text.txt").touch()
     (tmp_path / "my_data_package" / "test_folder2" / "random").touch()
     (tmp_path / "my_data_package" / "test_folder2" / ".hidden").touch()
     (tmp_path / "my_data_package" / "script.py").touch()
+    (tmp_path / "my_data_package" / "readme.md").touch()
     return tmp_path / "my_data_package"
+
+
+@pytest.fixture()
+def large_package(tmp_path, my_package_dir):
+    file_sizes = 1024**2 * 15
+    file_name = "large.txt"
+
+    files = []
+    for folder in [my_package_dir / f"folder_{i}" for i in range(10)]:
+        folder.mkdir()
+        files.append(_generate_binary_file(file_sizes, folder, file_name))
+
+    yield my_package_dir
+
+    for file in files:
+        file.unlink()
 
 
 @pytest.fixture

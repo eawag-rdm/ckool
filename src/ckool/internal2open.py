@@ -419,11 +419,3 @@ class Prod2Ext:
             pkg.update({"citation_publication": citation_publication})
 
         self.targetconn.call_action("package_update", data_dict=pkg)
-
-    # barely used
-    def del_all_target_resources(self, pkgname):
-        pkg = self.targetconn.call_action("package_show", data_dict={"id": pkgname})
-        res_ids = [r["id"] for r in pkg["resources"]]
-        for r in res_ids:
-            print("deleting resource {} from {}.".format(r, pkg["name"]))
-            self.targetconn.call_action("resource_delete", data_dict={"id": r})

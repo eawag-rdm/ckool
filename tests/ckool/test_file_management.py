@@ -1,22 +1,60 @@
-import pytest
-from pytest_unordered import unordered
+import shutil
+import time
 
 from ckool.file_management import (
     generate_archive_dest,
-    glob_files,
-    prepare_for_package_upload,
+    iter_files,
+    iter_package_and_prepare_for_upload,
+    match_via_include_exclude_patters,
+    prepare_for_upload_parallel,
+    prepare_for_upload_sequential,
     tar_files,
     zip_files,
 )
 
 
+def test_match_via_include_exclude_patters():
+    short_name = match_via_include_exclude_patters
+    assert short_name("this/should/be/matched", None, None)
+    assert short_name("this/should/be/matched", "this*", None)
+    assert short_name("this/should/be/matched", None, "[0-9]")
+    assert short_name("this/should/be/matched", "matched", "abc")
+
+    assert not short_name("/no/match/2024", "abc", None)
+    assert not short_name("/no/match/2024", None, "match")
+    assert not short_name("/no/match/2024", "abc", "match")
+
+    # conflicting patterns, exclude wins
+    assert not short_name("/no/match/2024", "match", "match")
+
+
+# def transform_pathlib_to_string(iterable: list | dict):
+#     def is_dict_or_list(entity):
+#         return isinstance(entity, dict) or isinstance(entity, list)
+#
+#     if isinstance(iterable, dict):
+#         for key, val in iterable.items():
+#             if is_dict_or_list(iterable[key]):
+#                 transform_pathlib_to_string(iterable[key])
+#             elif isinstance(iterable[key], pathlib.Path):
+#                 iterable[key] = val.as_posix()
+#     elif isinstance(iterable, list):
+#         for idx, val in enumerate(iterable):
+#             if is_dict_or_list(val):
+#                 transform_pathlib_to_string(val)
+#             elif isinstance(val, pathlib.Path):
+#                 iterable[idx] = val.as_posix()
+#
+#     return iterable
+
+
 def test_iter_files(tmp_path, my_package_dir):
-    assert len([file.relative_to(tmp_path) for file in glob_files(tmp_path)]) == 4
+    assert len([file.relative_to(tmp_path) for file in iter_files(tmp_path)]) == 5
     assert (
         len(
             [
                 file.relative_to(tmp_path)
-                for file in glob_files(tmp_path, pattern="**/*.txt")
+                for file in iter_files(tmp_path, include_pattern="\.py")
             ]
         )
         == 1
@@ -25,7 +63,7 @@ def test_iter_files(tmp_path, my_package_dir):
         len(
             [
                 file.relative_to(tmp_path)
-                for file in glob_files(tmp_path, pattern="**/script*")
+                for file in iter_files(tmp_path, include_pattern="/script")
             ]
         )
         == 1
@@ -44,7 +82,7 @@ def test_zip_files(tmp_path, my_package_dir):
     )
 
     file = zip_files(
-        my_package_dir, archive_file, [file for file in glob_files(tmp_path)]
+        my_package_dir, archive_file, [file for file in iter_files(tmp_path)]
     )
 
     assert file == archive_file.with_suffix(".zip")
@@ -56,62 +94,214 @@ def test_tar_files(tmp_path, my_package_dir):
     )
 
     file = tar_files(
-        my_package_dir, archive_file, [file for file in glob_files(tmp_path)]
+        my_package_dir, archive_file, [file for file in iter_files(tmp_path)]
     )
 
-    assert file == archive_file.with_suffix(".tar")
+    assert file == archive_file.with_suffix(".tar.gz")
 
 
-def test_prepare_for_package_upload_main_folder(tmp_path, my_package_dir):
-    tmp_dir_name = "__tmp__"
-    assert prepare_for_package_upload(my_package_dir, tmp_dir_name=tmp_dir_name) == {
-        "files": [tmp_path / tmp_dir_name / my_package_dir.with_suffix(".zip").name],
-        "created": [tmp_path / tmp_dir_name / my_package_dir.with_suffix(".zip").name],
+def test_tar_file(tmp_path):
+    (tmp_path / "some.txt").write_text("Test!")
+    archive_file = generate_archive_dest(tmp_path, tmp_path, tmp_dir_name=".ckool")
+
+    assert tar_files(
+        tmp_path,
+        archive_file,
+        [file for file in iter_files(tmp_path)],
+        compression="xz",
+    ).name.endswith(".tar.xz")
+    assert tar_files(
+        tmp_path,
+        archive_file,
+        [file for file in iter_files(tmp_path)],
+        compression="bz2",
+    ).name.endswith(".tar.bz2")
+    assert tar_files(
+        tmp_path,
+        archive_file,
+        [file for file in iter_files(tmp_path)],
+        compression="gz",
+    ).name.endswith(".tar.gz")
+
+
+def test_iter_package_and_prepare_for_upload_prepare_all(tmp_path, my_package_dir):
+    valid_results = [
+        {"static": tmp_path / "my_data_package" / "readme.md", "dynamic": {}},
+        {"static": tmp_path / "my_data_package" / "script.py", "dynamic": {}},
+        {
+            "static": "",
+            "dynamic": {
+                # "func": zip_files,
+                "args": [],
+                "kwargs": {
+                    "root_folder": tmp_path / "my_data_package",
+                    "archive_destination": tmp_path
+                    / "my_data_package"
+                    / ".ckool"
+                    / "test_folder2",
+                    "files": [
+                        tmp_path / "my_data_package" / "test_folder2" / ".hidden",
+                        tmp_path / "my_data_package" / "test_folder2" / "random",
+                    ],
+                },
+            },
+        },
+        {
+            "static": "",
+            "dynamic": {
+                # "func": zip_files,
+                "args": [],
+                "kwargs": {
+                    "root_folder": tmp_path / "my_data_package",
+                    "archive_destination": tmp_path
+                    / "my_data_package"
+                    / ".ckool"
+                    / "test_folder1",
+                    "files": [
+                        tmp_path / "my_data_package" / "test_folder1" / "text.txt"
+                    ],
+                },
+            },
+        },
+    ]
+
+    for result in iter_package_and_prepare_for_upload(my_package_dir):
+        res = result
+        if res["dynamic"]:  # removing function, as memory address will not be the same
+            del res["dynamic"]["func"]
+        assert res in valid_results
+
+
+def test_iter_package_and_prepare_for_upload_with_filter(tmp_path, my_package_dir):
+    valid_results = {
+        "static": tmp_path / "my_data_package" / "script.py",
+        "dynamic": {},
     }
+    for result in iter_package_and_prepare_for_upload(
+        my_package_dir, include_pattern=r"\.py"
+    ):
+        assert result == valid_results
+
+    valid_results = [
+        {
+            "static": tmp_path / "my_data_package" / "script.py",
+            "dynamic": {},
+        },
+        {
+            "static": tmp_path / "my_data_package" / "readme.md",
+            "dynamic": {},
+        },
+    ]
+    for result in iter_package_and_prepare_for_upload(
+        my_package_dir, exclude_pattern=r"test_folder1|test_folder2"
+    ):
+        assert result in valid_results
+
+    # exclude wins!
+    for result in iter_package_and_prepare_for_upload(
+        my_package_dir,
+        include_pattern="test_",
+        exclude_pattern=r"test_folder1|test_folder2",
+    ):
+        assert result in valid_results
+
+    for result in iter_package_and_prepare_for_upload(
+        my_package_dir, exclude_pattern=r"test_folder2|\.py|\.md"
+    ):
+        if result[
+            "dynamic"
+        ]:  # removing function, as memory address will not be the same
+            del result["dynamic"]["func"]
+        assert result == {
+            "static": "",
+            "dynamic": {
+                # "func": zip_files,
+                "args": [],
+                "kwargs": {
+                    "root_folder": tmp_path / "my_data_package",
+                    "archive_destination": tmp_path
+                    / "my_data_package"
+                    / ".ckool"
+                    / "test_folder1",
+                    "files": [
+                        tmp_path / "my_data_package" / "test_folder1" / "text.txt"
+                    ],
+                },
+            },
+        }
 
 
-def test_prepare_for_package_upload_sub_folders(tmp_path, my_package_dir):
-    tmp_dir_name = "__tmp__"
-    assert prepare_for_package_upload(
-        my_package_dir / "*", tmp_dir_name=tmp_dir_name
-    ) == {
-        "files": unordered(
-            [
-                tmp_path / my_package_dir / tmp_dir_name / "test_folder1.zip",
-                tmp_path / my_package_dir / tmp_dir_name / "test_folder2.zip",
-                tmp_path / my_package_dir / "script.py",
-            ]
-        ),
-        "created": unordered(
-            [
-                tmp_path / my_package_dir / tmp_dir_name / "test_folder1.zip",
-                tmp_path / my_package_dir / tmp_dir_name / "test_folder2.zip",
-            ]
-        ),
-    }
+def test_prepare_for_upload_sequential(tmp_path, my_package_dir):
+    def filter_hash(x):
+        return {"file": x["file"], "size": x["size"]}
+
+    files = prepare_for_upload_sequential(my_package_dir, compression_type="tar")
+    assert [filter_hash(f) for f in files] == [
+        {
+            "file": tmp_path / "my_data_package" / "readme.md",
+            "size": 0,
+        },
+        {
+            "file": tmp_path / "my_data_package" / "script.py",
+            "size": 0,
+        },
+        {
+            "file": tmp_path / "my_data_package" / ".ckool" / "test_folder2.tar.gz",
+            "size": 139,
+        },
+        {
+            "file": tmp_path / "my_data_package" / ".ckool" / "test_folder1.tar.gz",
+            "size": 122,
+        },
+    ]
 
 
-def test_prepare_for_package_upload_single_file(tmp_path, my_package_dir):
-    assert prepare_for_package_upload(my_package_dir / "script.py") == {
-        "files": [my_package_dir / "script.py"],
-        "created": [],
-    }
+def test_prepare_for_upload_parallel(tmp_path, my_package_dir):
+    def filter_hash(x):
+        return {"file": x["file"], "size": x["size"]}
+
+    files = prepare_for_upload_parallel(my_package_dir, compression_type="tar")
+    should_be = [
+        {
+            "file": tmp_path / "my_data_package" / "readme.md",
+            "size": 0,
+        },
+        {
+            "file": tmp_path / "my_data_package" / "script.py",
+            "size": 0,
+        },
+        {
+            "file": tmp_path / "my_data_package" / ".ckool" / "test_folder2.tar.gz",
+            "size": 139,
+        },
+        {
+            "file": tmp_path / "my_data_package" / ".ckool" / "test_folder1.tar.gz",
+            "size": 122,
+        },
+    ]
+    assert all([filter_hash(file) in should_be for file in files])
 
 
-def test_prepare_for_package_upload_empty_folder(tmp_path, my_package_dir):
-    assert prepare_for_package_upload(
-        my_package_dir / "test_folder3" / "test_folder3"
-    ) == {"files": [], "created": []}
+def test_prepare_for_upload_performance(tmp_path, large_package):
+    t1 = time.time()
+    files_1 = prepare_for_upload_sequential(large_package, compression_type="zip")
+    t2 = time.time()
 
+    shutil.rmtree(
+        large_package / ".ckool"
+    )  # deletes the tmp folder from the first preparation
 
-def test_prepare_for_package_upload_invalid(tmp_path, my_package_dir):
-    with pytest.raises(NotADirectoryError):
-        prepare_for_package_upload(my_package_dir / "does_not_exist")
-        prepare_for_package_upload(my_package_dir / "does_not_exist" / "*")
+    t3 = time.time()
+    files_2 = prepare_for_upload_parallel(large_package, compression_type="zip")
+    t4 = time.time()
 
+    duration_sequential = t2 - t1
+    duration_parallel = t4 - t3
 
-def test_prepare_for_package_upload_no_compression_needed(tmp_path, my_package_dir):
-    assert prepare_for_package_upload(my_package_dir / "test_folder1" / "*") == {
-        "files": [my_package_dir / "test_folder1" / "text.txt"],
-        "created": [],
-    }
+    assert files_1 == files_2
+    # There should be a significant difference in performance!!
+    assert duration_parallel * 2 < duration_sequential, (
+        f"Performance parallel {duration_parallel:.4f}s\n"
+        f"Performance sequential: {duration_sequential:.4f}s\n"
+        f"Parallel is not twice as fast."
+    )

@@ -1,14 +1,50 @@
+import os
 import pathlib
+import re
+import tarfile
+from concurrent.futures import ProcessPoolExecutor
 from tarfile import TarFile, TarInfo
 from typing import Literal
 from zipfile import ZipFile
 
+from .hashing import get_hash_func
 
-def glob_files(folder: pathlib.Path, pattern: str = "**/*"):
-    """Matching like fnmatch https://docs.python.org/3/library/fnmatch.html#module-fnmatch"""
-    for file_or_folder in folder.glob(pattern):
-        if file_or_folder.is_file():
-            yield file_or_folder
+
+def match_via_include_exclude_patters(
+    string, include_pattern: str = None, exclude_pattern: str = None
+):
+    return any(
+        [
+            include_pattern is None and exclude_pattern is None,
+            include_pattern is None
+            and exclude_pattern is not None
+            and re.search(exclude_pattern, string) is None,
+            include_pattern is not None
+            and re.search(include_pattern, string) is not None
+            and exclude_pattern is None,
+            include_pattern is not None
+            and re.search(include_pattern, string) is not None
+            and exclude_pattern is not None
+            and re.search(exclude_pattern, string) is None,
+        ]
+    )
+
+
+def iter_files(
+    folder: pathlib.Path, include_pattern: str = None, exclude_pattern: str = None
+):
+    """
+    Using re to filter paths. If both include_pattern and exclude pattern are provided.
+    Both will be used, beware of conflicts.
+    include_pattern: str [default: None] -> match everything
+    exclude_pattern: str [default: None] -> exclude nothing
+    """
+
+    for file_or_folder in folder.glob("**/*"):
+        fof = file_or_folder.as_posix()
+        if match_via_include_exclude_patters(fof, include_pattern, exclude_pattern):
+            if file_or_folder.is_file():
+                yield file_or_folder
 
 
 def generate_archive_dest(
@@ -33,77 +69,164 @@ def zip_files(
 
 
 def tar_files(
-    root_folder: pathlib.Path, archive_destination: pathlib.Path, files: list
+    root_folder: pathlib.Path,
+    archive_destination: pathlib.Path,
+    files: list,
+    compression: Literal["gz", "bz2", "xz"] = "gz",
 ) -> pathlib.Path:
-    with TarFile(archive_destination.with_suffix(".tar"), mode="w") as tar:
+    with tarfile.open(
+        archive_destination.with_suffix(f".tar.{compression}"), mode=f"w:{compression}"
+    ) as tar:
         for file in files:
-            tar.addfile(TarInfo(file.relative_to(root_folder).as_posix()), file)
-    return archive_destination.with_suffix(".tar")
+            tarinfo = tarfile.TarInfo(file.relative_to(root_folder).as_posix())
+            tarinfo.size = (
+                file.stat().st_size
+            )  # size needs to be set, otherwise 0 bytes will be read ffrom each file
+            with file.open("rb") as f:
+                tar.addfile(tarinfo, f)
+    return archive_destination.with_suffix(f".tar.{compression}")
 
 
-def prepare_for_package_upload(
-    candidate: pathlib.Path,
-    pattern: str = "**/*",
+def iter_package_and_prepare_for_upload(
+    package: pathlib.Path,
+    include_pattern: str = None,
+    exclude_pattern: str = None,
     compression_type: Literal["zip", "tar"] = "zip",
     tmp_dir_name: str = ".ckool",
 ) -> dict:
+    """
+    This function gets everything ready for the package upload.
+    - it creates a tmp directory and saves compressed folders in there and collects all folders.
+    """
     compress = {"zip": zip_files, "tar": tar_files}.get(compression_type)
 
-    if candidate.is_file():
-        return {"files": [candidate], "created": []}
-
-    elif candidate.is_dir():
-        archive_destination = generate_archive_dest(
-            candidate, candidate.parent, tmp_dir_name
+    if not package.exists():
+        raise NotADirectoryError(
+            f"The directory you specified does not exist. '{package}'"
         )
 
-        files_to_compress = list(glob_files(candidate, pattern))
+    for file_or_folder in package.iterdir():
+        if not match_via_include_exclude_patters(
+            file_or_folder.as_posix(), include_pattern, exclude_pattern
+        ):
+            continue
 
-        if not files_to_compress:
-            return {"files": [], "created": []}
-
-        archive = compress(
-            candidate,
-            archive_destination,
-            files_to_compress,
-        )
-
-        return {"files": [archive], "created": [archive]}
-
-    else:
-        # designed to deal with sub folders archiving /some/folder/with/subfolders/there/*
-        archives = []
-        to_upload = []
-        if candidate.name == "*":
-            if not candidate.parent.exists():
-                raise NotADirectoryError(
-                    f"The directory you specified does not exist. '{candidate.parent}'"
-                )
-        else:
-            if not candidate.exists():
-                raise NotADirectoryError(
-                    f"The directory you specified does not exist. '{candidate}'"
-                )
-
-        for file_or_folder in candidate.parent.iterdir():
+        if file_or_folder.is_file():
+            yield {"static": file_or_folder, "dynamic": {}}
+        elif file_or_folder.is_dir():
             archive_destination = generate_archive_dest(
-                file_or_folder, candidate.parent, tmp_dir_name
+                file_or_folder, file_or_folder.parent, tmp_dir_name
             )
-
-            if file_or_folder.is_file():
-                to_upload.append(file_or_folder)
-                continue
-
-            files_to_compress = list(glob_files(file_or_folder, pattern))
+            files_to_compress = list(
+                iter_files(file_or_folder, include_pattern, exclude_pattern)
+            )
 
             if not files_to_compress:
                 continue
 
-            archive = compress(
-                file_or_folder,
-                archive_destination,
-                files_to_compress,
+            yield {
+                "static": "",
+                "dynamic": {
+                    "func": compress,
+                    "args": [],
+                    "kwargs": {
+                        "root_folder": package,
+                        "archive_destination": archive_destination,
+                        "files": files_to_compress,
+                    },
+                },
+            }
+        else:
+            raise ValueError(
+                f"Ooops this shouldn't happen. This is not a file and not a folder '{file_or_folder.as_posix()}'."
             )
-            archives.append(archive)
 
-        return {"files": to_upload + archives, "created": archives}
+
+class LocalProcessor:
+    def __init__(
+        self,
+        hash_type: str,
+    ):
+        self.hash_type = hash_type
+
+    def get_hash(self, file_path):
+        hash_func = get_hash_func(self.hash_type)
+        return hash_func(file_path)
+
+    def get_size(self, file_path):
+        return file_path.stat().st_size
+
+    def process(self, static_or_dynamic):
+        if file := static_or_dynamic.get("static"):
+            return {
+                "file": file,
+                "hash": self.get_hash(file),
+                "size": self.get_size(file),
+            }
+        elif instruction := static_or_dynamic.get("dynamic"):
+            file = instruction["func"](
+                *instruction["args"], **instruction["kwargs"]
+            )  # compressing
+            return {
+                "file": file,
+                "hash": self.get_hash(file),
+                "size": self.get_size(file),
+            }
+        else:
+            raise ValueError(
+                f"Ooops, this is not a valid Processor instruction '{static_or_dynamic}'."
+            )
+
+
+def prepare_for_upload_sequential(
+    package: pathlib.Path,
+    include_pattern: str = None,
+    exclude_pattern: str = None,
+    compression_type: Literal["zip", "tar"] = "zip",
+    tmp_dir_name: str = ".ckool",
+    hash_type: str = "sha256",
+):
+    files_to_upload = []
+    for static_or_dynamic in iter_package_and_prepare_for_upload(
+        package, include_pattern, exclude_pattern, compression_type, tmp_dir_name
+    ):
+        lp = LocalProcessor(hash_type)
+        file_info = lp.process(static_or_dynamic)
+        files_to_upload.append(file_info)
+
+    return files_to_upload
+
+
+def prepare_for_upload_parallel(
+    package: pathlib.Path,
+    include_pattern: str = None,
+    exclude_pattern: str = None,
+    compression_type: Literal["zip", "tar"] = "zip",
+    tmp_dir_name: str = ".ckool",
+    hash_type: str = "sha256",
+    max_workers: int = None,
+):
+    max_workers = max_workers if max_workers is not None else os.cpu_count()
+    if not isinstance(max_workers, int):
+        raise ValueError(
+            f"The value for 'max_worker' must be an integer. "
+            f"Your device allow up to '{os.cpu_count()}' parallel workers."
+        )
+
+    lp = LocalProcessor(hash_type)
+
+    files_to_upload = []
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        for result in executor.map(
+            lp.process,
+            iter_package_and_prepare_for_upload(
+                package,
+                include_pattern,
+                exclude_pattern,
+                compression_type,
+                tmp_dir_name,
+            ),
+        ):
+            files_to_upload.append(result)
+
+    return files_to_upload

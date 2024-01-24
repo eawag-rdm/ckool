@@ -1,6 +1,5 @@
 import pytest
 
-from ckool.interfaces.dora import Dora
 from ckool.interfaces.mixed_requests import get_citation_from_doi
 
 
@@ -15,7 +14,3 @@ def test_get_citation_eawag_doi():
 @pytest.mark.parametrize("doi", ["https://doi.org/10.25678/00039Z", "10.1109/5.771073"])
 def test_get_citation_non_eawag_doi(doi):
     assert isinstance(get_citation_from_doi(doi), str)
-
-
-def test_plink_dora_from_doi():
-    print(Dora.publication_link_dora_from_doi("10.25678/00039Z"))
