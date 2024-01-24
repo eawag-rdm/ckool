@@ -65,15 +65,20 @@ class SecureInterface:
         return ssh
 
     def scp(
-        self, local_filepath: str | pathlib.Path, remote_filepath: str | pathlib.Path, show_progress: bool = False
+        self,
+        local_filepath: str | pathlib.Path,
+        remote_filepath: str | pathlib.Path,
+        show_progress: bool = False,
     ):
         """To copy to remote host only"""
         local_filepath = to_pathlib(local_filepath)
         remote_filepath = to_pathlib(remote_filepath)
 
         def progress4(filename, size, sent, peername):
-            sys.stdout.write("(%s:%s) %s's progress: %.2f%%   \r" % (
-            peername[0], peername[1], filename, float(sent) / float(size) * 100))
+            sys.stdout.write(
+                "(%s:%s) %s's progress: %.2f%%   \r"
+                % (peername[0], peername[1], filename, float(sent) / float(size) * 100)
+            )
 
         with SSHClient() as ssh:
             ssh.load_system_host_keys()
@@ -87,7 +92,7 @@ class SecureInterface:
                 key_filename=self.ssh_key,
             )
 
-            kwargs = {} if not show_progress else {"progress4": "progress4"}
+            kwargs = {} if not show_progress else {"progress4": progress4}
             with SCPClient(ssh.get_transport(), **kwargs) as scp:
                 scp.put(local_filepath, remote_filepath.as_posix())
 
