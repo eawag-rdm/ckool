@@ -1,11 +1,11 @@
+import json
+
 import ckanapi
 import pytest
 
 
 def test_get_package_metadata(ckan_instance, ckan_test_package):
     data = ckan_instance.get_package(ckan_test_package)
-    import json
-
     print(json.dumps(data, indent=2))
     assert isinstance(data, dict) and len(data) > 0
 

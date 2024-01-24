@@ -1,3 +1,4 @@
+import concurrent.futures
 import json
 import pathlib
 
@@ -10,6 +11,23 @@ from ..utilities import get_secret
 API Documentation:
 https://docs.ckan.org/en/2.9/api/index.html#action-api-reference
 """
+
+
+def _download_resource(
+    url: str, api_key: str, destination_file_path: str | pathlib.Path, chunk_size=8192
+):
+    with requests.get(url, headers={"X-CKAN-API-Key": api_key}, stream=True) as req:
+        req.raise_for_status()
+        with open(destination_file_path, "wb") as f:
+            for chunk in req.iter_content(chunk_size=chunk_size):
+                f.write(chunk)
+    return destination_file_path
+
+
+def _wrapper_for_parallel(args):
+    """ignores chunk_size for now"""
+    url, api_key, destination_file_path = args
+    return _download_resource(url, api_key, destination_file_path)
 
 
 class CKAN:
@@ -65,14 +83,7 @@ class CKAN:
     def download_resource(
         self, url: str, destination_file_path: str | pathlib.Path, chunk_size=8192
     ):
-        with requests.get(
-            url, headers={"X-CKAN-API-Key": self.apikey}, stream=True
-        ) as req:
-            req.raise_for_status()
-            with open(destination_file_path, "wb") as f:
-                for chunk in req.iter_content(chunk_size=chunk_size):
-                    f.write(chunk)
-        return destination_file_path
+        return _download_resource(url, self.apikey, destination_file_path, chunk_size)
 
     def update_package_metadata(self, package_data: dict):
         """You must provide the full metadata"""
@@ -134,3 +145,54 @@ class CKAN:
                     },
                     requests_kwargs={"verify": self.verify},
                 )
+
+    def _download_link_sequentially(self, links: list, destination: pathlib.Path):
+        done = []
+        for link in links:
+            name = pathlib.Path(link)
+            self.download_resource(link, destination / name)
+        return done
+
+    @staticmethod
+    def _download_resources_in_parallel(links, api_key, destination, max_workers):
+        # prepare_args
+        n = len(links)
+        _list_api_key = [api_key for _ in range(n)]
+        _list_destination = [destination for _ in range(n)]
+
+        done = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for result in executor.map(
+                _wrapper_for_parallel, zip(links, _list_api_key, _list_destination)
+            ):
+                done.append(result)
+
+        return done
+
+    def download_package_with_resources(
+        self,
+        package_name: str,
+        destination: str | pathlib.Path,
+        parallel: bool = False,
+        max_workers: int = None,
+    ):
+        # TODO write tests for this
+        if isinstance(destination, str):
+            destination = pathlib.Path(destination)
+
+        metadata = self.get_package(package_name)
+        with (destination / "metadata.json").open("w") as f:
+            json.dump(metadata, f)
+
+        resources_to_download = [
+            res["url"] for res in metadata["resources"] if res["url_type"] == "upload"
+        ]
+
+        if parallel:
+            files = self._download_resources_in_parallel(
+                resources_to_download, self.apikey, destination, max_workers=max_workers
+            )
+        else:
+            files = self._download_link_sequentially(resources_to_download, destination)
+
+        return files + [destination / "metadata.json"]
