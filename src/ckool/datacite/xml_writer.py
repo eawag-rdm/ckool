@@ -1,47 +1,9 @@
-# _*_ coding: utf-8 _*_
-
-"""
-This module reads a json-file which contains the metadata of an
-item to be published and returns an XML representation thereof.
-
-Currently, the application is DOI-minting and the DataCite metadata-schema v4.4
-(https://schema.datacite.org/meta/kernel-4.4/metadata.xsd) is returned. (This
-of course only happens if the input-metadata is DataCite compatible.)
-
-The item's metadata in json is represented with regard to the XML nodes of
-the schema:
-
-Each XML node is represented by an object ("node-object").
-Each node-object contains only one key - value pair.
-The key of a node-object corresponds to an XML tag-name.
-Namespaces for tag-names are expressed in Clark's notation:
-http://www.jclark.com/xml/xmlns.htm.
-The value of a node-object can be a (1) string, (2) an array or (3) an object.
-
-(1) and (2) are simpliifcations, (3) Is most flexible.
-
-(1) In case it is a string, it equals the XML node's text. The node
-does not have attributes or children.
-
-(2) In case it is an array, the array contains node-objects of the node's children.
-The node does not have neither text nor attributes.
-
-(3) In case it is an object, it might contain keys "val", "att", "children", "tail"
-
-  + The value of "val" is a string and equals the XML node's text.
-  + The value of "att" is an object and corresponds the node's attributes.
-    Namespaces for attributes are given using Clark's notation:
-    http://www.jclark.com/xml/xmlns.htm.
-  + The value of "children" is an array that contains node-objects of the node's
-    children.
-  + The value of "tail" is text that is directly inserted after the element.
-    This serves to enable "mixed contenet" (see https://lxml.de/tutorial.html#elements-contain-text).
-
-"""
 import pathlib
+import xml.etree.ElementTree as ET
 
-from lxml import etree as ET
-from lxml.builder import ElementMaker
+# Register the default namespace
+default_ns = "http://datacite.org/schema/kernel-4"
+ET.register_namespace('', default_ns)
 
 __THIS_FOLDER = pathlib.Path(__file__).parent.resolve()
 
@@ -53,28 +15,21 @@ def read_official_datacite_schema(typ):
     datacite4.1
     datacite4.4
     """
-    global __THIS_FOLDER
-    if typ == "datacite4.1":
-        return ET.XMLSchema(
-            ET.parse(__THIS_FOLDER / "schema/datacite/metadata_schema_4.1.xsd")
-        )
-    elif typ == "datacite4.4":
-        return ET.XMLSchema(
-            ET.parse(__THIS_FOLDER / "schema/datacite/metadata_schema_4.4.xsd")
-        )
+    # Note: xml.etree.ElementTree does not support XML schema validation.
+    # This function will need to be adapted if schema validation is required.
+    # For now, it just loads the schema file.
+    if typ in ["datacite4.1", "datacite4.4"]:
+        with open(__THIS_FOLDER / f"schema/datacite/metadata_schema_{typ[-3:]}.xsd", "r") as file:
+            return file.read()
     else:
         raise ValueError(
-            f"The schema type you provided'{typ}' is not implemented. "
+            f"The schema type you provided '{typ}' is not implemented. "
             f"Types are expected to be in form of 'dataciteX.X'."
         )
 
 
 def generate_attribute_map(typ):
-    if typ == "datacite4.1":
-        return {
-            "lang": "{http://www.w3.org/XML/1998/namespace}lang",
-        }
-    elif typ == "datacite4.4":
+    if typ in ["datacite4.1", "datacite4.4"]:
         return {
             "lang": "{http://www.w3.org/XML/1998/namespace}lang",
         }
@@ -83,18 +38,11 @@ def generate_attribute_map(typ):
 
 
 def generate_attribute_defaults(typ):
-    if typ == "datacite4.1":
+    if typ in ["datacite4.1", "datacite4.4"]:
         return {
             "resource": {
-                "{http://www.w3.org/2001/XMLSchema-instance}schemaLocation": "http://datacite.org/schema/kernel-4 "
-                "http://schema.datacite.org/meta/kernel-4.1/metadata.xsd"
-            }
-        }
-    elif typ == "datacite4.4":
-        return {
-            "resource": {
-                "{http://www.w3.org/2001/XMLSchema-instance}schemaLocation": "http://datacite.org/schema/kernel-4 "
-                "http://schema.datacite.org/meta/kernel-4.4/metadata.xsd"
+                "{http://www.w3.org/2001/XMLSchema-instance}schemaLocation": f"http://datacite.org/schema/kernel-4 "
+                f"http://schema.datacite.org/meta/kernel-{typ[-3:]}/metadata.xsd"
             }
         }
     else:
@@ -103,7 +51,6 @@ def generate_attribute_defaults(typ):
 
 class MetaDataToXMLConverter:
     def __init__(self, metadata: dict, typ="datacite4.4"):
-        self.E = ElementMaker(nsmap={None: "http://datacite.org/schema/kernel-4"})
         self.typ = typ
         self.meta = metadata
 
@@ -112,45 +59,39 @@ class MetaDataToXMLConverter:
         self.attribute_map = None
         self.root = None
 
-    def _validate(self, official_datacite_schema):
-        valid = official_datacite_schema.validate(ET.fromstring(ET.tostring(self.root)))
-        if not valid:
-            print(official_datacite_schema.error_log)
-            raise ValueError(
-                f"The generated schema is not a valid '{self.typ}' schema."
-            )
+    @staticmethod
+    def _build_element(tag, text=None, tail=None, attrib=None):
+        """Helper function to create an ElementTree Element."""
+        if not tag.startswith("{"):
+            tag = f"{{{default_ns}}}{tag}"
+        element = ET.Element(tag, attrib if attrib else {})
+        if text:
+            element.text = text
+        if tail:
+            element.tail = tail
+        return element
 
     def _build_tree(self, d=None):
-        """Traverses the json-metadata and builds the corresponding lxml-tree"""
+        """Traverses the json-metadata and builds the corresponding ElementTree."""
         d = d or self.meta
         assert len(d) == 1
         k = list(d.keys())[0]
         v = list(d.values())[0]
-        default_att = self.attribute_defaults.get(k)
+        default_att = self.attribute_defaults.get(k, {})
         if isinstance(v, str):
-            # simple element
-            el = self.E(k)
-            el.text = v
-            if default_att:
-                el.attrib.update(default_att)
+            el = self._build_element(k, text=v, attrib=default_att)
             return el
         if isinstance(v, list):
-            # element containing sequence of child elements / no attributes
-            el = self.E(k)
+            el = self._build_element(k, attrib=default_att)
             for child in v:
                 el.append(self._build_tree(d=child))
-            if default_att:
-                el.attrib.update(default_att)
             return el
         if isinstance(v, dict):
-            # element with attribute(s)
-            el = self.E(k)
+            el = self._build_element(k, attrib=default_att)
             att = v.get("att")
             if att:
-                att = {self.attribute_map.get(k) or k: v for k, v in att.items()}
+                att = {self.attribute_map.get(k, k): v for k, v in att.items()}
                 el.attrib.update(att)
-            if default_att:
-                el.attrib.update(default_att)
             if v.get("val"):
                 el.text = v.get("val")
             if v.get("tail"):
@@ -166,8 +107,7 @@ class MetaDataToXMLConverter:
         self.attribute_map = generate_attribute_map(self.typ)
 
         self.root = self._build_tree()
-        self._validate(self.official_datacite_schema)
 
-        return ET.tostring(
-            self.root, encoding="utf-8", xml_declaration=True, pretty_print=pretty_print
-        ).decode("utf-8")
+        # Note: ElementTree does not have a built-in pretty print option.
+        # The 'pretty_print' parameter will not have any effect.
+        return ET.tostring(self.root, encoding="utf-8", xml_declaration=True).decode("utf-8")

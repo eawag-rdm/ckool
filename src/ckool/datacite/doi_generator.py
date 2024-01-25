@@ -22,10 +22,7 @@ Options:
   -r, --reverse   Returns offset and internal ID belonging to <doi>.
 
 """
-import sys
-
 import base32_crockford as b32
-from datacite import DataCiteRESTClient
 
 
 def generate_doi(prefix, intid, offset, url=False):

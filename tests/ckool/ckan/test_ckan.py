@@ -4,6 +4,7 @@ import ckanapi
 import pytest
 
 
+@pytest.mark.slow_or_impure
 def _delete_resource_ids_and_times(data: dict):
     """Due to setup and teardown for each test the times and ids are always different"""
     del data["id"]
@@ -20,10 +21,12 @@ def _delete_resource_ids_and_times(data: dict):
     return data
 
 
+@pytest.mark.slow_or_impure
 def test_get_all_packages(ckan_instance):
     assert ckan_instance.get_all_packages()
 
 
+@pytest.mark.slow_or_impure
 def test_get_package(ckan_instance, ckan_envvars, ckan_setup_data, valid_outputs):
     data = ckan_instance.get_package(ckan_envvars["test_package"])
     with (valid_outputs / "package_data_from_ckan.json").open() as f:
@@ -33,11 +36,13 @@ def test_get_package(ckan_instance, ckan_envvars, ckan_setup_data, valid_outputs
     )
 
 
+@pytest.mark.slow_or_impure
 def test_get_package_metadata_package_does_not_exist(ckan_instance, ckan_setup_data):
     with pytest.raises(ckanapi.errors.NotFound):
         ckan_instance.get_package("this-package-name-does-not-exist")
 
 
+@pytest.mark.slow_or_impure
 def test_get_package_metadata_filtered(ckan_instance, ckan_envvars, ckan_setup_data):
     data = ckan_instance.get_package(
         ckan_envvars["test_package"], filter_fields=["maintainer", "author"]
@@ -45,6 +50,7 @@ def test_get_package_metadata_filtered(ckan_instance, ckan_envvars, ckan_setup_d
     assert len(data) == 2
 
 
+@pytest.mark.slow_or_impure
 def test_update_package_metadata(ckan_instance, ckan_envvars, ckan_setup_data):
     data = ckan_instance.get_package(ckan_envvars["test_package"])
 
@@ -64,6 +70,7 @@ def test_update_package_metadata(ckan_instance, ckan_envvars, ckan_setup_data):
     assert data["notes"] == original_message
 
 
+@pytest.mark.slow_or_impure
 def test_patch_package_metadata(ckan_instance, ckan_envvars, ckan_setup_data):
     data = ckan_instance.get_package(ckan_envvars["test_package"])
     original_message = data["notes"]

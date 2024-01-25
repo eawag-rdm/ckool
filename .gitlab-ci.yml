@@ -1,22 +1,21 @@
 image: python:slim-buster
 
-stages:
-  - style
-  - build
-  - deploy
+before_script:
+  - apt update && apt install make -y
+  - python -m pip install --upgrade -e .[dev]
 
-style-check:
-  stage: style
-  before_script:
-    - apt update && apt install make -y
+stages:
+  - test
+  - build
+
+run-test:
+  stage: test
   script:
-    - make style-check
+    - pytest -svv
 
 build-docs:
   stage: build
   script:
-    - apt update && apt install make -y
-    - pip install -r docs/requirements.txt
     - make -C docs html
   artifacts:
     paths:

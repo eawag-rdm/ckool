@@ -35,4 +35,4 @@ def test_metadata_to_xml_converter(json_test_data, data_directory):
     xml_correct = (
         (data_directory / "enriched_package_metadata.xml").read_text().replace("\n", "")
     )
-    assert xml_correct == xml
+    assert xml == xml_correct

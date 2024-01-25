@@ -24,6 +24,7 @@ classifiers = [
 
 dependencies = [
     "requests",
+    "bs4",
     "ckanapi",
     "base32_crockford",
     "requests_toolbelt",

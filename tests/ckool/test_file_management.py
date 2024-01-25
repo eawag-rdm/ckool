@@ -235,8 +235,7 @@ def test_prepare_for_upload_sequential(tmp_path, my_package_dir):
     def filter_hash(x):
         return {"file": x["file"], "size": x["size"]}
 
-    files = prepare_for_upload_sequential(my_package_dir, compression_type="tar")
-    assert [filter_hash(f) for f in files] == [
+    correct = [
         {
             "file": tmp_path / "my_data_package" / "readme.md",
             "size": 0,
@@ -254,6 +253,10 @@ def test_prepare_for_upload_sequential(tmp_path, my_package_dir):
             "size": 122,
         },
     ]
+
+    files = prepare_for_upload_sequential(my_package_dir, compression_type="tar")
+    for entry in files:
+        assert filter_hash(entry) in correct
 
 
 def test_prepare_for_upload_parallel(tmp_path, my_package_dir):

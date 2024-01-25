@@ -3,7 +3,7 @@ from urllib.parse import quote, urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from lxml import etree as ET
+import xml.etree.ElementTree as ET
 
 
 class Dora:
@@ -57,13 +57,16 @@ class Dora:
             raise ValueError(f"No entries can be found for the dora_id '{dora_id}'.")
 
         xml_root = ET.fromstring(xml)
-        namespace = re.match("{(.*)}.*", xml_root.tag).group(1)
+
+        match = re.match("{(.*)}.*", xml_root.tag)
+        namespace = match.group(1) if match else ""
 
         def parse_root(search_string):
+            nsmap = {"mods": namespace}
             return [
                 identifier.text
                 for identifier in xml_root.findall(
-                    search_string, namespaces={"mods": namespace}
+                    search_string, namespaces=nsmap
                 )
                 if identifier.text
             ]
