@@ -39,44 +39,68 @@ class Dora:
             return
         if len(links) > 1:
             print(
-                f"WARNING: multiple DORA records for one DOI: '{doi}'. Only the first will be returned"
+                f"WARNING: multiple DORA records for one DOI: '{doi}'. Only the first will be returned."
             )
 
         return links[0]
 
-    # TODO
     @classmethod
-    def _get_dora_record(cls, dora_id):
+    def get_doi_from_dora_id(cls, dora_id):
+        """
+        dora_id: str,
+            example: eawag:20376
+        """
         url = f"https://www.dora.lib4ri.ch/eawag/islandora/object/{dora_id}/datastream/MODS"
-        res = requests.get(url).text
-        root = ET.fromstring(res)
-        ns = {"nsdefault": re.match("{(.*)}.*", root.tag).group(1)}
-        return ns, root
 
-    # TODO
-    # This relies on the current position of the
-    # Data-Link in DORA-MODS. Not robust.
-    @classmethod
-    def _get_paper_doi_from_dora(cls, ns, root):
-        related_items = root.findall("./nsdefault:identifier[@type='doi']", ns)
-        paperdoi = related_items[0].text
-        return paperdoi
+        xml = requests.get(url).text
+        if re.match("<!DOCTYPE html>", xml):
+            raise ValueError(f"No entries can be found for the dora_id '{dora_id}'.")
 
-    # TODO
+        xml_root = ET.fromstring(xml)
+        namespace = re.match("{(.*)}.*", xml_root.tag).group(1)
+
+        def parse_root(search_string):
+            return [
+                identifier.text
+                for identifier in xml_root.findall(
+                    search_string, namespaces={"mods": namespace}
+                )
+                if identifier.text
+            ]
+
+        dois = parse_root(f'.//mods:identifier[@type="doi"]')
+        dois += parse_root(f'.//mods:identifier[@identifierType="DOI"]')
+
+        related_dois = parse_root(
+            f'.//mods:relatedIdentifier[@relatedIdentifierType="DOI"]'
+        )
+
+        if not dois:
+            print(f"WARNING: No DOIs in Dora for dora_id: '{dora_id}'.")
+            return
+
+        if len(dois) > 1:
+            print(
+                f"WARNING: multiple DOIs for the dora_id: '{dora_id}'. Only the first will be returned."
+            )
+        if related_dois:
+            print(
+                f"INFO: related DOIs found for the dora_id: '{dora_id}'. Related DOIs: '{', '.join(related_dois)}'"
+            )
+
+        return dois[0]
+
     @classmethod
     def doi_from_publication_link(cls, publication_link):
-        try:
-            doi = re.match(r"^https?://(dx.)?doi.org/(.*)$", publication_link).group(2)
-        except AttributeError:
-            try:
-                dora_id = re.match(
-                    r"^https?://(www.)?interfaces.lib4ri.ch.*/(.*)$", publication_link
-                ).group(2)
-                ns, root = cls._get_dora_record(dora_id)
-                doi = cls._get_paper_doi_from_dora(ns, root)
-            except Exception as e:
-                print(
-                    f"WARNING: publicationlink ({publication_link}) neither recognized as DOI nor as DORA-link"
-                )
-                raise e
-        return doi
+        matched = re.match(r"^https?://(dx.)?doi.org/(.*)$", publication_link)
+        if matched:
+            return matched.group(2)
+
+        matched = re.search("eawag:[0-9]{3,6}", publication_link)
+        if matched:
+            return cls.get_doi_from_dora_id(matched.group())
+
+        raise ValueError(
+            f"The publication link you provided '{publication_link}' is neither "
+            f"recognized as doi.org link nor as dora-link."
+        )
