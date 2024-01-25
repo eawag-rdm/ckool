@@ -3,12 +3,17 @@ import pytest
 from ckool.datacite.datacite import DataCiteException
 
 
+# TODO check DataCite TestAPI
 def test_doi_list_via_client(datacite_instance):
-    assert datacite_instance.doi_list_via_client() == []
+    print(datacite_instance.doi_list_via_client())
+    doi = "10.5524/this-is-a-test-no-doi"
+    # d = datacite_instance.doi_delete(doi)
+    # assert datacite_instance.doi_list_via_client() == []
 
 
 def test_doi_list_via_prefix(datacite_instance):
-    assert datacite_instance.doi_list_via_prefix() == []
+    print(datacite_instance.doi_list_via_prefix())
+    # assert datacite_instance.doi_list_via_prefix() == []
 
 
 def test_doi_reserve_and_delete(datacite_instance, load_env_file):

@@ -30,6 +30,7 @@ def upload_large_resource(
     api_key: str,
     resource_type: str = "Dataset",
     restricted_level: str = "public",
+    allow_insecure: bool = False,
 ):
     file_name = file_path.name
     file_size = file_path.stat().st_size
@@ -58,4 +59,5 @@ def upload_large_resource(
             headers=headers,
             auth=None,
             stream=True,
+            verify=not allow_insecure,
         )

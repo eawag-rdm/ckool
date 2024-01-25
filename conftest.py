@@ -9,6 +9,7 @@ import pytest
 
 from ckool.ckan.ckan import CKAN
 from ckool.datacite.datacite import DataCiteAPI
+from tests.ckool.data.inputs.ckan_entity_data import *
 
 
 @pytest.fixture
@@ -57,13 +58,46 @@ def secure_interface_input_args(load_env_file):
     }
 
 
+@pytest.fixture()
+def ckan_envvars(load_env_file):
+    return {
+        "host": os.environ.get("CKAN_URL"),
+        "token": os.environ.get("CKAN_TOKEN"),
+        "test_package": os.environ.get("CKAN_TEST_PACKAGE_NAME"),
+        "test_organization": os.environ.get("CKAN_TEST_ORGANIZATION_NAME"),
+    }
+
+
 @pytest.fixture
-def ckan_instance(load_env_file):
+def ckan_instance(ckan_envvars):
     return CKAN(
-        server=os.environ["CKAN_URL"],
-        apikey=os.environ["CKAN_APIKEY"],
+        server=ckan_envvars["host"],
+        token=ckan_envvars["token"],
         verify_certificate=False,
     )
+
+
+def setup(ckan_instance, ckan_envvars):
+    organization_data.update({"name": f"{ckan_envvars['test_organization']}"})
+    package_data.update({"name": f"{ckan_envvars['test_package']}"})
+    resource_data.update({"package_id": f"{ckan_envvars['test_package']}"})
+
+    ckan_instance.create_organization(**organization_data)
+    ckan_instance.create_package(**package_data)
+    ckan_instance.create_resource(**resource_data)
+
+
+def teardown(ckan_instance, ckan_envvars):
+    ckan_instance.delete_package(ckan_envvars["test_package"])
+    ckan_instance.delete_organization(ckan_envvars["test_organization"])
+    ckan_instance.purge_organization(ckan_envvars["test_organization"])
+
+
+@pytest.fixture
+def ckan_setup_data(ckan_instance, ckan_envvars):
+    setup(ckan_instance, ckan_envvars)
+    yield
+    teardown(ckan_instance, ckan_envvars)
 
 
 @pytest.fixture
@@ -193,18 +227,3 @@ def data_to_cache():
 @pytest.fixture
 def cache_file(tmp_path):
     return tmp_path / "cache.json"
-
-
-@pytest.fixture()
-def ckan_url():
-    return os.environ.get("CKAN_URL")
-
-
-@pytest.fixture()
-def ckan_api():
-    return os.environ.get("CKAN_API")
-
-
-@pytest.fixture()
-def ckan_package_name():
-    return os.environ.get("TEST_PACKAGE_NAME")

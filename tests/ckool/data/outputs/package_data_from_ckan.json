@@ -1,0 +1,88 @@
+{
+  "author": [
+    "ckan_admin"
+  ],
+  "author_email": "example@localhost.ch",
+  "creator_user_id": "a60585d5-78b1-4bc6-9821-09a1faa36136",
+  "id": "f8e26ce1-c085-474f-a49a-d51a384a04a4",
+  "isopen": false,
+  "license_id": null,
+  "license_title": null,
+  "maintainer": "ckan_admin",
+  "maintainer_email": null,
+  "metadata_created": "2024-01-25T14:18:02.218655",
+  "metadata_modified": "2024-01-25T14:18:02.444094",
+  "name": "test_package",
+  "notes": "some_note",
+  "num_resources": 1,
+  "num_tags": 1,
+  "organization": {
+    "id": "b9dd8422-6b0f-4ff2-8a82-604d5be19902",
+    "name": "test_organization",
+    "title": "Test_Organization",
+    "type": "organization",
+    "description": "This is my organization.",
+    "image_url": "https://www.techrepublic.com/wp-content/uploads/2017/03/meme05.jpg",
+    "created": "2024-01-25T14:18:02.133556",
+    "is_organization": true,
+    "approval_status": "approved",
+    "state": "active"
+  },
+  "owner_org": "b9dd8422-6b0f-4ff2-8a82-604d5be19902",
+  "private": false,
+  "publicationlink": "",
+  "review_level": "none",
+  "reviewed_by": "",
+  "spatial": "{\"type\": \"Point\", \"coordinates\": [8.609776496939471, 47.40384502816517]}",
+  "state": "active",
+  "status": "incomplete",
+  "tags_string": "some_tag",
+  "timerange": [
+    "*"
+  ],
+  "title": "Test_Package",
+  "type": "dataset",
+  "url": null,
+  "usage_contact": "ckan_admin",
+  "variables": [
+    "none"
+  ],
+  "version": null,
+  "resources": [
+    {
+      "cache_last_updated": null,
+      "cache_url": null,
+      "created": "2024-01-25T14:18:02.450847",
+      "datastore_active": false,
+      "description": null,
+      "format": "JPEG",
+      "hash": "",
+      "id": "70cb7e4e-72b0-4666-826c-d1600c3ea969",
+      "last_modified": null,
+      "metadata_modified": "2024-01-25T14:18:02.447817",
+      "mimetype": "image/jpeg",
+      "mimetype_inner": null,
+      "name": "test_resource_link",
+      "package_id": "f8e26ce1-c085-474f-a49a-d51a384a04a4",
+      "position": 0,
+      "resource_type": "Dataset",
+      "restricted_level": "public",
+      "size": null,
+      "state": "active",
+      "url": "https://static.demilked.com/wp-content/uploads/2021/07/60ed37b256b80-it-rage-comics-memes-reddit-60e6fee1e7dca__700.jpg",
+      "url_type": null
+    }
+  ],
+  "tags": [
+    {
+      "display_name": "some_tag",
+      "id": "817c946f-d18e-493a-a2b7-ff22d1e4d650",
+      "name": "some_tag",
+      "state": "active",
+      "vocabulary_id": null
+    }
+  ],
+  "groups": [],
+  "relationships_as_subject": [],
+  "relationships_as_object": []
+}

@@ -34,16 +34,36 @@ class CKAN:
     def __init__(
         self,
         server: str,
-        apikey: str = None,
+        token: str = None,
         secret: str = None,
         verify_certificate: bool = True,
     ):
         self.server = server
-        self.apikey = apikey if apikey is not None else get_secret(secret)
+        self.token = token if token is not None else get_secret(secret)
         self.verify = verify_certificate
 
     def connection(self):
-        return ckanapi.RemoteCKAN(self.server, apikey=self.apikey)
+        return ckanapi.RemoteCKAN(self.server, apikey=self.token)
+
+    def plain_action_call(self, endpoint, **kwargs):
+        with self.connection() as conn:
+            return conn.call_action(
+                endpoint,
+                data_dict=kwargs,
+                requests_kwargs={"verify": self.verify},
+            )
+
+    def get_all_packages(self, **kwargs):
+        """
+        https://docs.ckan.org/en/2.9/api/#ckan.logic.action.get.package_search
+        """
+
+        if not kwargs.get("include_private"):
+            kwargs["include_private"] = True
+        if not kwargs.get("rows"):
+            kwargs["rows"] = 1000
+
+        return self.plain_action_call("package_search", **kwargs)
 
     def get_package(self, package_name: str, filter_fields: list = None):
         """
@@ -52,12 +72,7 @@ class CKAN:
             eg: ["maintainer", "author", "usage_contact", "timerange", "notes", "spatial", "private", "num_tags", "tags", "tags_string"]
         """
 
-        with self.connection() as conn:
-            data = conn.call_action(
-                "package_show",
-                data_dict={"id": package_name},
-                requests_kwargs={"verify": self.verify},
-            )
+        data = self.plain_action_call("package_show", id=package_name)
 
         if filter_fields is not None:
             return {k: v for k, v in data.items() if k in filter_fields}
@@ -65,34 +80,77 @@ class CKAN:
         return data
 
     def get_project(self, project_name):
-        with self.connection() as conn:
-            return conn.call_action(
-                "group_show",
-                data_dict={"id": project_name},
-                requests_kwargs={"verify": self.verify},
-            )
+        return self.plain_action_call("group_show", id=project_name)
 
     def get_user(self, username):
-        with self.connection() as conn:
-            return conn.call_action(
-                "group_show",
-                data_dict={"id": username},
-                requests_kwargs={"verify": self.verify},
-            )
+        return self.plain_action_call("group_show", id=username)
 
-    def download_resource(
-        self, url: str, destination_file_path: str | pathlib.Path, chunk_size=8192
-    ):
-        return _download_resource(url, self.apikey, destination_file_path, chunk_size)
+    def create_organization(self, **kwargs):
+        """CURL example
+
+        curl --insecure -X POST https://localhost:8443/api/3/action/organization_create \
+         -H "Content-Type: application/json" \
+         -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJEV1dtMzhzQ2ZkMk1ob2V5SmZ5ZjJ0dHRjOERIYjdEQ0pPUU93QXNSdGFYYjdDbC12THRtRlhFVTg5ZExGU096aUxWTjAxeXlvSUYwSEdLQiIsImlhdCI6MTcwNjE4NzEzMn0.3ki03QvUSKDi61cug2ooD0WL-ckVzwhnIIV1UlrgCAo" \
+         -d '{
+               "name": "test_organization",
+               "title": "Test_Organization",
+               "description": "This is my organization.",
+               "homepage": "https://www.eawag.ch/de/",
+               "datamanager": "ckan_admin",
+               "image_url": "https://www.techrepublic.com/wp-content/uploads/2017/03/meme05.jpg"
+             }'
+        """
+        return self.plain_action_call("organization_create", **kwargs)
+
+    def create_package(self, **kwargs):
+        """CURL example
+
+        curl --insecure -X POST "https://localhost:8443/api/3/action/package_create" \
+         -H "Content-Type: application/json" \
+         -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJEV1dtMzhzQ2ZkMk1ob2V5SmZ5ZjJ0dHRjOERIYjdEQ0pPUU93QXNSdGFYYjdDbC12THRtRlhFVTg5ZExGU096aUxWTjAxeXlvSUYwSEdLQiIsImlhdCI6MTcwNjE4NzEzMn0.3ki03QvUSKDi61cug2ooD0WL-ckVzwhnIIV1UlrgCAo" \
+         -d '{
+               "name": "test_package",
+               "title": "Test_Package",
+               "private": false,
+               "description": "This is my package.",
+               "author": "ckan_admin",
+               "author_email": "your_email@example.com",
+               "state": "active",
+               "type": "dataset",
+               "owner_org": "test_organization",
+               "reviewed_by": "",
+               "maintainer": "ckan_admin",
+               "usage_contact": "ckan_admin",
+               "notes": "some_note",
+               "review_level": "none",
+               "spatial": "{\"type\": \"Point\", \"coordinates\": [8.609776496939471, 47.40384502816517]}",
+               "status": "incomplete",
+               "tags_string": "some_tag",
+               "timerange": "*",
+               "variables": "none"
+             }'
+        """
+        return self.plain_action_call("package_create", **kwargs)
+
+    def create_resource(self, **kwargs):
+        """CURL example
+
+        curl --insecure -X POST "https://localhost:8443/api/3/action/resource_create" \
+         -H "Content-Type: application/json" \
+         -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJjdDdKUWNKMUkzaXFSRGUtVFUzd0x4eG1fWjMyWkFwZG53eU80ejh3d1dRd240ZkljcEh0UXpBS0RJSWVsUUhuMU92NHRNU0dLNVZncWdHNyIsImlhdCI6MTcwNjE3NDc3OH0.Qvz3CSL9lmYtboxfMTw5Pa6vOCttNuqpPYIcih5nvig" \
+         -d '{
+               "package_id": "'test_package",
+               "name": "test_resource",
+               "resource_type": "Dataset",
+               "restricted_level": "public",
+               "url": "https://static.demilked.com/wp-content/uploads/2021/07/60ed37b256b80-it-rage-comics-memes-reddit-60e6fee1e7dca__700.jpg"
+             }'
+        """
+        return self.plain_action_call("resource_create", **kwargs)
 
     def update_package_metadata(self, package_data: dict):
         """You must provide the full metadata"""
-        with self.connection() as conn:
-            return conn.call_action(
-                "package_update",
-                data_dict=package_data,
-                requests_kwargs={"verify": self.verify},
-            )
+        return self.plain_action_call("package_update", **package_data)
 
     def patch_package_metadata(self, package_name: str, package_data_to_update: dict):
         """You provide only the key-value-pairs you want to update"""
@@ -118,33 +176,34 @@ class CKAN:
         """Inserts DOI and citation (retrieved from DataCite) into
         target-host metadata. Use from ckool.interfaces.mixed_requests import get_citation_from_doi
         """
-        with self.connection() as conn:
-            return conn.call_action(
-                "package_patch",
-                data_dict={"id": package_name, "doi": doi, "citation": citation},
-                requests_kwargs={"verify": self.verify},
-            )
+        return self.plain_action_call(
+            "package_patch", id=package_name, doi=doi, citation=citation
+        )
 
     def update_linked_resource_url(self, resource_id, url):
-        with self.connection() as conn:
-            return conn.call_action(
-                "resource_patch",
-                data_dict={"id": resource_id, "url": url},
-                requests_kwargs={"verify": self.verify},
-            )
+        return self.plain_action_call("resource_patch", id=resource_id, url=url)
+
+    def delete_resource(self, resource_id):
+        return self.plain_action_call("resource_delete", id=resource_id)
+
+    def delete_package(self, package_id):
+        return self.plain_action_call("package_delete", id=package_id)
+
+    def delete_organization(self, organization_id):
+        return self.plain_action_call("organization_delete", id=organization_id)
+
+    def purge_organization(self, organization_id):
+        return self.plain_action_call("organization_purge", id=organization_id)
 
     def delete_all_resources_from_package(self, package_name):
         pkg = self.get_package(package_name)
         resource_ids = [resource["id"] for resource in pkg["resources"]]
-        for resource_id in resource_ids:
-            with self.connection() as conn:
-                return conn.call_action(
-                    "resource_delete",
-                    data_dict={
-                        "id": resource_id,
-                    },
-                    requests_kwargs={"verify": self.verify},
-                )
+        return [self.delete_resource(resource_id) for resource_id in resource_ids]
+
+    def download_resource(
+        self, url: str, destination_file_path: str | pathlib.Path, chunk_size=8192
+    ):
+        return _download_resource(url, self.token, destination_file_path, chunk_size)
 
     def _download_link_sequentially(self, links: list, destination: pathlib.Path):
         done = []
@@ -190,7 +249,7 @@ class CKAN:
 
         if parallel:
             files = self._download_resources_in_parallel(
-                resources_to_download, self.apikey, destination, max_workers=max_workers
+                resources_to_download, self.token, destination, max_workers=max_workers
             )
         else:
             files = self._download_link_sequentially(resources_to_download, destination)
