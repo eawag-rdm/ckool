@@ -17,7 +17,7 @@ clean:
 	rm -rdf __pycache__ .pytest_cache htmlcov .coverage build .ruff_cache .benchmarks tests/*/.benchmarks .tox
 	make -C docs clean
 
-lint:
+style-check:
 	isort .
 	black .
 
