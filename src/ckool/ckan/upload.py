@@ -23,7 +23,7 @@ class TqdmProgressCallback:
         print("Waiting for CKAN server!")
 
 
-def upload_large_resource(
+def upload_resource(
     file_path: pathlib.Path,
     package_id: str,
     ckan_url: str,

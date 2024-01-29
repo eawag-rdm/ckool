@@ -6,7 +6,7 @@ from ckool.interfaces.interfaces import SecureInterface
 md5 = get_hash_func("md5")
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_secure_interface_init(secure_interface_input_args):
     SecureInterface(**secure_interface_input_args)
 
@@ -33,7 +33,7 @@ def test_secure_interface_init(secure_interface_input_args):
         SecureInterface(host="FakeHost", username="SomeUserName", passphrase="ass")
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_ssh(secure_interface_input_args):
     si = SecureInterface(**secure_interface_input_args)
     out, err = si.ssh("ls /home")
@@ -41,7 +41,7 @@ def test_ssh(secure_interface_input_args):
     assert si.username in users
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_scp(tmp_path, secure_interface_input_args):
     file = tmp_path / "abc"
     si = SecureInterface(**secure_interface_input_args)

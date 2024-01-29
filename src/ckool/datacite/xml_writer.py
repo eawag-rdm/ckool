@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 # Register the default namespace
 default_ns = "http://datacite.org/schema/kernel-4"
-ET.register_namespace('', default_ns)
+ET.register_namespace("", default_ns)
 
 __THIS_FOLDER = pathlib.Path(__file__).parent.resolve()
 
@@ -19,7 +19,9 @@ def read_official_datacite_schema(typ):
     # This function will need to be adapted if schema validation is required.
     # For now, it just loads the schema file.
     if typ in ["datacite4.1", "datacite4.4"]:
-        with open(__THIS_FOLDER / f"schema/datacite/metadata_schema_{typ[-3:]}.xsd", "r") as file:
+        with open(
+            __THIS_FOLDER / f"schema/datacite/metadata_schema_{typ[-3:]}.xsd", "r"
+        ) as file:
             return file.read()
     else:
         raise ValueError(
@@ -110,4 +112,6 @@ class MetaDataToXMLConverter:
 
         # Note: ElementTree does not have a built-in pretty print option.
         # The 'pretty_print' parameter will not have any effect.
-        return ET.tostring(self.root, encoding="utf-8", xml_declaration=True).decode("utf-8")
+        return ET.tostring(self.root, encoding="utf-8", xml_declaration=True).decode(
+            "utf-8"
+        )

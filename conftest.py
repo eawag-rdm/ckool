@@ -1,15 +1,43 @@
 import json
 import os
 import pathlib
-import random
-import string
-import time
 
 import pytest
 
 from ckool.ckan.ckan import CKAN
+from ckool.ckan.upload import upload_resource
 from ckool.datacite.datacite import DataCiteAPI
 from tests.ckool.data.inputs.ckan_entity_data import *
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--run-slow", action="store_true", default=False, help="run slow tests"
+    )
+    parser.addoption(
+        "--run-impure", action="store_true", default=False, help="run impure tests"
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "slow: marks test as slow")
+    config.addinivalue_line(
+        "markers", "impure: marks test as impure (depending on other systems)"
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    skip_slow = pytest.mark.skip(reason="need --run-slow option to run")
+    skip_impure = pytest.mark.skip(reason="need --run-impure option to run")
+
+    if config.getoption("--run-slow") and config.getoption("--run-impure"):
+        return
+
+    for item in items:
+        if "slow" in item.keywords and not config.getoption("--run-slow"):
+            item.add_marker(skip_slow)
+        elif "impure" in item.keywords and not config.getoption("--run-impure"):
+            item.add_marker(skip_impure)
 
 
 @pytest.fixture
@@ -93,6 +121,35 @@ def teardown(ckan_instance, ckan_envvars):
     ckan_instance.purge_organization(ckan_envvars["test_organization"])
 
 
+@pytest.fixture()
+def add_file_resources(tmp_path, ckan_instance, ckan_envvars):
+    def _add_file_resources(package_sizes: list):
+        files = []
+        for i in range(len(package_sizes)):
+            print(i)
+            with open(
+                file := _generate_binary_file(
+                    package_sizes[i], tmp_path, f"file_{i}", chunk_size=4 * 1024**2
+                ),
+                "rb",
+            ) as _file:
+                upload_resource(
+                    file_path=file,
+                    package_id=ckan_envvars["test_package"],
+                    ckan_url=ckan_envvars["host"],
+                    api_key=ckan_envvars["token"],
+                    resource_type="Dataset",
+                    restricted_level="public",
+                    allow_insecure=True,
+                )
+            files.append(file)
+
+        for f in files:
+            f.unlink()
+
+    return _add_file_resources
+
+
 @pytest.fixture
 def ckan_setup_data(ckan_instance, ckan_envvars):
     setup(ckan_instance, ckan_envvars)
@@ -114,26 +171,6 @@ def datacite_instance(load_env_file):
         host=os.environ["TEST_DATACITE_URL"],
         offset=os.environ["TEST_DATACITE_OFFSET"],
     )
-
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--runall", action="store_true", default=False, help="run all tests"
-    )
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "slow_or_impure: mark test as slow to run")
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runall"):
-        # --runall given in cli: do run all tests, even slow or impure
-        return
-    skip_slow_or_impure = pytest.mark.skip(reason="need --runall option to run")
-    for item in items:
-        if "slow_or_impure" in item.keywords:
-            item.add_marker(skip_slow_or_impure)
 
 
 def _generate_binary_file(
@@ -201,7 +238,7 @@ def my_package_dir(tmp_path):
 @pytest.fixture()
 def large_package(tmp_path, my_package_dir):
     file_sizes = 1024**2 * 15
-    file_name = "large.txt"
+    file_name = "large.bin"
 
     files = []
     for folder in [my_package_dir / f"folder_{i}" for i in range(10)]:

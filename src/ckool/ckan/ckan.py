@@ -14,9 +14,15 @@ https://docs.ckan.org/en/2.9/api/index.html#action-api-reference
 
 
 def _download_resource(
-    url: str, api_key: str, destination_file_path: str | pathlib.Path, chunk_size=8192
+    url: str,
+    api_key: str,
+    destination_file_path: str | pathlib.Path,
+    chunk_size: int = 8192,
+    verify: bool = True,
 ):
-    with requests.get(url, headers={"X-CKAN-API-Key": api_key}, stream=True) as req:
+    with requests.get(
+        url, headers={"X-CKAN-API-Key": api_key}, stream=True, verify=verify
+    ) as req:
         req.raise_for_status()
         with open(destination_file_path, "wb") as f:
             for chunk in req.iter_content(chunk_size=chunk_size):
@@ -26,8 +32,8 @@ def _download_resource(
 
 def _wrapper_for_parallel(args):
     """ignores chunk_size for now"""
-    url, api_key, destination_file_path = args
-    return _download_resource(url, api_key, destination_file_path)
+    url, api_key, destination_file_path, chunk_size, verify = args
+    return _download_resource(url, api_key, destination_file_path, chunk_size, verify)
 
 
 class CKAN:
@@ -139,12 +145,14 @@ class CKAN:
          -H "Content-Type: application/json" \
          -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJjdDdKUWNKMUkzaXFSRGUtVFUzd0x4eG1fWjMyWkFwZG53eU80ejh3d1dRd240ZkljcEh0UXpBS0RJSWVsUUhuMU92NHRNU0dLNVZncWdHNyIsImlhdCI6MTcwNjE3NDc3OH0.Qvz3CSL9lmYtboxfMTw5Pa6vOCttNuqpPYIcih5nvig" \
          -d '{
-               "package_id": "'test_package",
+               "package_id": "test_package",
                "name": "test_resource",
                "resource_type": "Dataset",
                "restricted_level": "public",
                "url": "https://static.demilked.com/wp-content/uploads/2021/07/60ed37b256b80-it-rage-comics-memes-reddit-60e6fee1e7dca__700.jpg"
              }'
+
+        This does not work for files! Please use the upload_function from the upload module.
         """
         return self.plain_action_call("resource_create", **kwargs)
 
@@ -201,31 +209,51 @@ class CKAN:
         return [self.delete_resource(resource_id) for resource_id in resource_ids]
 
     def download_resource(
-        self, url: str, destination_file_path: str | pathlib.Path, chunk_size=8192
+        self,
+        url: str,
+        destination_file_path: str | pathlib.Path,
+        chunk_size=8192,
+        verify: bool = True,
     ):
-        return _download_resource(url, self.token, destination_file_path, chunk_size)
+        return _download_resource(
+            url, self.token, destination_file_path, chunk_size, verify
+        )
 
-    def _download_link_sequentially(self, links: list, destination: pathlib.Path):
+    def _download_link_sequentially(
+        self,
+        links: list,
+        destination: pathlib.Path,
+        chunk_size=8192,
+        verify: bool = True,
+    ):
         done = []
         for link in links:
-            name = pathlib.Path(link)
-            self.download_resource(link, destination / name)
+            name = pathlib.Path(link).name
+            done.append(
+                self.download_resource(link, destination / name, chunk_size, verify)
+            )
         return done
 
     @staticmethod
-    def _download_resources_in_parallel(links, api_key, destination, max_workers):
+    def _download_resources_in_parallel(
+        links, api_key, destination, max_workers, chunk_size=8192, verify=True
+    ):
         # prepare_args
         n = len(links)
         _list_api_key = [api_key for _ in range(n)]
-        _list_destination = [destination for _ in range(n)]
+        _list_destination = [
+            destination / pathlib.Path(link).name for _, link in zip(range(n), links)
+        ]
+        _chunk_size = [chunk_size for _ in range(n)]
+        _verify = [verify for _ in range(n)]
 
         done = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             for result in executor.map(
-                _wrapper_for_parallel, zip(links, _list_api_key, _list_destination)
+                _wrapper_for_parallel,
+                zip(links, _list_api_key, _list_destination, _chunk_size, _verify),
             ):
                 done.append(result)
-
         return done
 
     def download_package_with_resources(
@@ -234,7 +262,12 @@ class CKAN:
         destination: str | pathlib.Path,
         parallel: bool = False,
         max_workers: int = None,
+        chunk_size: int = 8192,
+        verify: bool = True,
     ):
+        """
+        Significant performance differences can be seen for many large resources.
+        """
         # TODO write tests for this
         if isinstance(destination, str):
             destination = pathlib.Path(destination)
@@ -249,9 +282,16 @@ class CKAN:
 
         if parallel:
             files = self._download_resources_in_parallel(
-                resources_to_download, self.token, destination, max_workers=max_workers
+                resources_to_download,
+                self.token,
+                destination,
+                max_workers=max_workers,
+                chunk_size=chunk_size,
+                verify=verify,
             )
         else:
-            files = self._download_link_sequentially(resources_to_download, destination)
+            files = self._download_link_sequentially(
+                resources_to_download, destination, chunk_size=chunk_size, verify=verify
+            )
 
         return files + [destination / "metadata.json"]

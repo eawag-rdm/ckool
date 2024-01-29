@@ -3,6 +3,7 @@ import pytest
 from ckool.interfaces.mixed_requests import get_citation_from_doi
 
 
+@pytest.mark.impure
 def test_get_citation_eawag_doi():
     eawag_doi = "10.25678/00039Z"
     assert (
@@ -11,6 +12,7 @@ def test_get_citation_eawag_doi():
     )
 
 
+@pytest.mark.impure
 @pytest.mark.parametrize("doi", ["https://doi.org/10.25678/00039Z", "10.1109/5.771073"])
 def test_get_citation_non_eawag_doi(doi):
     assert isinstance(get_citation_from_doi(doi), str)

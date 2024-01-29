@@ -3,7 +3,6 @@ import pathlib
 import re
 import tarfile
 from concurrent.futures import ProcessPoolExecutor
-from tarfile import TarFile, TarInfo
 from typing import Literal
 from zipfile import ZipFile
 

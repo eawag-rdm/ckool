@@ -3,7 +3,7 @@ import pytest
 from ckool.datacite.datacite import DataCiteException
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_doi_list_via_client(datacite_instance):
     print(datacite_instance.doi_list_via_client())
     doi = "10.5524/this-is-a-test-no-doi"
@@ -11,13 +11,13 @@ def test_doi_list_via_client(datacite_instance):
     # assert datacite_instance.doi_list_via_client() == []
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_doi_list_via_prefix(datacite_instance):
     print(datacite_instance.doi_list_via_prefix())
     # assert datacite_instance.doi_list_via_prefix() == []
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_doi_reserve_and_delete(datacite_instance, load_env_file):
     doi = "10.5524/this-is-a-test-no-doi"
     d = datacite_instance.doi_reserve(doi)
@@ -26,7 +26,7 @@ def test_doi_reserve_and_delete(datacite_instance, load_env_file):
     assert d
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_doi_retrieve(datacite_instance, load_env_file):
     doi = "10.5524/this-is-a-test-no-doi"
     d = datacite_instance.doi_reserve(doi)
@@ -37,14 +37,14 @@ def test_doi_retrieve(datacite_instance, load_env_file):
     assert d
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_doi_retrieve_not_available(datacite_instance, load_env_file):
     doi = "10.5524/this-doi-does-not-exist"
     with pytest.raises(DataCiteException):
         datacite_instance.doi_retrieve(doi)
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_doi_reserve_existing(datacite_instance, load_env_file):
     doi = "10.5524/this-is-a-test-no-doi"
     d = datacite_instance.doi_reserve(doi)
@@ -55,7 +55,7 @@ def test_doi_reserve_existing(datacite_instance, load_env_file):
     assert d
 
 
-@pytest.mark.slow_or_impure
+@pytest.mark.impure
 def test_doi_delete_non_existing(datacite_instance, load_env_file):
     doi = "10.5524/this-is-a-test-no-doi"
     d = datacite_instance.doi_reserve(doi)

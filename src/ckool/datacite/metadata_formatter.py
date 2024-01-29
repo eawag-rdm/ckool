@@ -4,8 +4,6 @@ import re
 import sys
 from datetime import datetime
 
-from docopt import docopt
-
 from ..interfaces.dora import Dora
 
 PUBLISHER = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"

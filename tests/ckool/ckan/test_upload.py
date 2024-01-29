@@ -1,15 +1,15 @@
 import pytest
 
-from ckool.ckan.upload import upload_large_resource
+from ckool.ckan.upload import upload_resource
 
 
-@pytest.mark.slow_or_impure
-def test_upload_small(ckan_api, ckan_url, ckan_package_name, small_file):
-    response = upload_large_resource(
+@pytest.mark.impure
+def test_upload_small(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
+    response = upload_resource(
         small_file,
-        ckan_package_name,
-        ckan_url,
-        ckan_api,
+        ckan_envvars["test_package"],
+        ckan_envvars["host"],
+        ckan_envvars["token"],
         "Dataset",
         "public",
         allow_insecure=True,
@@ -17,13 +17,13 @@ def test_upload_small(ckan_api, ckan_url, ckan_package_name, small_file):
     response.raise_for_status()
 
 
-@pytest.mark.slow_or_impure
-def test_upload_large(ckan_api, ckan_url, ckan_package_name, large_file):
-    response = upload_large_resource(
+@pytest.mark.impure
+def test_upload_large(ckan_instance, ckan_envvars, ckan_setup_data, large_file):
+    response = upload_resource(
         large_file,
-        ckan_package_name,
-        ckan_url,
-        ckan_api,
+        ckan_envvars["test_package"],
+        ckan_envvars["host"],
+        ckan_envvars["token"],
         "Dataset",
         "public",
         allow_insecure=True,
@@ -31,13 +31,16 @@ def test_upload_large(ckan_api, ckan_url, ckan_package_name, large_file):
     response.raise_for_status()
 
 
-@pytest.mark.slow_or_impure
-def test_upload_very_large(ckan_api, ckan_url, ckan_package_name, very_large_file):
-    response = upload_large_resource(
+@pytest.mark.slow
+@pytest.mark.impure
+def test_upload_very_large(
+    ckan_instance, ckan_envvars, ckan_setup_data, very_large_file
+):
+    response = upload_resource(
         very_large_file,
-        ckan_package_name,
-        ckan_url,
-        ckan_api,
+        ckan_envvars["test_package"],
+        ckan_envvars["host"],
+        ckan_envvars["token"],
         "Dataset",
         "public",
         allow_insecure=True,

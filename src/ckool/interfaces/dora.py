@@ -1,9 +1,9 @@
 import re
+import xml.etree.ElementTree as ET
 from urllib.parse import quote, urljoin
 
 import requests
 from bs4 import BeautifulSoup
-import xml.etree.ElementTree as ET
 
 
 class Dora:
@@ -28,7 +28,7 @@ class Dora:
         base_url = "https://www.dora.lib4ri.ch/eawag/islandora/object/"
 
         # Extract links from response
-        bs = BeautifulSoup(response.text)
+        bs = BeautifulSoup(response.text, features="lxml")
         links = [
             urljoin(base_url, html.find("a").get("href"))
             for html in bs.find_all("div", {"class": "lib4ridora-pdf-link"})
@@ -65,17 +65,15 @@ class Dora:
             nsmap = {"mods": namespace}
             return [
                 identifier.text
-                for identifier in xml_root.findall(
-                    search_string, namespaces=nsmap
-                )
+                for identifier in xml_root.findall(search_string, namespaces=nsmap)
                 if identifier.text
             ]
 
-        dois = parse_root(f'.//mods:identifier[@type="doi"]')
-        dois += parse_root(f'.//mods:identifier[@identifierType="DOI"]')
+        dois = parse_root('.//mods:identifier[@type="doi"]')
+        dois += parse_root('.//mods:identifier[@identifierType="DOI"]')
 
         related_dois = parse_root(
-            f'.//mods:relatedIdentifier[@relatedIdentifierType="DOI"]'
+            './/mods:relatedIdentifier[@relatedIdentifierType="DOI"]'
         )
 
         if not dois:

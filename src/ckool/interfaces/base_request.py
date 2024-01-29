@@ -2,10 +2,10 @@ import requests
 
 
 def base_get(server, api_key):
-    def _base_get(endpoint):
+    def _base_get(endpoint, verify=True):
         url = f"{server}{endpoint}"
         headers = {"Authorization": api_key}
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers, verify=verify)
         r.raise_for_status()
         return r.json()
 

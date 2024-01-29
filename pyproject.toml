@@ -7,7 +7,7 @@ name = "ckool"
 version = "0.1.0"
 description = "CKAN Tool, in short ckool! A tool for working with CKAN instances."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 keywords = ["ckan", "data management", "open data"]
 authors = [
@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "requests",
     "bs4",
+    "lxml",  # required by bs4 to parse xml response
     "ckanapi",
     "base32_crockford",
     "requests_toolbelt",
@@ -60,7 +61,7 @@ env =[
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py38,py39,py310,py311
+envlist = py310,py311,py312
 isolated_build = True
 tox_pyenv_fallback=False
 
@@ -71,7 +72,7 @@ deps =
     pytest
 commands =
     pip install .[dev]
-    pytest
+    pytest {posargs}
 """
 
 [tool.ruff]
@@ -86,11 +87,15 @@ exclude = [
     ".bzr",
     ".direnv",
     ".eggs",
+    ".egg-info",
+    ".env",
+    ".benchmarks",
     ".git",
     ".hg",
     ".mypy_cache",
     ".nox",
     ".pants.d",
+    ".python-version",
     ".pytype",
     ".ruff_cache",
     ".svn",
