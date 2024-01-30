@@ -306,8 +306,8 @@ def test_prepare_for_upload_performance(tmp_path, large_package):
     assert files_1 == files_2
     # There should be a significant difference in performance.
     # Especially for large files, if system resources are available.
-    #assert duration_parallel < duration_sequential, (
+    # assert duration_parallel < duration_sequential, (
     #    f"Performance parallel {duration_parallel:.4f}s\n"
     #    f"Performance sequential: {duration_sequential:.4f}s\n"
     #    f"Parallel is not faster "
-    #)
+    # )

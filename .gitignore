@@ -16,3 +16,4 @@ __pycache__
 *.ipynb
 *.egg-info
 .env
+.ckool.toml

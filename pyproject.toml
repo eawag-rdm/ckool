@@ -32,7 +32,8 @@ dependencies = [
     "tqdm",
     "typer",
     "paramiko",
-    "scp"
+    "scp",
+    "typer[all]"
 ]
 
 [project.optional-dependencies]

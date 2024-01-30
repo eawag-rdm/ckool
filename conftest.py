@@ -13,7 +13,7 @@ from tests.ckool.data.inputs.ckan_entity_data import *
 def flatten_nested_structure(structure: dict | list):
     result = []
 
-    def flatten_element(element, prefix=''):
+    def flatten_element(element, prefix=""):
         if isinstance(element, dict):
             for key, value in element.items():
                 flatten_element(value, prefix + str(key))

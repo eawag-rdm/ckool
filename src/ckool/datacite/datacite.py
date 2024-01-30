@@ -5,6 +5,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from ckool.other.utilities import get_secret
+
 from .doi_generator import generate_doi
 
 
