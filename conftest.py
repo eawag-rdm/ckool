@@ -10,6 +10,23 @@ from ckool.datacite.datacite import DataCiteAPI
 from tests.ckool.data.inputs.ckan_entity_data import *
 
 
+def flatten_nested_structure(structure: dict | list):
+    result = []
+
+    def flatten_element(element, prefix=''):
+        if isinstance(element, dict):
+            for key, value in element.items():
+                flatten_element(value, prefix + str(key))
+        elif isinstance(element, list):
+            for item in element:
+                flatten_element(item, prefix)
+        else:
+            result.append(prefix + str(element))
+
+    flatten_element(structure)
+    return result
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--run-slow", action="store_true", default=False, help="run slow tests"
