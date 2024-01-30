@@ -5,7 +5,7 @@ import pathlib
 import ckanapi
 import requests
 
-from ..utilities import get_secret
+from ckool.other.utilities import get_secret
 
 """
 API Documentation:

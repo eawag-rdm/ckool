@@ -3,7 +3,7 @@ from hashlib import sha256
 import pyinstrument
 import pytest
 
-from ckool.hashing import _hash, get_hash_func, import_hash_func
+from ckool.other.hashing import _hash, get_hash_func, import_hash_func
 
 
 def test_hash_speed(large_file):

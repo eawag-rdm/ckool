@@ -1,7 +1,7 @@
 import shutil
 import time
 
-from ckool.file_management import (
+from ckool.other.file_management import (
     generate_archive_dest,
     iter_files,
     iter_package_and_prepare_for_upload,

@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 import requests
 from requests.auth import HTTPBasicAuth
 
-from ..utilities import get_secret
+from ckool.other.utilities import get_secret
 from .doi_generator import generate_doi
 
 

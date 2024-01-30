@@ -1,6 +1,6 @@
 import pytest
 
-from ckool.hashing import get_hash_func
+from ckool.other.hashing import get_hash_func
 from ckool.interfaces.interfaces import SecureInterface
 
 md5 = get_hash_func("md5")

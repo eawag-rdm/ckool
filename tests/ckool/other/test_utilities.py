@@ -1,4 +1,4 @@
-from ckool.utilities import upload_via_api
+from ckool.other.utilities import upload_via_api
 
 
 def test_upload_via_api():

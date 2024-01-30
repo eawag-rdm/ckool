@@ -1,4 +1,4 @@
-from ckool.utilities import meta_default
+from ckool.other.utilities import meta_default
 
 
 def test_make_meta_calculated(tmp_path):
