@@ -1,5 +1,6 @@
 [![License](https://img.shields.io/badge/LICENSE-GPL3.0-blue)](https://www.gnu.org/licenses/gpl-3.0.en.html)
-[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.9%20%7C%203.11%20%7C%203.12-green)](https://www.gnu.org/licenses/gpl-3.0.en.html)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-green)](https://www.gnu.org/licenses/gpl-3.0.en.html)
+[![Tests](https://gitlab.switch.ch/eaw-rdm/ckool/badges/main/pipeline.svg)](https://gitlab.switch.ch/eaw-rdm/ckool/-/commits/main)
 
 # Ckool
 
