@@ -1,14 +1,14 @@
 """
 This script will use the API key of another user to create a package for them
 """
-import json
+
 from ckool.ckan.ckan import CKAN
 
 if __name__ == "__main__":
     ckan = CKAN(
-        server="https://...",
+        server="...",
         token="...",  # token of user you're creating for
-        verify_certificate=...
+        verify_certificate=False,
     )
 
     # retrieve a sample package
@@ -26,7 +26,7 @@ if __name__ == "__main__":
             "Kang, Seju seju.kang@eawag.ch",
             "Dauletova, Ayazhan ayazhan.dauletova@eawag.ch",
             "Habl\u00fctzel, Camille camille.habluetzel@eawag.ch",
-            "McLeod, Rachel rachel.mcleod@eawag.ch"
+            "McLeod, Rachel rachel.mcleod@eawag.ch",
         ],
         "author_email": None,
         "creator_user_id": "4a66df76-b0f1-41d1-b81e-a1dbdce64037",
@@ -36,7 +36,7 @@ if __name__ == "__main__":
             "ARA Sensetal/Laupen",
             "ARA Werdh\u00f6lzli",
             "CDA Lugano",
-            "STEP Aire"
+            "STEP Aire",
         ],
         "isopen": False,
         "license_id": None,
@@ -61,37 +61,28 @@ if __name__ == "__main__":
             "created": "2018-11-14T14:47:22.277786",
             "is_organization": True,
             "approval_status": "approved",
-            "state": "active"
+            "state": "active",
         },
         "owner_org": "0ae980fc-312e-47ce-907d-0603a178b4cf",
         "private": False,
         "publicationlink": "",
         "review_level": "none",
         "reviewed_by": "",
-        "spatial": "{\"type\": \"MultiPoint\",     \"coordinates\": [ [9.567155,47.490022], [9.529527,46.870354], [7.236975,46.913004], [8.481231,47.400656], [8.917439,46.009391], [6.088355,46.196795] ]}",
+        "spatial": '{"type": "MultiPoint",     "coordinates": [ [9.567155,47.490022], [9.529527,46.870354], [7.236975,46.913004], [8.481231,47.400656], [8.917439,46.009391], [6.088355,46.196795] ]}',
         "state": "active",
         "status": "incomplete",
         "substances": [],
         "substances_generic": [],
-        "systems": [
-            "Sewage systems"
-        ],
+        "systems": ["Sewage systems"],
         "tags_string": "RT-dPCR assay,dPCR,Municipal wastewater,SARS-CoV-2,virus",
         "taxa": [],
-        "taxa_generic": [
-            "Murine Hepatitis Virus (MHV)",
-            "SARS-CoV-2"
-        ],
-        "timerange": [
-            "2023-02"
-        ],
+        "taxa_generic": ["Murine Hepatitis Virus (MHV)", "SARS-CoV-2"],
+        "timerange": ["2023-02"],
         "title": "Cowwid_raw_data_dPCR_RESP6_assay-2024-01",
         "type": "dataset",
         "url": None,
         "usage_contact": "julianti",
-        "variables": [
-            "gene_abundance"
-        ],
+        "variables": ["gene_abundance"],
         "version": None,
         "tags": [
             {
@@ -99,37 +90,37 @@ if __name__ == "__main__":
                 "id": "51a86776-c789-40cb-8988-6126aaecb011",
                 "name": "Municipal wastewater",
                 "state": "active",
-                "vocabulary_id": None
+                "vocabulary_id": None,
             },
             {
                 "display_name": "RT-dPCR assay",
                 "id": "e2728a53-dd7a-4711-865a-895c8f18b791",
                 "name": "RT-dPCR assay",
                 "state": "active",
-                "vocabulary_id": None
+                "vocabulary_id": None,
             },
             {
                 "display_name": "SARS-CoV-2",
                 "id": "acbf3237-4b42-4ff2-9105-71b9bb126e5c",
                 "name": "SARS-CoV-2",
                 "state": "active",
-                "vocabulary_id": None
+                "vocabulary_id": None,
             },
             {
                 "display_name": "dPCR",
                 "id": "7a18505b-161b-43c7-b35a-47c1c73eb045",
                 "name": "dPCR",
                 "state": "active",
-                "vocabulary_id": None
+                "vocabulary_id": None,
             },
             {
                 "display_name": "virus",
                 "id": "8ecb7c2e-38ab-44d1-94be-9c4f90cc9787",
                 "name": "virus",
                 "state": "active",
-                "vocabulary_id": None
-            }
-        ]
+                "vocabulary_id": None,
+            },
+        ],
     }
 
     ckan.create_package(**data)

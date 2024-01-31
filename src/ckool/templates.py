@@ -1,3 +1,18 @@
+def _create_package(
+    metadata_file: str,
+    package_folder: str,
+    ckan_instance: str,
+    compression_type: str,
+    include_pattern: str,
+    exclude_pattern: str,
+    hash_algorithm: str,
+    parallel: bool,
+    workers: int,
+):
+    print(locals())
+    return
+
+
 def upload_data_package():
     # datapackage_checker could also be included here
 
@@ -34,7 +49,7 @@ def publish_package():
 def reserve_doi():
     # package as input
 
-    # read metadata
+    # reserve doi
+    # save metadata locally
 
-    # call datacite
     pass

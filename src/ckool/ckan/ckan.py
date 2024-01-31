@@ -154,6 +154,7 @@ class CKAN:
 
         This does not work for files! Please use the upload_function from the upload module.
         """
+
         return self.plain_action_call("resource_create", **kwargs)
 
     def update_package_metadata(self, package_data: dict):

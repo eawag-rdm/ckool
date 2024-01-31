@@ -45,31 +45,37 @@ CKOOL_TOML = dedent(
 
 
 def get_default_conf_location(default_name: str = ".ckool.toml"):
-    """Function will prefer the conf in the user's home directory"""
-    return {
-        "hdir": pathlib.Path.home() / default_name,
-        "wdir": pathlib.Path.cwd() / default_name,
-    }
+    """Function will prefer the conf in the current directory"""
+    return pathlib.Path.home() / default_name
 
 
-def parse_config(config_file: str | pathlib.Path):
+def set_config_file_as_default(config_file: pathlib.Path):
+    default_destination = get_default_conf_location()
+    default_destination.write_text(config_file.read_text())
+
+
+def parse_config(config_file: pathlib.Path):
     with open(config_file, "rb") as f:
         return tomllib.load(f)
 
 
-def write_default_conf(config_file: str | pathlib.Path = None):
-    hdir_wdir = get_default_conf_location()
-
-    if config_file is None:
-        config_file = hdir_wdir["hdir"]
-    elif config_file == "." or config_file == "./" or config_file == hdir_wdir["wdir"]:
-        config_file = hdir_wdir["wdir"]
-
+def generate_example_config(config_file: pathlib.Path = None):
     with open(config_file, "w+") as file:
         file.write(CKOOL_TOML)
 
 
-def load_config(config_file: str | pathlib.Path):
+def load_config(config_file: pathlib.Path = None):
     """This wrapper around parse config can be used to abstract away the order of the config file"""
-    toml = parse_config(config_file)
-    return toml
+
+    if config_file is not None and pathlib.Path(config_file).exists():
+        return parse_config(config_file)
+
+    home_dir, current_dir = get_default_conf_location()
+    if current_dir.exists():
+        return parse_config(current_dir)
+    elif home_dir.exists():
+        return parse_config(home_dir)
+
+    raise FileNotFoundError(
+        f"Can not found the config file. You must either make sure to have a config file named '{home_dir.name}' in your cwd, in your home directory or you must provide one via the CLI."
+    )

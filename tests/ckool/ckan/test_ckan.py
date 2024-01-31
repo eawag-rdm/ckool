@@ -87,6 +87,33 @@ def test_patch_package_metadata(ckan_instance, ckan_envvars, ckan_setup_data):
     assert data["notes"] == original_message
 
 
+@pytest.mark.impure
+def test_resource_create_link(ckan_instance, ckan_envvars, ckan_setup_data):
+    ckan_instance.create_resource(
+        **{
+            "package_id": ckan_envvars["test_package"],
+            "name": "test_resource_new",
+            "resource_type": "Dataset",
+            "restricted_level": "public",
+            "url": "https://static.demilked.com/wp-content/uploads/2021/07/60ed37b256b80-it-rage-comics-memes-reddit-60e6fee1e7dca__700.jpg",
+        }
+    )
+
+
+@pytest.mark.impure
+def test_resource_create_file(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
+    ckan_instance.create_resource(
+        **{
+            "package_id": ckan_envvars["test_package"],
+            "name": "test_resource_new",
+            "resource_type": "Dataset",
+            "restricted_level": "public",
+            "files": ("upload", open(small_file, "rb")),
+        },
+    )
+    time.sleep(22)
+
+
 @pytest.mark.slow
 @pytest.mark.impure
 def test_download_package_with_resources_sequential(

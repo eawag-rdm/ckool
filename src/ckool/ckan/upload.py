@@ -28,13 +28,33 @@ def upload_resource(
     package_id: str,
     ckan_url: str,
     api_key: str,
+    file_hash: str,
+    file_size: int,
+    citation: str = "",
+    description: str = "",
+    format: str = "",
+    hashtype: str = "sha256",
     resource_type: str = "Dataset",
     restricted_level: str = "public",
+    state: str = "active",
     allow_insecure: bool = False,
 ):
+    """
+    {
+        "citation": "",
+        "description": "",
+        "format": "",
+        "hash": "db033c4634a43bfbca7ea7c1cf21d76dfd23d53bde1c20fbf953e6fe358600d5",
+        "hashtype": "sha256",
+        "name": "20230224_N1MHV_02150221_11.ncr",
+        "resource_type": "Dataset",
+        "restricted_level": "public",
+        "size": 511757238,
+        "state": "active"
+    }
+    """
     file_name = file_path.name
-    file_size = file_path.stat().st_size
-
+    print(file_name)
     with open(file_path, "rb") as file_stream:
         encoder = MultipartEncoder(
             fields={
@@ -42,6 +62,12 @@ def upload_resource(
                 "package_id": package_id,
                 "name": file_name,
                 "mimetype": "application/octet-stream",
+                "citation": citation,
+                "description": description,
+                "format": format,
+                "hash": file_hash,
+                "hashtype": hashtype,
+                "state": state,
                 "size": str(file_size),
                 "resource_type": resource_type,
                 "restricted_level": restricted_level,
