@@ -6,6 +6,7 @@ import ckanapi
 import requests
 
 from ckool.other.utilities import get_secret
+from .upload import upload_resource
 
 """
 API Documentation:
@@ -138,7 +139,7 @@ class CKAN:
         """
         return self.plain_action_call("package_create", **kwargs)
 
-    def create_resource(self, **kwargs):
+    def create_resource_of_type_link(self, **kwargs):
         """CURL example
 
         curl --insecure -X POST "https://localhost:8443/api/3/action/resource_create" \
@@ -152,10 +153,43 @@ class CKAN:
                "url": "https://static.demilked.com/wp-content/uploads/2021/07/60ed37b256b80-it-rage-comics-memes-reddit-60e6fee1e7dca__700.jpg"
              }'
 
-        This does not work for files! Please use the upload_function from the upload module.
+        This does not work for files, as the ckanapi package is currently broken.
         """
-
         return self.plain_action_call("resource_create", **kwargs)
+
+    def create_resource_of_type_file(
+        self,
+        file: str | pathlib.Path,
+        package_id: str,
+        file_hash: str,
+        file_size: int,
+        citation: str = "",
+        description: str = "",
+        format: str = "",
+        hash_type: str = "sha256",
+        resource_type: str = "Dataset",
+        restricted_level: str = "public",
+        state: str = "active",
+    ):
+        if isinstance(file, str):
+            file = pathlib.Path(file)
+
+        return upload_resource(
+            file_path=file,
+            package_id=package_id,
+            ckan_url=self.server,
+            api_key=self.token,
+            file_hash=file_hash,
+            file_size=file_size,
+            citation=citation,
+            description=description,
+            format=format,
+            hashtype=hash_type,
+            resource_type=resource_type,
+            restricted_level=restricted_level,
+            state=state,
+            verify=self.verify,
+        )
 
     def update_package_metadata(self, package_data: dict):
         """You must provide the full metadata"""

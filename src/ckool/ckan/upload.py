@@ -37,7 +37,7 @@ def upload_resource(
     resource_type: str = "Dataset",
     restricted_level: str = "public",
     state: str = "active",
-    allow_insecure: bool = False,
+    verify: bool = True,
 ):
     """
     {
@@ -85,5 +85,5 @@ def upload_resource(
             headers=headers,
             auth=None,
             stream=True,
-            verify=not allow_insecure,
+            verify=verify,
         )

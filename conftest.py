@@ -129,7 +129,7 @@ def setup(ckan_instance, ckan_envvars):
 
     ckan_instance.create_organization(**organization_data)
     ckan_instance.create_package(**package_data)
-    ckan_instance.create_resource(**resource_data)
+    ckan_instance.create_resource_of_type_link(**resource_data)
 
 
 def teardown(ckan_instance, ckan_envvars):
@@ -143,7 +143,6 @@ def add_file_resources(tmp_path, ckan_instance, ckan_envvars):
     def _add_file_resources(package_sizes: list):
         files = []
         for i in range(len(package_sizes)):
-            print(i)
             with open(
                 file := _generate_binary_file(
                     package_sizes[i], tmp_path, f"file_{i}", chunk_size=4 * 1024**2
@@ -155,9 +154,11 @@ def add_file_resources(tmp_path, ckan_instance, ckan_envvars):
                     package_id=ckan_envvars["test_package"],
                     ckan_url=ckan_envvars["host"],
                     api_key=ckan_envvars["token"],
+                    file_size=file.stat().st_size,
+                    file_hash="absd",
                     resource_type="Dataset",
                     restricted_level="public",
-                    allow_insecure=True,
+                    verify=False,
                 )
             files.append(file)
 

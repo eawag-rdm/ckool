@@ -15,7 +15,7 @@ def test_upload_small(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
         ckan_envvars["token"],
         file_hash=hasher(small_file),
         file_size=small_file.stat().st_size,
-        allow_insecure=True,
+        verify=False,
     )
     response.raise_for_status()
 
@@ -38,7 +38,7 @@ def test_upload_small_all_args(
         resource_type="Dataset",
         restricted_level="public",
         state="active",
-        allow_insecure=True,
+        verify=False,
     )
     response.raise_for_status()
 
@@ -52,7 +52,7 @@ def test_upload_large(ckan_instance, ckan_envvars, ckan_setup_data, large_file):
         ckan_envvars["token"],
         file_hash=hasher(large_file),
         file_size=large_file.stat().st_size,
-        allow_insecure=True,
+        verify=False,
     )
     response.raise_for_status()
 
@@ -69,6 +69,6 @@ def test_upload_very_large(
         ckan_envvars["token"],
         file_hash=hasher(very_large_file),
         file_size=very_large_file.stat().st_size,
-        allow_insecure=True,
+        verify=False,
     )
     response.raise_for_status()

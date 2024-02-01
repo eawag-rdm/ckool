@@ -4,6 +4,9 @@ import time
 import ckanapi
 import pytest
 
+from ckool.other.hashing import get_hash_func
+hasher = get_hash_func("sha256")
+
 
 def _delete_resource_ids_and_times(data: dict):
     """Due to setup and teardown for each test the times and ids are always different"""
@@ -89,7 +92,7 @@ def test_patch_package_metadata(ckan_instance, ckan_envvars, ckan_setup_data):
 
 @pytest.mark.impure
 def test_resource_create_link(ckan_instance, ckan_envvars, ckan_setup_data):
-    ckan_instance.create_resource(
+    ckan_instance.create_resource_of_type_link(
         **{
             "package_id": ckan_envvars["test_package"],
             "name": "test_resource_new",
@@ -101,17 +104,34 @@ def test_resource_create_link(ckan_instance, ckan_envvars, ckan_setup_data):
 
 
 @pytest.mark.impure
-def test_resource_create_file(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
-    ckan_instance.create_resource(
+def test_resource_create_file_minimal(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
+    ckan_instance.create_resource_of_type_file(
         **{
+            "file": small_file,
             "package_id": ckan_envvars["test_package"],
-            "name": "test_resource_new",
-            "resource_type": "Dataset",
-            "restricted_level": "public",
-            "files": ("upload", open(small_file, "rb")),
+            "file_size": small_file.stat().st_size,
+            "file_hash": hasher(small_file),
         },
     )
-    time.sleep(22)
+
+
+@pytest.mark.impure
+def test_resource_create_file_maximal(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
+    ckan_instance.create_resource_of_type_file(
+        **{
+            "file": small_file,
+            "package_id": ckan_envvars["test_package"],
+            "file_size": small_file.stat().st_size,
+            "file_hash": hasher(small_file),
+            "citation": "Some text here",
+            "description": "A very long description",
+            "format": small_file.suffix.strip("."),
+            "hash_type": "sha256",
+            "resource_type": "Dataset",
+            "restricted_level": "public",
+            "state": "active",
+        },
+    )
 
 
 @pytest.mark.slow
@@ -148,6 +168,5 @@ def test_download_package_with_resources_sequential(
     )
     en = time.time()
     print(f"Parallel download took {en-st}s.")
-
     assert downloaded_files_1 == downloaded_files_2
     assert len(list(tmp_path.iterdir())) == 9
