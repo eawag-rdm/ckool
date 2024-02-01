@@ -15,24 +15,24 @@ CKOOL_TOML = dedent(
     
     datacite = { user = "user_name", url = "https://api.datacite.org", prefix = "prefix_here"}
     ckan_api = [
-        { name = "instance_name_1", url = "host_url_1"},
-        { name = "instance_name_2", url = "host_url_2"},
+        { instance = "instance_name_1", url = "host_url_1"},
+        { instance = "instance_name_2", url = "host_url_2"},
     ]
     
     ckan_server = [
-        {name = "instance_name_1", host = "FQDN_1", port = 22, user = "user_name_1", ssh_key = "/path/to/key_1" },
-        {name = "instance_name_2", host = "FQDN_2", port = 22, user = "user_name_2", ssh_key = "/path/to/key_2" }
+        {instance = "instance_name_1", host = "FQDN_1", port = 22, user = "user_name_1", ssh_key = "/path/to/key_1" },
+        {instance = "instance_name_2", host = "FQDN_2", port = 22, user = "user_name_2", ssh_key = "/path/to/key_2" }
     ]
     
     [Production.Secrets]
     datacite = { password = "very_secret" }
     ckan_api = [
-        { name = "instance_name_1", apikey = "ckan_api_key_1"},
-        { name = "instance_name_2", apikey = "ckan_api_key_2"},
+        { instance = "instance_name_1", apikey = "ckan_api_key_1"},
+        { instance = "instance_name_2", apikey = "ckan_api_key_2"},
     ]
     ckan_server = [
-        {name = "instance_name_1", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key"},
-        {name = "instance_name_2", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key" }
+        {instance = "instance_name_1", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key"},
+        {instance = "instance_name_2", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key" }
     ]
     
     [Test.Base]
