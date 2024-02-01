@@ -5,6 +5,7 @@ import ckanapi
 import pytest
 
 from ckool.other.hashing import get_hash_func
+
 hasher = get_hash_func("sha256")
 
 
@@ -104,7 +105,9 @@ def test_resource_create_link(ckan_instance, ckan_envvars, ckan_setup_data):
 
 
 @pytest.mark.impure
-def test_resource_create_file_minimal(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
+def test_resource_create_file_minimal(
+    ckan_instance, ckan_envvars, ckan_setup_data, small_file
+):
     ckan_instance.create_resource_of_type_file(
         **{
             "file": small_file,
@@ -116,7 +119,9 @@ def test_resource_create_file_minimal(ckan_instance, ckan_envvars, ckan_setup_da
 
 
 @pytest.mark.impure
-def test_resource_create_file_maximal(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
+def test_resource_create_file_maximal(
+    ckan_instance, ckan_envvars, ckan_setup_data, small_file
+):
     ckan_instance.create_resource_of_type_file(
         **{
             "file": small_file,

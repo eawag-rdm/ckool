@@ -6,6 +6,7 @@ import ckanapi
 import requests
 
 from ckool.other.utilities import get_secret
+
 from .upload import upload_resource
 
 """

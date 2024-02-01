@@ -282,3 +282,21 @@ def data_to_cache():
 @pytest.fixture
 def cache_file(tmp_path):
     return tmp_path / "cache.json"
+
+
+@pytest.fixture()
+def local_structure_doi(tmp_path):
+    (tmp_path / "strange-file").touch()
+    folders = [
+        tmp_path / "name-1" / "package-url-1",
+        tmp_path / "name-1" / "package-url-2",
+        tmp_path / "name-2" / "package-url-2",
+        tmp_path / ".git",
+    ]
+
+    files = ["file-1.txt", "file-2.pdf"]
+
+    for fo in folders:
+        fo.mkdir(parents=True)
+        for fi in files:
+            (fo / fi).touch()
