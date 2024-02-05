@@ -11,6 +11,7 @@ from ckool.other.file_management import (
     tar_files,
     zip_files,
 )
+from ckool import TEMPORARY_DIRECTORY
 from conftest import flatten_nested_structure
 
 
@@ -138,7 +139,7 @@ def test_iter_package_and_prepare_for_upload_prepare_all(tmp_path, my_package_di
                     "root_folder": tmp_path / "my_data_package",
                     "archive_destination": tmp_path
                     / "my_data_package"
-                    / ".ckool"
+                    / TEMPORARY_DIRECTORY
                     / "test_folder2",
                     "files": [
                         tmp_path / "my_data_package" / "test_folder2" / ".hidden",
@@ -156,7 +157,7 @@ def test_iter_package_and_prepare_for_upload_prepare_all(tmp_path, my_package_di
                     "root_folder": tmp_path / "my_data_package",
                     "archive_destination": tmp_path
                     / "my_data_package"
-                    / ".ckool"
+                    / TEMPORARY_DIRECTORY
                     / "test_folder1",
                     "files": [
                         tmp_path / "my_data_package" / "test_folder1" / "text.txt"
@@ -171,6 +172,7 @@ def test_iter_package_and_prepare_for_upload_prepare_all(tmp_path, my_package_di
         res = result
         if res["dynamic"]:  # removing function, as memory address will not be the same
             del res["dynamic"]["func"]
+        print(res)
         assert sorted(flatten_nested_structure(res)) in valid_results
 
 
@@ -223,7 +225,7 @@ def test_iter_package_and_prepare_for_upload_with_filter(tmp_path, my_package_di
                     "root_folder": tmp_path / "my_data_package",
                     "archive_destination": tmp_path
                     / "my_data_package"
-                    / ".ckool"
+                    / TEMPORARY_DIRECTORY
                     / "test_folder1",
                     "files": [
                         tmp_path / "my_data_package" / "test_folder1" / "text.txt"
@@ -239,19 +241,19 @@ def test_prepare_for_upload_sequential(tmp_path, my_package_dir):
 
     correct = [
         {
-            "file": tmp_path / "my_data_package" / "readme.md",
+            "file": (tmp_path / "my_data_package" / "readme.md").as_posix(),
             "size": 0,
         },
         {
-            "file": tmp_path / "my_data_package" / "script.py",
+            "file": (tmp_path / "my_data_package" / "script.py").as_posix(),
             "size": 0,
         },
         {
-            "file": tmp_path / "my_data_package" / ".ckool" / "test_folder2.tar.gz",
+            "file": (tmp_path / "my_data_package" / TEMPORARY_DIRECTORY / "test_folder2.tar.gz").as_posix(),
             "size": 139,
         },
         {
-            "file": tmp_path / "my_data_package" / ".ckool" / "test_folder1.tar.gz",
+            "file": (tmp_path / "my_data_package" / TEMPORARY_DIRECTORY / "test_folder1.tar.gz").as_posix(),
             "size": 122,
         },
     ]
@@ -268,23 +270,24 @@ def test_prepare_for_upload_parallel(tmp_path, my_package_dir):
     files = prepare_for_upload_parallel(my_package_dir, compression_type="tar")
     should_be = [
         {
-            "file": tmp_path / "my_data_package" / "readme.md",
+            "file": (tmp_path / "my_data_package" / "readme.md").as_posix(),
             "size": 0,
         },
         {
-            "file": tmp_path / "my_data_package" / "script.py",
+            "file": (tmp_path / "my_data_package" / "script.py").as_posix(),
             "size": 0,
         },
         {
-            "file": tmp_path / "my_data_package" / ".ckool" / "test_folder2.tar.gz",
+            "file": (tmp_path / "my_data_package" / TEMPORARY_DIRECTORY / "test_folder2.tar.gz").as_posix(),
             "size": 139,
         },
         {
-            "file": tmp_path / "my_data_package" / ".ckool" / "test_folder1.tar.gz",
+            "file": (tmp_path / "my_data_package" / TEMPORARY_DIRECTORY / "test_folder1.tar.gz").as_posix(),
             "size": 122,
         },
     ]
-    assert all([filter_hash(file) in should_be for file in files])
+    for file in files:
+        assert filter_hash(file) in should_be
 
 
 def test_prepare_for_upload_performance(tmp_path, large_package):
@@ -293,7 +296,7 @@ def test_prepare_for_upload_performance(tmp_path, large_package):
     t2 = time.time()
 
     shutil.rmtree(
-        large_package / ".ckool"
+        large_package / TEMPORARY_DIRECTORY
     )  # deletes the tmp folder from the first preparation
 
     t3 = time.time()
@@ -302,7 +305,6 @@ def test_prepare_for_upload_performance(tmp_path, large_package):
 
     duration_sequential = t2 - t1
     duration_parallel = t4 - t3
-
     assert files_1 == files_2
     # There should be a significant difference in performance.
     # Especially for large files, if system resources are available.

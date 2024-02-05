@@ -1,12 +1,21 @@
+import json
 import os
 import pathlib
 import re
 import tarfile
 from concurrent.futures import ProcessPoolExecutor
+from enum import Enum
 from typing import Literal
 from zipfile import ZipFile
 
 from .hashing import get_hash_func
+from .caching import update_cache
+from ckool import TEMPORARY_DIRECTORY, CACHE_FILE
+
+
+class CompressionTypes(str, Enum):
+    zip = "zip"
+    tar = "tar"
 
 
 def match_via_include_exclude_patters(
@@ -49,7 +58,7 @@ def iter_files(
 def generate_archive_dest(
     folder_to_zip: pathlib.Path,
     root_folder: pathlib.Path,
-    tmp_dir_name: str = ".ckool",
+    tmp_dir_name: str = TEMPORARY_DIRECTORY,
 ) -> pathlib.Path:
     tmp_folder = root_folder / tmp_dir_name
     tmp_folder.mkdir(exist_ok=True)
@@ -86,12 +95,16 @@ def tar_files(
     return archive_destination.with_suffix(f".tar.{compression}")
 
 
+def _find_archive(file: pathlib.Path):
+    return [f for f in file.parent.iterdir() if not f.suffix == ".json"][0]
+
+
 def iter_package_and_prepare_for_upload(
     package: pathlib.Path,
     include_pattern: str = None,
     exclude_pattern: str = None,
-    compression_type: Literal["zip", "tar"] = "zip",
-    tmp_dir_name: str = ".ckool",
+    compression_type: CompressionTypes = CompressionTypes.zip,
+    tmp_dir_name: str = TEMPORARY_DIRECTORY,
 ) -> dict:
     """
     This function gets everything ready for the package upload.
@@ -122,6 +135,9 @@ def iter_package_and_prepare_for_upload(
 
             if not files_to_compress:
                 continue
+            elif archive_destination.with_suffix(".json").exists():
+                archive_destination.iterdir()
+                yield {"static": _find_archive(archive_destination), "dynamic": {}}
 
             yield {
                 "static": "",
@@ -145,6 +161,7 @@ class LocalProcessor:
     def __init__(
         self,
         hash_type: str,
+        cache_file_name: str = "file_meta.json",
     ):
         self.hash_type = hash_type
 
@@ -156,21 +173,31 @@ class LocalProcessor:
         return file_path.stat().st_size
 
     def process(self, static_or_dynamic):
+
         if file := static_or_dynamic.get("static"):
-            return {
-                "file": file,
+            _meta = {
+                "file": str(file),
                 "hash": self.get_hash(file),
+                "hash_type": self.hash_type,
                 "size": self.get_size(file),
             }
+            update_cache(_meta, file.parent / TEMPORARY_DIRECTORY / (file.name + ".json"))
+            return _meta
+
         elif instruction := static_or_dynamic.get("dynamic"):
             file = instruction["func"](
                 *instruction["args"], **instruction["kwargs"]
             )  # compressing
-            return {
-                "file": file,
+
+            _meta = {
+                "file": str(file),
                 "hash": self.get_hash(file),
+                "hash_type": self.hash_type,
                 "size": self.get_size(file),
             }
+            update_cache(_meta, file.parent / (file.name + ".json"))
+            return _meta
+
         else:
             raise ValueError(
                 f"Ooops, this is not a valid Processor instruction '{static_or_dynamic}'."
@@ -181,8 +208,8 @@ def prepare_for_upload_sequential(
     package: pathlib.Path,
     include_pattern: str = None,
     exclude_pattern: str = None,
-    compression_type: Literal["zip", "tar"] = "zip",
-    tmp_dir_name: str = ".ckool",
+    compression_type: CompressionTypes = CompressionTypes.zip,
+    tmp_dir_name: str = TEMPORARY_DIRECTORY,
     hash_type: str = "sha256",
 ):
     files_to_upload = []
@@ -200,8 +227,8 @@ def prepare_for_upload_parallel(
     package: pathlib.Path,
     include_pattern: str = None,
     exclude_pattern: str = None,
-    compression_type: Literal["zip", "tar"] = "zip",
-    tmp_dir_name: str = ".ckool",
+    compression_type: CompressionTypes = CompressionTypes.zip,
+    tmp_dir_name: str = TEMPORARY_DIRECTORY,
     hash_type: str = "sha256",
     max_workers: int = None,
 ):

@@ -1,11 +1,14 @@
 import pathlib
 
+from .other.file_management import CompressionTypes
 
-# TODO: Full pipeline packing of files plus the hasing should run parallel, currently upload will only start, when preparation is finished.
+
+# TODO: Full pipeline packing of files plus the hasing should run parallel,
+#  currently upload will only start, when preparation is finished.
 def _upload_package(
     metadata_file: str,
     package_folder: str,
-    compression_type: str,
+    compression_type: CompressionTypes,
     include_pattern: str,
     exclude_pattern: str,
     hash_algorithm: str,
@@ -34,6 +37,25 @@ def _upload_resource(
     Example calls here
     """
     # check if files hash and size are available
+    print(locals())
+    return
+
+
+def _prepare_package(
+    package: pathlib.Path,
+    include_pattern: str,
+    exclude_pattern: str,
+    compression_type: CompressionTypes,
+    hash_algorithm: str,
+    parallel: bool,
+    workers: int,
+    config: dict,
+):
+    """
+    Example calls here
+    """
+    # prepare_for_upload_sequential
+    # prepare_for_upload_parallel
     print(locals())
     return
 
@@ -92,17 +114,18 @@ def _download_resources(
 
 
 def _download_metadata(
-
+    package_name: str,
+    filter_fields: str,
     config: dict,
     ckan_instance: str,
     verify: bool,
 ):
+    filter_fields = filter_fields.split(",")
     print(locals())
     return
 
 
 def _download_all_metadata(
-
     config: dict,
     ckan_instance: str,
     verify: bool,
@@ -111,25 +134,19 @@ def _download_all_metadata(
     return
 
 
-def upload_data_package():
-    # datapackage_checker could also be included here
-
-    # local preparation - with file sizes and hashes
-
-    # create new package and upload all resources
-    # uploading data via scp or api (decided via file_size)
-
-    # check hashsums on remote system
-    pass
+def _patch_package():
+    """should be interactive, show diff, let user select what to patch"""
+    return
 
 
-def upload_resource():
-    # input can be folder -> that will be compressed, local preparation
+def _patch_resource():
+    """should be interactive, show diff, let user select what to patch"""
+    return
 
-    # uploading to existing package
 
-    # check hashsums on remote system
-    pass
+def _patch_metadata():
+    """should be interactive, show diff, let user select what to patch"""
+    return
 
 
 def publish_package():

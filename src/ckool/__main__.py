@@ -4,11 +4,12 @@ import typer
 from typing_extensions import Annotated
 
 from ckool.templates import (
+    _download_all_metadata,
+    _download_metadata,
     _download_package,
     _download_resource,
     _download_resources,
-    _download_metadata,
-    _download_all_metadata,
+    _prepare_package,
     _upload_package,
     _upload_resource,
 )
@@ -19,6 +20,7 @@ from .other.config_parser import (
     load_config,
     set_config_file_as_default,
 )
+from .other.file_management import CompressionTypes
 
 OPTIONS = {"config": {}, "verify": True, "ckan-instance": "None"}
 
@@ -30,6 +32,9 @@ app.add_typer(
     name="config",
     help="Generate an example configuration .toml file or set a default configuration.",
 )
+
+prepare_app = typer.Typer()
+app.add_typer(prepare_app, name="prepare")
 
 create_app = typer.Typer()
 app.add_typer(create_app, name="upload")
@@ -44,6 +49,7 @@ app.add_typer(download_app, name="patch")
 @create_app.callback()
 @download_app.callback()
 @patch_app.callback()
+@prepare_app.callback()
 def main(
     config_file: str = typer.Option(
         get_default_conf_location().as_posix(), "-c", "--config-file"
@@ -94,6 +100,65 @@ def set_default(
     ]
 ):
     set_config_file_as_default(pathlib.Path(filepath))
+
+
+@prepare_app.command("package")
+def prepare_package(
+    package_folder: str = typer.Argument(
+        help="Folder that contain the package resources.",
+    ),
+    compression_type: CompressionTypes = typer.Option(
+        CompressionTypes.zip,
+        "--compression-type",
+        "-ct",
+        help="Available compression types are 'zip' and 'tar'.",
+        case_sensitive=False,
+    ),
+    include_pattern: str = typer.Option(
+        None,
+        "--include-pattern",
+        "-ip",
+        help="Include files that follow a certain regex pattern. The default None will include all files.",
+    ),
+    exclude_pattern: str = typer.Option(
+        None,
+        "--exclude-pattern",
+        "-ep",
+        help="Exclude files that follow a certain regex pattern. The default None will not exclude any files.",
+    ),
+    hash_algorithm: str = typer.Option(
+        "sha256",
+        "--hash-algorithm",
+        "-ha",
+        help="Which hash algorthm to use.",
+    ),
+    parallel: bool = typer.Option(
+        False,
+        "--parallel",
+        "-p",
+        help="Use multiple threads/processes to handle job.",
+    ),
+    workers: int = typer.Option(
+        None,
+        "--workers",
+        "-w",
+        help=(
+            "Parallel workers to use. Depending on the task these could be processes or threads. "
+            "If argument not provided the maximum available amount will be used."
+        ),
+    ),
+):
+    package_folder = pathlib.Path(package_folder)
+    return _prepare_package(
+        package_folder,
+        include_pattern,
+        exclude_pattern,
+        compression_type,
+        hash_algorithm,
+        parallel,
+        workers,
+        OPTIONS["config"],
+    )
 
 
 @create_app.command("package")
@@ -284,27 +349,20 @@ def download_resources(
         OPTIONS["verify"],
     )
 
-#TODO
+
 @download_app.command("metadata")
 def download_metadata(
-    url_file: str = typer.Argument(
-        help="A file containing all urls that should be downloaded. Each one in a new line.",
+    package_name: str = typer.Argument(
+        help="Name of the package, for which to get the metadata.",
     ),
-    package_name: str = typer.Option(
-        pathlib.Path.cwd(),
-        "--destination",
-        "-d",
-        help="Where should the resources be saved.",
-    ),
-    filter_fields: list = typer.Option(
-        8192,
-        "--chunk-size",
-        "-cs",
-        help="Chunk size to use for download [bytes].",
+    filter_fields: str = typer.Option(
+        None,
+        "--filter_fields",
+        "-ff",
+        help="Filter metadata to certain fields. Separate multiple fields by comma.",
     ),
 ):
     return _download_metadata(
-        url_file,
         package_name,
         filter_fields,
         OPTIONS["config"],
@@ -312,22 +370,18 @@ def download_metadata(
         OPTIONS["verify"],
     )
 
-#TODO
+
 @download_app.command("all_metadata")
-def download_metadata(
-
-):
-    return _download_metadata(
-
+def download_all_metadata():
+    return _download_all_metadata(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
     )
 
 
-
 @patch_app.command("package")
-def download_package(name: str):
+def patch_package(name: str):
     print(f"Hello {name}")
 
 
