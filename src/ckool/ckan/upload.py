@@ -9,11 +9,17 @@ from tqdm import tqdm
 
 
 class TqdmProgressCallback:
-    def __init__(self, total_size):
+    def __init__(self, total_size, filename, progressbar: tqdm = None):
         self.total_size = total_size
-        self.progress_bar = tqdm(
-            total=total_size, unit="B", unit_scale=True, desc="Uploading"
-        )
+        self.filename = filename
+        if progressbar is None:
+            progressbar = tqdm(
+                total=total_size,
+                unit="B",
+                unit_scale=True,
+                desc=f"Uploading {filename}",
+            )
+        self.progress_bar = progressbar
 
     def __call__(self, monitor):
         self.progress_bar.update(monitor.bytes_read - self.progress_bar.n)
@@ -38,6 +44,7 @@ def upload_resource(
     restricted_level: str = "public",
     state: str = "active",
     verify: bool = True,
+    progressbar: tqdm = None,
 ):
     """
     {
@@ -54,7 +61,6 @@ def upload_resource(
     }
     """
     file_name = file_path.name
-    print(file_name)
     with open(file_path, "rb") as file_stream:
         encoder = MultipartEncoder(
             fields={
@@ -74,7 +80,7 @@ def upload_resource(
             }
         )
 
-        progress_callback = TqdmProgressCallback(file_size)
+        progress_callback = TqdmProgressCallback(file_size, file_name, progressbar)
         monitor = MultipartEncoderMonitor(encoder, progress_callback)
 
         headers = {"Authorization": api_key, "Content-Type": monitor.content_type}

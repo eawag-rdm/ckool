@@ -169,9 +169,6 @@ def upload_package(
     package_folder: str = typer.Argument(
         help="Folder that contain the package resources.",
     ),
-    ckan_instance: str = typer.Option(
-        "eric", "--ckan-instance", "-ci", help="The name must be defined in the config."
-    ),
     compression_type: str = typer.Option(
         "zip",
         "--compression-type",

@@ -1,6 +1,7 @@
 import os
 import pathlib
 import sys
+from functools import wraps
 from subprocess import PIPE, CalledProcessError, run
 
 
@@ -18,6 +19,19 @@ def get_secret(name):
     else:
         secret = proc.stdout.decode("utf-8").strip("\n")
         return secret
+
+
+def partial(func, /, *args, **keywords):
+    # the default implementation does not use wraps, I need it
+    @wraps(func)
+    def new_func(*f_args, **f_keywords):
+        new_keywords = {**keywords, **f_keywords}
+        return func(*args, *f_args, **new_keywords)
+
+    new_func.func = func
+    new_func.args = args
+    new_func.keywords = keywords
+    return new_func
 
 
 def upload_via_api(

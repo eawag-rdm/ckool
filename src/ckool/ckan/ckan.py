@@ -4,6 +4,7 @@ import pathlib
 
 import ckanapi
 import requests
+import tqdm
 
 from ckool.other.utilities import get_secret
 
@@ -171,6 +172,7 @@ class CKAN:
         resource_type: str = "Dataset",
         restricted_level: str = "public",
         state: str = "active",
+        progressbar: tqdm.tqdm = None,
     ):
         if isinstance(file, str):
             file = pathlib.Path(file)
@@ -190,6 +192,7 @@ class CKAN:
             restricted_level=restricted_level,
             state=state,
             verify=self.verify,
+            progressbar=progressbar,
         )
 
     def update_package_metadata(self, package_data: dict):

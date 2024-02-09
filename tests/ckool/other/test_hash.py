@@ -26,6 +26,13 @@ def test_import_hash_func_raises():
 
 def test_get_hash_func(small_file):
     this_hash = get_hash_func("sha256")
-    b = _hash(file=small_file, hash_func=sha256)
+    b = _hash(filepath=small_file, hash_func=sha256)
     a = this_hash(small_file)
+    assert b == a
+
+
+def test_get_hash_func_larger(large_file):
+    this_hash = get_hash_func("sha256")
+    b = _hash(filepath=large_file, hash_func=sha256)
+    a = this_hash(large_file)
     assert b == a

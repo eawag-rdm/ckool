@@ -2,6 +2,7 @@ import json
 import os
 import pathlib
 
+import ckanapi
 import pytest
 
 from ckool.ckan.ckan import CKAN
@@ -126,10 +127,18 @@ def setup(ckan_instance, ckan_envvars):
     organization_data.update({"name": f"{ckan_envvars['test_organization']}"})
     package_data.update({"name": f"{ckan_envvars['test_package']}"})
     resource_data.update({"package_id": f"{ckan_envvars['test_package']}"})
-
-    ckan_instance.create_organization(**organization_data)
-    ckan_instance.create_package(**package_data)
-    ckan_instance.create_resource_of_type_link(**resource_data)
+    try:
+        ckan_instance.create_organization(**organization_data)
+    except ckanapi.ValidationError:
+        pass
+    try:
+        ckan_instance.create_package(**package_data)
+    except ckanapi.ValidationError:
+        pass
+    try:
+        ckan_instance.create_resource_of_type_link(**resource_data)
+    except ckanapi.ValidationError:
+        pass
 
 
 def teardown(ckan_instance, ckan_envvars):
@@ -253,20 +262,31 @@ def my_package_dir(tmp_path):
     return tmp_path / "my_data_package"
 
 
-@pytest.fixture()
-def large_package(tmp_path, my_package_dir):
-    file_sizes = 1024**2 * 15
-    file_name = "large.bin"
-
+def _large_package(root_folder, file_sizes, files_per_folders):
     files = []
-    for folder in [my_package_dir / f"folder_{i}" for i in range(10)]:
+    for u, folder in enumerate(
+        [root_folder / f"folder_{i}" for i in range(len(file_sizes))]
+    ):
         folder.mkdir()
-        files.append(_generate_binary_file(file_sizes, folder, file_name))
+        for v in range(files_per_folders):
+            files.append(_generate_binary_file(file_sizes[u], folder, f"large_{v}.bin"))
 
-    yield my_package_dir
+    yield root_folder
 
     for file in files:
         file.unlink()
+
+
+@pytest.fixture()
+def large_package(my_package_dir):
+    yield from _large_package(my_package_dir, [1024**2 * 15] * 10, 1)
+
+
+@pytest.fixture()
+def very_large_package(tmp_path):
+    (pkg := tmp_path / "package-dir").mkdir()
+    MB = 1024**2
+    yield from _large_package(pkg, [10 * MB, 20 * MB, 80 * MB, 100 * MB], 8)
 
 
 @pytest.fixture

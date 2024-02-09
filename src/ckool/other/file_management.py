@@ -1,16 +1,18 @@
-import json
 import os
 import pathlib
 import re
 import tarfile
 from concurrent.futures import ProcessPoolExecutor
 from enum import Enum
-from typing import Literal
+from typing import Callable, Literal
 from zipfile import ZipFile
 
-from .hashing import get_hash_func
+import tqdm
+
+from ckool import TEMPORARY_DIRECTORY
+
 from .caching import update_cache
-from ckool import TEMPORARY_DIRECTORY, CACHE_FILE
+from .hashing import get_hash_func
 
 
 class CompressionTypes(str, Enum):
@@ -67,12 +69,18 @@ def generate_archive_dest(
 
 
 def zip_files(
-    root_folder: pathlib.Path, archive_destination: pathlib.Path, files: list
+    root_folder: pathlib.Path,
+    archive_destination: pathlib.Path,
+    files: list,
+    progressbar: tqdm.tqdm = None,
 ) -> pathlib.Path:
-    with ZipFile(archive_destination.with_suffix(".zip"), mode="w") as zip:
+    if progressbar is None:
+        progressbar = tqdm.tqdm(files, desc=f"Zipping {archive_destination.name}")
+    with ZipFile(archive_destination.with_suffix(".zip"), mode="w") as _zip:
         for file in files:
-            zip.write(file, file.relative_to(root_folder))
-
+            _zip.write(file, file.relative_to(root_folder))
+            progressbar.update()
+    progressbar.close()
     return archive_destination.with_suffix(".zip")
 
 
@@ -81,7 +89,10 @@ def tar_files(
     archive_destination: pathlib.Path,
     files: list,
     compression: Literal["gz", "bz2", "xz"] = "gz",
+    progressbar: tqdm.tqdm = None,
 ) -> pathlib.Path:
+    if progressbar is None:
+        progressbar = tqdm.tqdm(files, desc=f"Taring {archive_destination.name}")
     with tarfile.open(
         archive_destination.with_suffix(f".tar.{compression}"), mode=f"w:{compression}"
     ) as tar:
@@ -89,9 +100,10 @@ def tar_files(
             tarinfo = tarfile.TarInfo(file.relative_to(root_folder).as_posix())
             tarinfo.size = (
                 file.stat().st_size
-            )  # size needs to be set, otherwise 0 bytes will be read ffrom each file
+            )  # size needs to be set, otherwise 0 bytes will be read from each file
             with file.open("rb") as f:
                 tar.addfile(tarinfo, f)
+    progressbar.close()
     return archive_destination.with_suffix(f".tar.{compression}")
 
 
@@ -99,18 +111,27 @@ def _find_archive(file: pathlib.Path):
     return [f for f in file.parent.iterdir() if not f.suffix == ".json"][0]
 
 
+def get_compression_func(
+    compression_type: CompressionTypes = CompressionTypes.zip,
+):
+    return {CompressionTypes.zip: zip_files, CompressionTypes.tar: tar_files}.get(
+        compression_type
+    )
+
+
+# TODO: this needs rewriting! The returned value must be more consistent. both should return
+#  func, args, kwargs An the function is somewhat of a task scheduler
 def iter_package_and_prepare_for_upload(
     package: pathlib.Path,
     include_pattern: str = None,
     exclude_pattern: str = None,
-    compression_type: CompressionTypes = CompressionTypes.zip,
+    compression_func: Callable = zip_files,
     tmp_dir_name: str = TEMPORARY_DIRECTORY,
 ) -> dict:
     """
     This function gets everything ready for the package upload.
     - it creates a tmp directory and saves compressed folders in there and collects all folders.
     """
-    compress = {"zip": zip_files, "tar": tar_files}.get(compression_type)
 
     if not package.exists():
         raise NotADirectoryError(
@@ -142,7 +163,7 @@ def iter_package_and_prepare_for_upload(
             yield {
                 "static": "",
                 "dynamic": {
-                    "func": compress,
+                    "func": compression_func,
                     "args": [],
                     "kwargs": {
                         "root_folder": package,
@@ -173,7 +194,6 @@ class LocalProcessor:
         return file_path.stat().st_size
 
     def process(self, static_or_dynamic):
-
         if file := static_or_dynamic.get("static"):
             _meta = {
                 "file": str(file),
@@ -181,7 +201,9 @@ class LocalProcessor:
                 "hash_type": self.hash_type,
                 "size": self.get_size(file),
             }
-            update_cache(_meta, file.parent / TEMPORARY_DIRECTORY / (file.name + ".json"))
+            update_cache(
+                _meta, file.parent / TEMPORARY_DIRECTORY / (file.name + ".json")
+            )
             return _meta
 
         elif instruction := static_or_dynamic.get("dynamic"):
@@ -212,9 +234,10 @@ def prepare_for_upload_sequential(
     tmp_dir_name: str = TEMPORARY_DIRECTORY,
     hash_type: str = "sha256",
 ):
+    compression_func = get_compression_func(compression_type)
     files_to_upload = []
     for static_or_dynamic in iter_package_and_prepare_for_upload(
-        package, include_pattern, exclude_pattern, compression_type, tmp_dir_name
+        package, include_pattern, exclude_pattern, compression_func, tmp_dir_name
     ):
         lp = LocalProcessor(hash_type)
         file_info = lp.process(static_or_dynamic)
@@ -232,6 +255,7 @@ def prepare_for_upload_parallel(
     hash_type: str = "sha256",
     max_workers: int = None,
 ):
+    compression_func = get_compression_func(compression_type)
     max_workers = max_workers if max_workers is not None else os.cpu_count()
     if not isinstance(max_workers, int):
         raise ValueError(
@@ -249,7 +273,7 @@ def prepare_for_upload_parallel(
                 package,
                 include_pattern,
                 exclude_pattern,
-                compression_type,
+                compression_func,
                 tmp_dir_name,
             ),
         ):

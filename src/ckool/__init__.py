@@ -1,2 +1,5 @@
 TEMPORARY_DIRECTORY = ".tmp_ckan_tool"
-CACHE_FILE = "ckan_tool_metadata.json"
+LOGGER = None
+HASH_TYPE = "sha256"
+COMPRESSION_TYPE = "zip"
+OVERWRITE_FILE_STATS = True

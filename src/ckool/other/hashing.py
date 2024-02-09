@@ -1,7 +1,10 @@
 import hashlib
 import pathlib
-from functools import partial
 from typing import Callable
+
+import tqdm
+
+from ckool.other.utilities import partial
 
 
 def import_hash_func(hash_func_name: str):
@@ -13,17 +16,33 @@ def import_hash_func(hash_func_name: str):
         )
 
 
-def _hash(file: pathlib.Path, hash_func: Callable, block_size: int = 65536):
+def _hash(
+    filepath: pathlib.Path,
+    hash_func: Callable,
+    block_size: int = 65536,
+    progressbar: tqdm.tqdm = None,
+):
     """
     From python3.11 there's a native implementation which is marginally faster.
     https://docs.python.org/3/library/hashlib.html#hashlib.file_digest
     """
     hf = hash_func()
-    with file.open("rb") as f:
+    if progressbar is None:
+        iterations = filepath.stat().st_size / block_size
+        progressbar = tqdm.tqdm(
+            total=int(iterations) + 1, desc=f"Hashing {filepath.name}"
+        )
+
+    with filepath.open("rb") as f:
         chunk = f.read(block_size)
+        progressbar.update()
         while chunk:
             hf.update(chunk)
             chunk = f.read(block_size)
+            progressbar.update()
+
+    progressbar.close()
+
     return hf.hexdigest()
 
 

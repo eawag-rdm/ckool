@@ -1,4 +1,4 @@
-from ckool.other.caching import read_cache, update_cache, _write_cache
+from ckool.other.caching import _write_cache, read_cache, update_cache
 
 
 def test_write_cache(data_to_cache, cache_file):

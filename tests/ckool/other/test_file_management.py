@@ -1,6 +1,7 @@
 import shutil
 import time
 
+from ckool import TEMPORARY_DIRECTORY
 from ckool.other.file_management import (
     generate_archive_dest,
     iter_files,
@@ -11,7 +12,6 @@ from ckool.other.file_management import (
     tar_files,
     zip_files,
 )
-from ckool import TEMPORARY_DIRECTORY
 from conftest import flatten_nested_structure
 
 
@@ -249,11 +249,21 @@ def test_prepare_for_upload_sequential(tmp_path, my_package_dir):
             "size": 0,
         },
         {
-            "file": (tmp_path / "my_data_package" / TEMPORARY_DIRECTORY / "test_folder2.tar.gz").as_posix(),
+            "file": (
+                tmp_path
+                / "my_data_package"
+                / TEMPORARY_DIRECTORY
+                / "test_folder2.tar.gz"
+            ).as_posix(),
             "size": 139,
         },
         {
-            "file": (tmp_path / "my_data_package" / TEMPORARY_DIRECTORY / "test_folder1.tar.gz").as_posix(),
+            "file": (
+                tmp_path
+                / "my_data_package"
+                / TEMPORARY_DIRECTORY
+                / "test_folder1.tar.gz"
+            ).as_posix(),
             "size": 122,
         },
     ]
@@ -278,11 +288,21 @@ def test_prepare_for_upload_parallel(tmp_path, my_package_dir):
             "size": 0,
         },
         {
-            "file": (tmp_path / "my_data_package" / TEMPORARY_DIRECTORY / "test_folder2.tar.gz").as_posix(),
+            "file": (
+                tmp_path
+                / "my_data_package"
+                / TEMPORARY_DIRECTORY
+                / "test_folder2.tar.gz"
+            ).as_posix(),
             "size": 139,
         },
         {
-            "file": (tmp_path / "my_data_package" / TEMPORARY_DIRECTORY / "test_folder1.tar.gz").as_posix(),
+            "file": (
+                tmp_path
+                / "my_data_package"
+                / TEMPORARY_DIRECTORY
+                / "test_folder1.tar.gz"
+            ).as_posix(),
             "size": 122,
         },
     ]
