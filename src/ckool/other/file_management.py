@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Callable, Literal
 from zipfile import ZipFile
 
-import tqdm
+from tqdm.auto import tqdm
 
 from ckool import TEMPORARY_DIRECTORY
 
@@ -72,14 +72,16 @@ def zip_files(
     root_folder: pathlib.Path,
     archive_destination: pathlib.Path,
     files: list,
-    progressbar: tqdm.tqdm = None,
+    progressbar_position: int = None,
 ) -> pathlib.Path:
-    if progressbar is None:
-        progressbar = tqdm.tqdm(files, desc=f"Zipping {archive_destination.name}")
+    progressbar = tqdm(
+        files, desc=f"Zipping {archive_destination.name}", position=progressbar_position
+    )
     with ZipFile(archive_destination.with_suffix(".zip"), mode="w") as _zip:
         for file in files:
             _zip.write(file, file.relative_to(root_folder))
             progressbar.update()
+            progressbar.refresh()
     progressbar.close()
     return archive_destination.with_suffix(".zip")
 
@@ -89,10 +91,11 @@ def tar_files(
     archive_destination: pathlib.Path,
     files: list,
     compression: Literal["gz", "bz2", "xz"] = "gz",
-    progressbar: tqdm.tqdm = None,
+    progressbar_position: int = None,
 ) -> pathlib.Path:
-    if progressbar is None:
-        progressbar = tqdm.tqdm(files, desc=f"Taring {archive_destination.name}")
+    progressbar = tqdm(
+        files, desc=f"Taring {archive_destination.name}", position=progressbar_position
+    )
     with tarfile.open(
         archive_destination.with_suffix(f".tar.{compression}"), mode=f"w:{compression}"
     ) as tar:

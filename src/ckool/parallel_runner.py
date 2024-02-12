@@ -85,7 +85,15 @@ def extract_job_wrapper_input(
 
 class JobWrapper:
     def __init__(
-        self, job_id, func, args, kwargs, queue_todo, queue_finished, queue_error
+        self,
+        job_id,
+        func,
+        args,
+        kwargs,
+        queue_todo,
+        queue_finished,
+        queue_error,
+        pass_job_id_as,
     ):
         self.job_id = job_id
         self.func = func
@@ -95,6 +103,7 @@ class JobWrapper:
         self.queue_todo = queue_todo
         self.queue_finished = queue_finished
         self.queue_error = queue_error
+        self.pass_job_id_as = pass_job_id_as
 
         self.with_trigger = False
         self.include_return_values = False
@@ -114,6 +123,8 @@ class JobWrapper:
 
     def run(self):
         try:
+            if self.pass_job_id_as:
+                self.kwargs[self.pass_job_id_as] = self.job_id
             returns = self.func(*self.args, **self.kwargs)
             next_instructions = {
                 "func": self.next_func,
@@ -144,7 +155,14 @@ class JobWrapper:
 
 
 def wrap_job(
-    _id, job, queue_finished, queue_todo, queue_error, pass_return, trigger_info
+    _id,
+    job,
+    queue_finished,
+    queue_todo,
+    queue_error,
+    pass_return,
+    trigger_info,
+    pass_job_id_as,
 ):
     _job = JobWrapper(
         job_id=_id,
@@ -154,6 +172,7 @@ def wrap_job(
         queue_todo=queue_todo,
         queue_finished=queue_finished,
         queue_error=queue_error,
+        pass_job_id_as=pass_job_id_as,
     )
     if pass_return:
         _job.set_include_return_values()
@@ -168,6 +187,8 @@ class ParallelRunner:
     """
     This task is for dynamically scheduling chains of function executions
     that can either be multi-processed or multi-threaded
+    pass_job_id_as: str
+        argument name that will be used to pass job id to functions as
     """
 
     def __init__(
@@ -177,12 +198,14 @@ class ParallelRunner:
         func_type: dict,
         base_func_info: dict,
         wait_between_checks: float = 0.1,
+        pass_job_id_as: str = None,
     ):
         self.trigger_map = trigger_map
         self.start_conditions = start_conditions
         self.func_type = func_type
         self.base_func_info = base_func_info
         self.wait_between_checks = wait_between_checks
+        self.pass_job_id_as = pass_job_id_as
 
         self.wait_between_checks: float = 0.1
         self.total_job_estimate = {"multi-threaded": 0, "multi-processed": 0}
@@ -253,6 +276,7 @@ class ParallelRunner:
                 self.trigger_map,
                 self.base_func_info,
             ),
+            pass_job_id_as=self.pass_job_id_as,
         )
         thread = threading.Thread(target=_job.run)
         self.threads.append(thread)
@@ -272,6 +296,7 @@ class ParallelRunner:
                 self.trigger_map,
                 self.base_func_info,
             ),
+            pass_job_id_as=self.pass_job_id_as,
         )
         process = multiprocessing.Process(target=_job.run)
         self.processes.append(process)

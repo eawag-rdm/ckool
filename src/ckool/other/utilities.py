@@ -35,7 +35,7 @@ def partial(func, /, *args, **keywords):
 
 
 def upload_via_api(
-    files, space_available_on_server_root_disk, parallel_upload, factor: int = 4.8
+    file_sizes, space_available_on_server_root_disk, parallel_upload, factor: int = 4.8
 ):
     """
     This function is used to decide, if data should be uploaded via the API or via the hacky way.
@@ -47,9 +47,8 @@ def upload_via_api(
     especially for parallel uploads this should be considered to not fill up the root disk and crash the server
     """
 
-    sizes = [file["size"] for file in files]
-    combined_size = sum(sizes)
-    max_single_size = max(sizes)
+    combined_size = sum(file_sizes)
+    max_single_size = max(file_sizes)
 
     max_file_size = space_available_on_server_root_disk / factor
 
@@ -63,6 +62,11 @@ def upload_via_api(
     return False
 
 
+class DataIntegrityError(Exception):
+    pass
+
+
+# TODO: not in use
 def meta_default(
     pkg_name: str,
     filename: pathlib.Path,

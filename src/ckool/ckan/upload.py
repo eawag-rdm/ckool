@@ -5,28 +5,30 @@ from requests_toolbelt.multipart.encoder import (
     MultipartEncoder,
     MultipartEncoderMonitor,
 )
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
 class TqdmProgressCallback:
-    def __init__(self, total_size, filename, progressbar: tqdm = None):
+    def __init__(self, total_size, filename, progressbar: int = True):
         self.total_size = total_size
         self.filename = filename
-        if progressbar is None:
-            progressbar = tqdm(
+        self.progressbar = progressbar
+        if progressbar:
+            self.bar = tqdm(
                 total=total_size,
                 unit="B",
                 unit_scale=True,
                 desc=f"Uploading {filename}",
             )
-        self.progress_bar = progressbar
 
     def __call__(self, monitor):
-        self.progress_bar.update(monitor.bytes_read - self.progress_bar.n)
+        if self.progressbar:
+            self.bar.update(monitor.bytes_read - self.bar.n)
+            self.bar.refresh()
 
     def close(self):
-        self.progress_bar.close()
-        print("Waiting for CKAN server!")
+        if self.progressbar:
+            self.bar.close()
 
 
 def upload_resource(
@@ -44,7 +46,7 @@ def upload_resource(
     restricted_level: str = "public",
     state: str = "active",
     verify: bool = True,
-    progressbar: tqdm = None,
+    progressbar: int = True,
 ):
     """
     {
@@ -85,7 +87,7 @@ def upload_resource(
 
         headers = {"Authorization": api_key, "Content-Type": monitor.content_type}
 
-        return requests.post(
+        response = requests.post(
             f"{ckan_url}/api/3/action/resource_create",
             data=monitor,
             headers=headers,
@@ -93,3 +95,7 @@ def upload_resource(
             stream=True,
             verify=verify,
         )
+
+        progress_callback.close()
+
+        return response

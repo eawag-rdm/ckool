@@ -55,6 +55,82 @@ def test_get_package_metadata_filtered(ckan_instance, ckan_envvars, ckan_setup_d
 
 
 @pytest.mark.impure
+def test_get_package_metadata_filtered(
+    tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
+):
+    sha256 = get_hash_func("sha256")
+    test_file = tmp_path / "test_file.ending"
+    test_file.write_text("some text")
+    ckan_instance.create_resource_of_type_file(
+        file=test_file,
+        package_id=ckan_envvars["test_package"],
+        file_hash=sha256(test_file),
+        file_size=test_file.stat().st_size,
+        progressbar=False,
+    )
+    data = ckan_instance.get_resource_meta(
+        ckan_envvars["test_package"], resource_name=test_file.name
+    )
+    path = ckan_instance.get_local_resource_path(
+        ckan_envvars["test_package"],
+        resource_name=test_file.name,
+        ckan_storage_path="/var/lib/ckan",
+    )
+    # remote_hash = os.popen(f"docker exec ckan sha256sum {path}").read().split(" ")[0]
+    assert (
+        data["hash"]
+        == "b94f6f125c79e3a5ffaa826f584c10d52ada669e6762051b826b55776d05aed2"
+    )
+
+
+@pytest.mark.impure
+def test_get_local_resource_path(
+    tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
+):
+    test_file = tmp_path / "test_file.ending"
+    test_file.touch()
+    ckan_instance.create_resource_of_type_file(
+        file=test_file,
+        package_id=ckan_envvars["test_package"],
+        file_hash="abc",
+        file_size=test_file.stat().st_size,
+        progressbar=False,
+    )
+    relative_resource_path = ckan_instance.get_local_resource_path(
+        package_name=ckan_envvars["test_package"],
+        resource_name=test_file.name,
+    )
+
+    resource_path = ckan_instance.get_local_resource_path(
+        package_name=ckan_envvars["test_package"],
+        resource_name=test_file.name,
+        ckan_storage_path="/var/lib/ckan/resources/",
+    )
+    assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
+
+    resource_path = ckan_instance.get_local_resource_path(
+        package_name=ckan_envvars["test_package"],
+        resource_name=test_file.name,
+        ckan_storage_path="/var/lib/ckan/resources",
+    )
+    assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
+
+    resource_path = ckan_instance.get_local_resource_path(
+        package_name=ckan_envvars["test_package"],
+        resource_name=test_file.name,
+        ckan_storage_path="/var/lib/ckan/",
+    )
+    assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
+
+    resource_path = ckan_instance.get_local_resource_path(
+        package_name=ckan_envvars["test_package"],
+        resource_name=test_file.name,
+        ckan_storage_path="/var/lib/ckan",
+    )
+    assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
+
+
+@pytest.mark.impure
 def test_update_package_metadata(ckan_instance, ckan_envvars, ckan_setup_data):
     data = ckan_instance.get_package(ckan_envvars["test_package"])
 

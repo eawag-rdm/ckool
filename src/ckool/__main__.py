@@ -3,7 +3,7 @@ import pathlib
 import typer
 from typing_extensions import Annotated
 
-from ckool.templates import (
+from ckool.api import (
     _download_all_metadata,
     _download_metadata,
     _download_package,

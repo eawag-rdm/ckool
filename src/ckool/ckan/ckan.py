@@ -4,7 +4,6 @@ import pathlib
 
 import ckanapi
 import requests
-import tqdm
 
 from ckool.other.utilities import get_secret
 
@@ -87,6 +86,30 @@ class CKAN:
             return {k: v for k, v in data.items() if k in filter_fields}
 
         return data
+
+    def get_local_resource_path(
+        self, package_name, resource_name, ckan_storage_path=""
+    ):
+        data = self.get_package(package_name, filter_fields=["resources"])
+
+        resource = [r for r in data["resources"] if r["name"] == resource_name][0]
+        resource_id = resource.get("id")
+
+        rsc_1, rsc_2, rsc_3 = resource_id[:3], resource_id[3:6], resource_id[6:]
+        local_resource_path = f"{rsc_1}/{rsc_2}/{rsc_3}"
+
+        if ckan_storage_path.endswith("/"):
+            ckan_storage_path = ckan_storage_path[:-1]
+
+        if ckan_storage_path:
+            if not ckan_storage_path.endswith("resources"):
+                ckan_storage_path += "/resources"
+            ckan_storage_path += "/"
+        return f"{ckan_storage_path}{local_resource_path}"
+
+    def get_resource_meta(self, package_name, resource_name):
+        data = self.get_package(package_name, filter_fields=["resources"])
+        return [r for r in data["resources"] if r["name"] == resource_name][0]
 
     def get_project(self, project_name):
         return self.plain_action_call("group_show", id=project_name)
@@ -172,7 +195,7 @@ class CKAN:
         resource_type: str = "Dataset",
         restricted_level: str = "public",
         state: str = "active",
-        progressbar: tqdm.tqdm = None,
+        progressbar: int = True,
     ):
         if isinstance(file, str):
             file = pathlib.Path(file)
