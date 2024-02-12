@@ -6,10 +6,7 @@ from ckool import COMPRESSION_TYPE, TEMPORARY_DIRECTORY
 from ckool.ckan.ckan import CKAN
 from ckool.interfaces.interfaces import SecureInterface
 from ckool.other.caching import read_cache, update_cache
-from ckool.other.file_management import (
-    get_compression_func,
-    iter_package_and_prepare_for_upload,
-)
+from ckool.other.file_management import get_compression_func, iter_package_and_prepare_for_upload
 from ckool.other.hashing import get_hash_func
 from ckool.other.utilities import DataIntegrityError, upload_via_api
 
@@ -193,7 +190,9 @@ def check_uploaded_resource_integrity(
         )
 
 
-def build_start_conditions(package_dir, tmp_dir_name, overwrite, hash_type):
+def build_start_conditions_for_parallel_runner(
+    package_dir, tmp_dir_name, overwrite, hash_type
+):
     start_conditions = []
     for static_or_dynamic in iter_package_and_prepare_for_upload(
         package_dir,

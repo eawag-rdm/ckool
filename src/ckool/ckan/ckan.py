@@ -7,7 +7,7 @@ import requests
 
 from ckool.other.utilities import get_secret
 
-from .upload import upload_resource
+from ckool.ckan.upload import upload_resource
 
 """
 API Documentation:

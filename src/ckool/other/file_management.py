@@ -3,7 +3,6 @@ import pathlib
 import re
 import tarfile
 from concurrent.futures import ProcessPoolExecutor
-from enum import Enum
 from typing import Callable, Literal
 from zipfile import ZipFile
 
@@ -11,13 +10,9 @@ from tqdm.auto import tqdm
 
 from ckool import TEMPORARY_DIRECTORY
 
-from .caching import update_cache
-from .hashing import get_hash_func
-
-
-class CompressionTypes(str, Enum):
-    zip = "zip"
-    tar = "tar"
+from ckool.other.caching import update_cache
+from ckool.other.hashing import get_hash_func
+from ckool.other.types import CompressionTypes
 
 
 def match_via_include_exclude_patters(

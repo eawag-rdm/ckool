@@ -5,10 +5,9 @@ import pytest
 from ckool import HASH_TYPE, OVERWRITE_FILE_STATS, TEMPORARY_DIRECTORY
 from ckool.parallel_runner import ParallelRunner, ParallelType
 from ckool.templates import (
-    build_start_conditions,
     collect_stats,
     compression_func,
-    upload_resource_file_via_api,
+    upload_resource_file_via_api, build_start_conditions_for_parallel_runner,
 )
 
 
@@ -116,7 +115,7 @@ def test_parallel_runner_realistic(
             "pass_return_values": True,
         },
     }
-    start_conditions = build_start_conditions(
+    start_conditions = build_start_conditions_for_parallel_runner(
         very_large_package, TEMPORARY_DIRECTORY, OVERWRITE_FILE_STATS, HASH_TYPE
     )
     func_type = {

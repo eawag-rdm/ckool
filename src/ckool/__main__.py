@@ -9,7 +9,12 @@ from ckool.api import (
     _download_package,
     _download_resource,
     _download_resources,
+    _patch_datacite,
+    _patch_metadata,
+    _patch_package,
+    _patch_resource,
     _prepare_package,
+    _publish_package,
     _upload_package,
     _upload_resource,
 )
@@ -20,7 +25,7 @@ from .other.config_parser import (
     load_config,
     set_config_file_as_default,
 )
-from .other.file_management import CompressionTypes
+from ckool.other.types import CompressionTypes
 
 OPTIONS = {"config": {}, "verify": True, "ckan-instance": "None"}
 
@@ -45,11 +50,15 @@ app.add_typer(download_app, name="download")
 patch_app = typer.Typer()
 app.add_typer(download_app, name="patch")
 
+publish_app = typer.Typer()
+app.add_typer(publish_app, name="publish")
+
 
 @create_app.callback()
 @download_app.callback()
 @patch_app.callback()
 @prepare_app.callback()
+@publish_app.callback()
 def main(
     config_file: str = typer.Option(
         get_default_conf_location().as_posix(), "-c", "--config-file"
@@ -169,7 +178,7 @@ def upload_package(
     package_folder: str = typer.Argument(
         help="Folder that contain the package resources.",
     ),
-    compression_type: str = typer.Option(
+    compression_type: CompressionTypes = typer.Option(
         "zip",
         "--compression-type",
         "-ct",
@@ -378,19 +387,111 @@ def download_all_metadata():
 
 
 @patch_app.command("package")
-def patch_package(name: str):
-    print(f"Hello {name}")
+def patch_package(
+    metadata_file: str = typer.Argument(
+        help="JSON file containing the metadata to create package with.",
+    ),
+    package_folder: str = typer.Argument(
+        help="Folder that contain the package resources.",
+    ),
+    parallel: bool = typer.Option(
+        False,
+        "--parallel",
+        "-p",
+        help="Use multiple threads/processes to handle job.",
+    ),
+    skip_prompt: bool = typer.Option(
+        False,
+        "--skip-prompt",
+        "-sp",
+        help="Do not ask which resources to overwrite. All resources with different local hashes will be uploaded.",
+    ),
+    recollect_file_stats: bool = typer.Option(
+        False,
+        "--recollect",
+        "-rc",
+        help="Recollect filestats (size, hash) for all files in package folder.",
+    ),
+):
+    return _patch_package(**locals())
 
 
 @patch_app.command("resource")
-def download_resource(name: str):
-    print(f"Hello {name}")
+def patch_resource(
+    metadata_file: str = typer.Argument(
+        help="JSON file containing the metadata to create package with.",
+    ),
+    file: str = typer.Option(
+        None,
+        "--file",
+        "-f",
+        help="If you're uploading a file resource, please provide the filepath.",
+    ),
+):
+    return _patch_resource(
+        metadata_file,
+        file,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+    )
 
 
 @patch_app.command("metadata")
-def download_metadata(name: str):
-    print(f"Hello {name}")
+def patch_metadata(
+    metadata_file: str = typer.Argument(
+        help="JSON file containing the metadata to create package with.",
+    ),
+):
+    return _patch_metadata(
+        metadata_file,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+    )
 
 
-if __name__ == "__main__":
-    app()
+@patch_app.command("datacite")
+def patch_datacite(
+    metadata_file: str = typer.Argument(
+        help="JSON file containing the metadata to create package with.",
+    ),
+):
+    return _patch_datacite(
+        metadata_file,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+    )
+
+
+@publish_app.command("package")
+def publish_package(
+    package_name: str = typer.Argument(
+        help="Name of the data package you would like to publish.",
+    ),
+    check_data_integrity: bool = typer.Option(
+        False,
+        "--check-data-integrity",
+        "-cdi",
+        help="Check data integrity (hash) after download and upload, for each resource.",
+    ),
+    track_progress: bool = typer.Option(
+        False,
+        "--track_progress",
+        "-tp",
+        help="Keep a record of the progress so that, "
+        "if some part of the operation fails, only outstanding operations will be resumed.",
+    ),
+):
+    return _publish_package(
+        package_name,
+        check_data_integrity,
+        track_progress,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+    )
+
+
+app()

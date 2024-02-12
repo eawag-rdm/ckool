@@ -36,6 +36,9 @@ dependencies = [
     "typer[all]"
 ]
 
+[project.scripts]
+ckool = "ckool.__main__:app"
+
 [project.optional-dependencies]
 dev = [
     "pytest",

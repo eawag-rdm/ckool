@@ -1,6 +1,6 @@
 import pathlib
 
-from .other.file_management import CompressionTypes
+from ckool.other.types import CompressionTypes
 
 
 # TODO: Full pipeline packing of files plus the hasing should run parallel,
@@ -134,22 +134,45 @@ def _download_all_metadata(
     return
 
 
-def _patch_package():
+def _patch_package(
+    metadata_file: str,
+    package_folder: str,
+    parallel: bool,
+    skip_prompt: bool,
+    recollect_file_stats: bool,
+):
+    """should be interactive, show diff, let user select what to patch"""
+    print(locals())
+    return
+
+
+def _patch_resource(
+    metadata_file: str, file: str, config: dict, ckan_instance: str, verify: bool
+):
+    print(locals())
+
     """should be interactive, show diff, let user select what to patch"""
     return
 
 
-def _patch_resource():
-    """should be interactive, show diff, let user select what to patch"""
+def _patch_metadata(metadata_file: str, config: dict, ckan_instance: str, verify: bool):
+    print(locals())
     return
 
 
-def _patch_metadata():
-    """should be interactive, show diff, let user select what to patch"""
+def _patch_datacite(metadata_file: str, config: dict, ckan_instance: str, verify: bool):
+    print(locals())
     return
 
 
-def publish_package():
+def _publish_package(
+    package_name: str,
+    check_data_integrity: bool,
+    track_progress: bool,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+):
     # download package check data consistency
 
     # upload package to eric open
@@ -157,7 +180,7 @@ def publish_package():
     # publish to datacite
 
     # update published package
-
+    print(locals())
     pass
 
 

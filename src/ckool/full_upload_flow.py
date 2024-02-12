@@ -12,9 +12,9 @@ from ckool import TEMPORARY_DIRECTORY
 from ckool.ckan.ckan import CKAN
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.file_management import (
-    CompressionTypes,
     iter_package_and_prepare_for_upload,
 )
+from ckool.other.types import CompressionTypes
 from ckool.other.hashing import get_hash_func
 
 
