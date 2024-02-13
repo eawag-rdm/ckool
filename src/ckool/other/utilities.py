@@ -69,7 +69,7 @@ class DataIntegrityError(Exception):
 
 
 # TODO: not in use
-def meta_default(
+def enrich_resource_metadata(
     pkg_name: str,
     filename: pathlib.Path,
     hash_string: str,
@@ -87,4 +87,14 @@ def meta_default(
         "hashtype": hash_type,
         "hash": hash_string,
         "size": file_size or filename.stat().st_size,
+    }
+
+
+def collect_metadata(file: pathlib.Path, hash_: str, hash_type: str):
+    return {
+        "file": str(file),
+        "hash": hash_,
+        "hash_type": hash_type,
+        "size": file.stat().st_size,
+        "format": file.suffix[1:],  # erasing the point from suffix
     }

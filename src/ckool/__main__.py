@@ -1,9 +1,11 @@
 import pathlib
 
 import typer
+from rich.prompt import Prompt
 from typing_extensions import Annotated
 
 from ckool.api import (
+    _delete_package,
     _download_all_metadata,
     _download_metadata,
     _download_package,
@@ -50,6 +52,9 @@ app.add_typer(download_app, name="download")
 patch_app = typer.Typer()
 app.add_typer(download_app, name="patch")
 
+delete_app = typer.Typer()
+app.add_typer(delete_app, name="delete")
+
 publish_app = typer.Typer()
 app.add_typer(publish_app, name="publish")
 
@@ -59,6 +64,7 @@ app.add_typer(publish_app, name="publish")
 @patch_app.callback()
 @prepare_app.callback()
 @publish_app.callback()
+@delete_app.callback()
 def main(
     config_file: str = typer.Option(
         get_default_conf_location().as_posix(), "-c", "--config-file"
@@ -67,11 +73,12 @@ def main(
         False, "--no-verify", help="Skip the certificate verification for web requests."
     ),
     ckan_instance: str = typer.Option(
-        "eric",
+        "Eric",
         "-ci",
         "--ckan-instance",
         help="Which CKAN instance run API requests against.",
     ),
+    test: bool = typer.Option(False, "--test", help="Run commands on Test instances."),
 ):
     config_file = pathlib.Path(config_file)
     if not config_file.exists():
@@ -81,6 +88,7 @@ def main(
     OPTIONS["config"] = load_config(config_file)
     OPTIONS["verify"] = not no_verify
     OPTIONS["ckan-instance"] = ckan_instance
+    OPTIONS["test"] = test
 
 
 @config_app.command("generate_example", help="Generate example .toml file.")
@@ -172,8 +180,8 @@ def prepare_package(
 
 @create_app.command("package")
 def upload_package(
-    metadata_file: str = typer.Argument(
-        help="JSON file containing the metadata to create package with.",
+    package_name: str = typer.Argument(
+        help="Package name in CKAN.",
     ),
     package_folder: str = typer.Argument(
         help="Folder that contain the package resources.",
@@ -219,7 +227,7 @@ def upload_package(
     ),
 ):
     return _upload_package(
-        metadata_file,
+        package_name,
         package_folder,
         compression_type,
         include_pattern,
@@ -230,6 +238,7 @@ def upload_package(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -251,6 +260,7 @@ def upload_resource(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -293,6 +303,7 @@ def download_package(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -325,6 +336,7 @@ def download_resource(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -353,6 +365,7 @@ def download_resources(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -374,6 +387,7 @@ def download_metadata(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -383,6 +397,7 @@ def download_all_metadata():
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -413,7 +428,17 @@ def patch_package(
         help="Recollect filestats (size, hash) for all files in package folder.",
     ),
 ):
-    return _patch_package(**locals())
+    return _patch_package(
+        metadata_file,
+        package_folder,
+        parallel,
+        skip_prompt,
+        recollect_file_stats,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+        OPTIONS["test"],
+    )
 
 
 @patch_app.command("resource")
@@ -434,6 +459,7 @@ def patch_resource(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -448,6 +474,7 @@ def patch_metadata(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -462,6 +489,7 @@ def patch_datacite(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
 
 
@@ -491,7 +519,31 @@ def publish_package(
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
+        OPTIONS["test"],
     )
+
+
+@delete_app.command("package")
+def delete_package(
+    package_name: str = typer.Argument(
+        help="Name of the package, for which to get the metadata.",
+    ),
+):
+    confirmation = Prompt.ask(
+        f"Are you sure you want to delete the package '{package_name}' on '{OPTIONS['ckan-instance']}'?",
+        choices=["no", "yes"],
+        default="no",
+    )
+    if confirmation == "yes":
+        return _delete_package(
+            package_name,
+            OPTIONS["config"],
+            OPTIONS["ckan-instance"],
+            OPTIONS["verify"],
+            OPTIONS["test"],
+        )
+    else:
+        print("Deletion aborted.")
 
 
 app()

@@ -64,9 +64,14 @@ def upload_resource(
     """
     file_name = file_path.name
     with open(file_path, "rb") as file_stream:
+        print("FORMAT:", format)
         encoder = MultipartEncoder(
             fields={
-                "upload": (file_name, file_stream, "application/octet-stream"),
+                "upload": (
+                    file_name,
+                    file_stream,
+                    format if format else "application/octet-stream",
+                ),
                 "package_id": package_id,
                 "name": file_name,
                 "mimetype": "application/octet-stream",

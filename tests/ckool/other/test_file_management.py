@@ -1,9 +1,12 @@
 import shutil
 import time
 
+import pytest
+
 from ckool import TEMPORARY_DIRECTORY
 from ckool.other.file_management import (
-    generate_archive_dest,
+    find_archive,
+    generate_archive_destination,
     iter_files,
     iter_package_and_prepare_for_upload,
     match_via_include_exclude_patters,
@@ -72,14 +75,29 @@ def test_iter_files(tmp_path, my_package_dir):
     )
 
 
-def test_generate_tmp_file_paths(tmp_path, my_package_dir):
-    assert generate_archive_dest(my_package_dir, tmp_path, tmp_dir_name=".ckool") == (
-        my_package_dir.parent / ".ckool" / my_package_dir.name
+def test_iter_files_2(tmp_path):
+    (tmp_path / "abc.json").touch()
+    (tmp_path / "abc.bcd").touch()
+    (tmp_path / "abc.json.sdd").touch()
+    (tmp_path / "def.json").touch()
+    (tmp_path / "ddd.json.json").touch()
+
+    print(
+        [
+            file.relative_to(tmp_path)
+            for file in iter_files(tmp_path, include_pattern=r".json$")
+        ]
     )
 
 
+def test_generate_tmp_file_paths(tmp_path, my_package_dir):
+    assert generate_archive_destination(
+        my_package_dir, tmp_path, tmp_dir_name=".ckool"
+    ) == (my_package_dir.parent / ".ckool" / my_package_dir.name)
+
+
 def test_zip_files(tmp_path, my_package_dir):
-    archive_file = generate_archive_dest(
+    archive_file = generate_archive_destination(
         my_package_dir, tmp_path, tmp_dir_name=".ckool"
     )
 
@@ -91,7 +109,7 @@ def test_zip_files(tmp_path, my_package_dir):
 
 
 def test_tar_files(tmp_path, my_package_dir):
-    archive_file = generate_archive_dest(
+    archive_file = generate_archive_destination(
         my_package_dir, tmp_path, tmp_dir_name=".ckool"
     )
 
@@ -104,7 +122,9 @@ def test_tar_files(tmp_path, my_package_dir):
 
 def test_tar_file(tmp_path):
     (tmp_path / "some.txt").write_text("Test!")
-    archive_file = generate_archive_dest(tmp_path, tmp_path, tmp_dir_name=".ckool")
+    archive_file = generate_archive_destination(
+        tmp_path, tmp_path, tmp_dir_name=".ckool"
+    )
 
     assert tar_files(
         tmp_path,
@@ -333,3 +353,15 @@ def test_prepare_for_upload_performance(tmp_path, large_package):
     #    f"Performance sequential: {duration_sequential:.4f}s\n"
     #    f"Parallel is not faster "
     # )
+
+
+def test_find_archive(tmp_path):
+    (tmp_path / "abc.tar.gz.json").touch()
+    (tmp_path / "abc.gz.json").touch()
+    (tmp_path / "abc.gz").touch()
+
+    assert tmp_path / "abc.gz" == find_archive(tmp_path / "abc")
+
+    (tmp_path / "abc.zip").touch()
+    with pytest.raises(AssertionError):
+        find_archive(tmp_path / "abc")

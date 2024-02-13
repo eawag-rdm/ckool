@@ -32,7 +32,7 @@ CKOOL_TOML = dedent(
     ]
     ckan_server = [
         {instance = "instance_name_1", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key"},
-        {instance = "instance_name_2", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key" }
+        {instance = "instance_name_2", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key"}
     ]
     
     [Test.Base]
@@ -78,4 +78,14 @@ def load_config(config_file: pathlib.Path = None):
 
     raise FileNotFoundError(
         f"Can not found the config file. You must either make sure to have a config file named '{home_dir.name}' in your cwd, in your home directory or you must provide one via the CLI."
+    )
+
+
+def config_for_instance(config_subsection: list, instance_name: str):
+    for section in config_subsection:
+        if section.get("instance") == instance_name:
+            del section["instance"]
+            return section
+    raise ValueError(
+        f"The instance name '{instance_name}' you specified is not defined in the config file."
     )

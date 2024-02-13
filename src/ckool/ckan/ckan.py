@@ -42,11 +42,11 @@ class CKAN:
         self,
         server: str,
         token: str = None,
-        secret: str = None,
+        secret_token: str = None,
         verify_certificate: bool = True,
     ):
         self.server = server
-        self.token = token if token is not None else get_secret(secret)
+        self.token = token if token is not None else get_secret(secret_token)
         self.verify = verify_certificate
 
     def connection(self):

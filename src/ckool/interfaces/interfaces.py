@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from paramiko import AutoAddPolicy, SSHClient
 from scp import SCPClient
 
+from ckool.other.utilities import get_secret
+
 
 def to_pathlib(path: str | pathlib.Path):
     return path if isinstance(path, pathlib.Path) else pathlib.Path(path)
@@ -17,20 +19,26 @@ class SecureInterface:
     host: str
     username: str
     port: int = 22
-    password: str = None
+    secret_password: str = None
     ssh_key: str = None
-    passphrase: str = None
+    secret_passphrase: str = None
 
     def __check_input(self):
         if any(
             [
-                self.password and self.ssh_key and self.passphrase,
-                self.password and self.ssh_key and self.passphrase is None,
-                self.password and self.ssh_key is None and self.passphrase,
-                self.password is None and self.ssh_key is None and self.passphrase,
-                self.password is None
+                self.secret_password and self.ssh_key and self.secret_passphrase,
+                self.secret_password
+                and self.ssh_key
+                and self.secret_passphrase is None,
+                self.secret_password
                 and self.ssh_key is None
-                and self.passphrase is None,
+                and self.secret_passphrase,
+                self.secret_password is None
+                and self.ssh_key is None
+                and self.secret_passphrase,
+                self.secret_password is None
+                and self.ssh_key is None
+                and self.secret_passphrase is None,
             ]
         ):
             raise ValueError(
@@ -58,8 +66,8 @@ class SecureInterface:
             hostname=self.host,
             port=self.port,
             username=self.username,
-            password=self.password,
-            passphrase=self.passphrase,
+            password=get_secret(self.secret_password),
+            passphrase=get_secret(self.secret_passphrase),
             key_filename=self.ssh_key,
         )
         return ssh
@@ -87,8 +95,8 @@ class SecureInterface:
                 hostname=self.host,
                 port=self.port,
                 username=self.username,
-                password=self.password,
-                passphrase=self.passphrase,
+                password=self.secret_password,
+                passphrase=self.secret_passphrase,
                 key_filename=self.ssh_key,
             )
 
@@ -109,8 +117,8 @@ class SecureInterface:
                 hostname=self.host,
                 port=self.port,
                 username=self.username,
-                password=self.password,
-                passphrase=self.passphrase,
+                password=self.secret_password,
+                passphrase=self.secret_passphrase,
                 key_filename=self.ssh_key,
             )
 

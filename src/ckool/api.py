@@ -1,29 +1,130 @@
 import pathlib
 
+from ckool import HASH_BLOCK_SIZE, TEMPORARY_DIRECTORY
+from ckool.ckan.ckan import CKAN
+from ckool.other.caching import read_cache, update_cache
+from ckool.other.config_parser import config_for_instance
+from ckool.other.file_management import (
+    find_archive,
+    get_compression_func,
+    iter_files,
+    iter_package,
+    stats_file,
+)
+from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes
+from ckool.other.utilities import collect_metadata
+from ckool.templates import get_upload_func
 
-
-# TODO: Full pipeline packing of files plus the hasing should run parallel,
+# TODO: Full pipeline packing of files plus the hashing should run parallel,
 #  currently upload will only start, when preparation is finished.
+
+
+# TODO adding additional resource metadata fields how?
 def _upload_package(
-    metadata_file: str,
+    package_name: str,
     package_folder: str,
     compression_type: CompressionTypes,
     include_pattern: str,
     exclude_pattern: str,
-    hash_algorithm: str,
+    hash_algorithm: str,  # todo, MUST BE an enum
     parallel: bool,
     workers: int,
     config: dict,
     ckan_instance: str,
     verify: bool,
+    test: bool,
 ):
     """
     Example calls here:
 
     """
-    print(locals())
-    return
+
+    section = "Production" if not test else "Test"
+
+    package_folder = pathlib.Path(package_folder)
+    hash_func = get_hash_func(hash_algorithm)
+    compression_func = get_compression_func(compression_type)
+
+    if not parallel:
+        for info in iter_package(
+            package_folder,
+            include_pattern=include_pattern,
+            exclude_pattern=exclude_pattern,
+        ):
+            if file := info["file"]:  # files are hashed
+                if (cache_file := stats_file(file, TEMPORARY_DIRECTORY)).exists():
+                    continue
+                hash_ = hash_func(
+                    filepath=file,
+                    block_size=HASH_BLOCK_SIZE,
+                    progressbar=True,
+                )
+                update_cache(collect_metadata(file, hash_, hash_algorithm), cache_file)
+            elif folder := info["folder"]:  # folders are archived and then hashed
+                archive = find_archive(folder["archive_destination"])
+                if not archive:
+                    archive = compression_func(
+                        root_folder=folder["root_folder"],
+                        archive_destination=folder["archive_destination"],
+                        files=folder["files"],
+                        progressbar=True,
+                    )
+                if not (cache_file := stats_file(archive, "")).exists():
+                    hash_ = hash_func(
+                        filepath=archive,
+                        block_size=HASH_BLOCK_SIZE,
+                        progressbar=True,
+                    )
+                    update_cache(
+                        collect_metadata(archive, hash_, hash_algorithm),
+                        cache_file,
+                    )
+            else:
+                raise ValueError(
+                    f"This should not happen, the dictionary does not have the expected content: '{repr(info)}'"
+                )
+
+        # Iter cache files for uploading
+        metadata_map = {
+            cache_file.name: read_cache(cache_file)
+            for cache_file in iter_files(
+                package_folder / TEMPORARY_DIRECTORY,
+                include_pattern=".json$",
+                tmp_dir_to_ignore=None,
+            )
+        }
+
+        sizes = [meta["size"] for meta in metadata_map.values()]
+
+        cfg_other = config_for_instance(config[section]["other"], ckan_instance)
+        cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+        cfg_ckan_api.update({"verify_certificate": verify})
+        cfg_secure_interface = config_for_instance(
+            config[section]["ckan_server"], ckan_instance
+        )
+
+        upload_func = get_upload_func(
+            file_sizes=sizes,
+            space_available_on_server_root_disk=cfg_other[
+                "space_available_on_server_root_disk"
+            ],
+            parallel_upload=False,
+            factor=4.8,
+        )
+        for meta in metadata_map.values():
+            upload_func(
+                ckan_api_input=cfg_ckan_api,
+                secure_interface_input=cfg_secure_interface,
+                ckan_storage_path=cfg_other["ckan_storage_path"],
+                package_name=package_name,
+                filepath=meta["file"],
+                metadata=meta,
+                empty_file_name="empty_file.empty",
+                progressbar=True,
+            )
+    else:
+        raise NotImplementedError("Parallel will be implemented soon.")
 
 
 def _upload_resource(
@@ -32,6 +133,7 @@ def _upload_resource(
     config: dict,
     ckan_instance: str,
     verify: bool,
+    test: bool,
 ):
     """
     Example calls here
@@ -69,6 +171,7 @@ def _download_package(
     config: dict,
     ckan_instance: str,
     verify: bool,
+    test: bool,
 ):
     """
     Example calls here
@@ -86,6 +189,7 @@ def _download_resource(
     config: dict,
     ckan_instance: str,
     verify: bool,
+    test: bool,
 ):
     """
     Example calls here
@@ -103,6 +207,7 @@ def _download_resources(
     config: dict,
     ckan_instance: str,
     verify: bool,
+    test: bool,
 ):
     """
     Example calls here
@@ -119,6 +224,7 @@ def _download_metadata(
     config: dict,
     ckan_instance: str,
     verify: bool,
+    test: bool,
 ):
     filter_fields = filter_fields.split(",")
     print(locals())
@@ -129,6 +235,7 @@ def _download_all_metadata(
     config: dict,
     ckan_instance: str,
     verify: bool,
+    test: bool,
 ):
     print(locals())
     return
@@ -140,6 +247,10 @@ def _patch_package(
     parallel: bool,
     skip_prompt: bool,
     recollect_file_stats: bool,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
 ):
     """should be interactive, show diff, let user select what to patch"""
     print(locals())
@@ -147,7 +258,12 @@ def _patch_package(
 
 
 def _patch_resource(
-    metadata_file: str, file: str, config: dict, ckan_instance: str, verify: bool
+    metadata_file: str,
+    file: str,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
 ):
     print(locals())
 
@@ -155,12 +271,24 @@ def _patch_resource(
     return
 
 
-def _patch_metadata(metadata_file: str, config: dict, ckan_instance: str, verify: bool):
+def _patch_metadata(
+    metadata_file: str,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
     print(locals())
     return
 
 
-def _patch_datacite(metadata_file: str, config: dict, ckan_instance: str, verify: bool):
+def _patch_datacite(
+    metadata_file: str,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
     print(locals())
     return
 
@@ -172,6 +300,7 @@ def _publish_package(
     config: dict,
     ckan_instance: str,
     verify: bool,
+    test: bool,
 ):
     # download package check data consistency
 
@@ -182,6 +311,20 @@ def _publish_package(
     # update published package
     print(locals())
     pass
+
+
+def _delete_package(
+    package_name: str,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
+    section = "Production" if not test else "Test"
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api.update({"verify_certificate": verify})
+    ckan = CKAN(**cfg_ckan_api)
+    ckan.delete_package(package_id=package_name)
 
 
 def reserve_doi():

@@ -25,10 +25,10 @@ class DataCiteException(Exception):
 
 class DataCiteAPI:
     def __init__(
-        self, host, prefix, username, password=None, secret_name=None, offset=0
+        self, host, prefix, username, password=None, secret_password=None, offset=0
     ):
-        if secret_name is not None:
-            password = get_secret(password)
+        if secret_password is not None:
+            password = get_secret(secret_password)
         self.auth = HTTPBasicAuth(username=username, password=password)
         self.username = username
         self.host = host

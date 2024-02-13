@@ -1,11 +1,11 @@
-from ckool.other.utilities import meta_default
+from ckool.other.utilities import enrich_resource_metadata
 
 
 def test_make_meta_calculated(tmp_path):
     some_file = tmp_path / "test_file.txt"
     some_file.touch()
 
-    assert meta_default(
+    assert enrich_resource_metadata(
         pkg_name="this-is-a-package",
         filename=some_file,
         hash_string="some-hash-string",
@@ -26,7 +26,7 @@ def test_make_meta_provided(tmp_path):
     some_file = tmp_path / "test_file.txt"
     some_file.touch()
 
-    assert meta_default(
+    assert enrich_resource_metadata(
         pkg_name="this-is-a-package",
         filename=some_file,
         hash_string="some-hash-string",

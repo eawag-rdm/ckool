@@ -5,7 +5,7 @@ from tqdm.auto import tqdm
 from ckool import COMPRESSION_TYPE, TEMPORARY_DIRECTORY
 from ckool.ckan.ckan import CKAN
 from ckool.interfaces.interfaces import SecureInterface
-from ckool.other.caching import read_cache, update_cache
+from ckool.other.caching import update_cache
 from ckool.other.file_management import (
     get_compression_func,
     iter_package_and_prepare_for_upload,
@@ -73,16 +73,16 @@ def collect_stats(tmp_dir_name, overwrite, hash_type, filepath, progressbar):
 
 
 def upload_resource_file_via_api(
-    ckan_api_input, package_name, filepath, cache_file, progressbar, *args, **kwargs
+    ckan_api_input, package_name, filepath, metadata, progressbar, *args, **kwargs
 ):
     ckan_instance = CKAN(**ckan_api_input)
-    stats = read_cache(cache_file)
     ckan_instance.create_resource_of_type_file(
         file=filepath,
         package_id=package_name,
-        file_hash=stats["hash"],
-        file_size=stats["size"],
-        hash_type=stats["hash_type"],
+        file_hash=metadata["hash"],
+        file_size=metadata["size"],
+        hash_type=metadata["hash_type"],
+        format=metadata["format"],
         progressbar=progressbar,
     )
 
@@ -93,7 +93,7 @@ def upload_resource_file_via_scp(
     ckan_storage_path,
     package_name,
     filepath,
-    cache_file,
+    metadata,
     empty_file_name: str = "empty_file.empty",
     progressbar: bool = True,
 ):
@@ -104,13 +104,12 @@ def upload_resource_file_via_scp(
     empty.touch()
 
     ckan_instance = CKAN(**ckan_api_input)
-    stats = read_cache(cache_file)
     ckan_instance.create_resource_of_type_file(
         file=empty,
         package_id=package_name,
-        file_hash=stats["hash"],
-        file_size=stats["size"],
-        hash_type=stats["hash_type"],
+        file_hash=metadata["hash"],
+        file_size=metadata["size"],
+        hash_type=metadata["hash_type"],
         progressbar=False,
     )
 
@@ -128,7 +127,10 @@ def upload_resource_file_via_scp(
 
 
 def get_upload_func(
-    file_sizes, space_available_on_server_root_disk, parallel_upload, factor: int = 4.8
+    file_sizes,
+    space_available_on_server_root_disk,
+    parallel_upload,
+    factor: float = 4.8,
 ):
     if upload_via_api(**locals()):
         return upload_resource_file_via_api

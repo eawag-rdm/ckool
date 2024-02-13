@@ -35,7 +35,10 @@ def match_via_include_exclude_patters(
 
 
 def iter_files(
-    folder: pathlib.Path, include_pattern: str = None, exclude_pattern: str = None
+    folder: pathlib.Path,
+    include_pattern: str = None,
+    exclude_pattern: str = None,
+    tmp_dir_to_ignore: str | None = TEMPORARY_DIRECTORY,
 ):
     """
     Using re to filter paths. If both include_pattern and exclude pattern are provided.
@@ -44,21 +47,29 @@ def iter_files(
     exclude_pattern: str [default: None] -> exclude nothing
     """
 
+    if not folder.exists():
+        raise NotADirectoryError(
+            f"The directory you specified does not exist. '{folder}'"
+        )
+
     for file_or_folder in folder.glob("**/*"):
         fof = file_or_folder.as_posix()
+        if tmp_dir_to_ignore and tmp_dir_to_ignore in fof:
+            continue
+
         if match_via_include_exclude_patters(fof, include_pattern, exclude_pattern):
             if file_or_folder.is_file():
                 yield file_or_folder
 
 
-def generate_archive_dest(
-    folder_to_zip: pathlib.Path,
+def generate_archive_destination(
+    folder_to_compress: pathlib.Path,
     root_folder: pathlib.Path,
     tmp_dir_name: str = TEMPORARY_DIRECTORY,
 ) -> pathlib.Path:
     tmp_folder = root_folder / tmp_dir_name
     tmp_folder.mkdir(exist_ok=True)
-    archive_destination = tmp_folder / folder_to_zip.name
+    archive_destination = tmp_folder / folder_to_compress.name
     return archive_destination
 
 
@@ -110,8 +121,16 @@ def tar_files(
     return archive_destination.with_suffix(f".tar.{compression}")
 
 
-def _find_archive(file: pathlib.Path):
-    return [f for f in file.parent.iterdir() if not f.suffix == ".json"][0]
+def find_archive(archive_destination: pathlib.Path):
+    found = []
+    for f in iter_files(archive_destination.parent, tmp_dir_to_ignore=""):
+        if not f.suffix.endswith(".json") and f.name.startswith(
+            archive_destination.name
+        ):
+            found.append(f)
+    assert len(found) <= 1, f"Invalid: Multiple archives found: {repr(found)}"
+    if found:
+        return found[0]
 
 
 def get_compression_func(
@@ -120,6 +139,58 @@ def get_compression_func(
     return {CompressionTypes.zip: zip_files, CompressionTypes.tar: tar_files}.get(
         compression_type
     )
+
+
+def iter_package(
+    package: pathlib.Path,
+    include_pattern: str = None,
+    exclude_pattern: str = None,
+    tmp_dir_name: str = TEMPORARY_DIRECTORY,
+    ignore_tmp_dir: bool = True,
+) -> dict:
+    """
+    This function gets everything ready for the package upload.
+    - it creates a tmp directory and saves compressed folders in there and collects all folders.
+    """
+
+    for file_or_folder in package.iterdir():
+        if not match_via_include_exclude_patters(
+            file_or_folder.as_posix(), include_pattern, exclude_pattern
+        ):
+            continue
+
+        if file_or_folder.is_file():
+            yield {"file": file_or_folder, "folder": {}}
+        elif file_or_folder.is_dir():
+            if ignore_tmp_dir and TEMPORARY_DIRECTORY in file_or_folder.as_posix():
+                continue
+            files_to_compress = list(
+                iter_files(file_or_folder, include_pattern, exclude_pattern)
+            )
+            archive_destination = generate_archive_destination(
+                file_or_folder, file_or_folder.parent, tmp_dir_name
+            )
+
+            if not files_to_compress:
+                continue
+
+            elif file := find_archive(archive_destination):
+                yield {"file": file, "folder": {}}
+            else:
+                yield {
+                    "file": "",
+                    "folder": {
+                        "location": file_or_folder,
+                        "files": files_to_compress,
+                        "archive_destination": archive_destination,
+                        "root_folder": file_or_folder.parent,
+                    },
+                }
+
+        else:
+            raise ValueError(
+                f"Ooops this shouldn't happen. This is not a file and not a folder '{file_or_folder.as_posix()}'."
+            )
 
 
 # TODO: this needs rewriting! The returned value must be more consistent. both should return
@@ -136,11 +207,6 @@ def iter_package_and_prepare_for_upload(
     - it creates a tmp directory and saves compressed folders in there and collects all folders.
     """
 
-    if not package.exists():
-        raise NotADirectoryError(
-            f"The directory you specified does not exist. '{package}'"
-        )
-
     for file_or_folder in package.iterdir():
         if not match_via_include_exclude_patters(
             file_or_folder.as_posix(), include_pattern, exclude_pattern
@@ -150,7 +216,7 @@ def iter_package_and_prepare_for_upload(
         if file_or_folder.is_file():
             yield {"static": file_or_folder, "dynamic": {}}
         elif file_or_folder.is_dir():
-            archive_destination = generate_archive_dest(
+            archive_destination = generate_archive_destination(
                 file_or_folder, file_or_folder.parent, tmp_dir_name
             )
             files_to_compress = list(
@@ -161,7 +227,7 @@ def iter_package_and_prepare_for_upload(
                 continue
             elif archive_destination.with_suffix(".json").exists():
                 archive_destination.iterdir()
-                yield {"static": _find_archive(archive_destination), "dynamic": {}}
+                yield {"static": find_archive(archive_destination), "dynamic": {}}
 
             yield {
                 "static": "",
@@ -179,6 +245,10 @@ def iter_package_and_prepare_for_upload(
             raise ValueError(
                 f"Ooops this shouldn't happen. This is not a file and not a folder '{file_or_folder.as_posix()}'."
             )
+
+
+def stats_file(file: pathlib.Path, tmp_dir: str = TEMPORARY_DIRECTORY):
+    return file.parent / tmp_dir / (file.name + ".json")
 
 
 class LocalProcessor:
@@ -204,9 +274,7 @@ class LocalProcessor:
                 "hash_type": self.hash_type,
                 "size": self.get_size(file),
             }
-            update_cache(
-                _meta, file.parent / TEMPORARY_DIRECTORY / (file.name + ".json")
-            )
+            update_cache(_meta, stats_file(file, TEMPORARY_DIRECTORY))
             return _meta
 
         elif instruction := static_or_dynamic.get("dynamic"):
@@ -220,7 +288,7 @@ class LocalProcessor:
                 "hash_type": self.hash_type,
                 "size": self.get_size(file),
             }
-            update_cache(_meta, file.parent / (file.name + ".json"))
+            update_cache(_meta, stats_file(file, TEMPORARY_DIRECTORY))
             return _meta
 
         else:

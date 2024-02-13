@@ -18,19 +18,27 @@ def test_secure_interface_init(secure_interface_input_args):
     with pytest.raises(ValueError):
         SecureInterface(host="FakeHost", username="SomeUserName")
         SecureInterface(
-            host="FakeHost", username="SomeUserName", password="abs", ssh_key="ass"
+            host="FakeHost",
+            username="SomeUserName",
+            secret_password="abs",
+            ssh_key="ass",
         )
         SecureInterface(
             host="FakeHost",
             username="SomeUserName",
-            password="abs",
+            secret_password="abs",
             ssh_key="ass",
-            passphrase="dsfs",
+            secret_passphrase="dsfs",
         )
         SecureInterface(
-            host="FakeHost", username="SomeUserName", password="abs", passphrase="ass"
+            host="FakeHost",
+            username="SomeUserName",
+            secret_password="abs",
+            secret_passphrase="ass",
         )
-        SecureInterface(host="FakeHost", username="SomeUserName", passphrase="ass")
+        SecureInterface(
+            host="FakeHost", username="SomeUserName", secret_passphrase="ass"
+        )
 
 
 @pytest.mark.impure
