@@ -17,7 +17,9 @@ def get_secret(name):
     except CalledProcessError:
         sys.exit("ERROR: Didn't find {} in .password-store either")
     else:
-        secret = proc.stdout.decode("utf-8").strip("\n")
+        secret = proc.stdout.decode("utf-8")
+        if "\n" in secret:
+            secret = secret.split("\n")[0]
         return secret
 
 
