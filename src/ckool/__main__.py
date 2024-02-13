@@ -18,6 +18,7 @@ from ckool.api import (
     _upload_package,
     _upload_resource,
 )
+from ckool.other.types import CompressionTypes
 
 from .other.config_parser import (
     generate_example_config,
@@ -25,7 +26,6 @@ from .other.config_parser import (
     load_config,
     set_config_file_as_default,
 )
-from ckool.other.types import CompressionTypes
 
 OPTIONS = {"config": {}, "verify": True, "ckan-instance": "None"}
 

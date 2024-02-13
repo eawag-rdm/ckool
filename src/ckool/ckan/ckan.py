@@ -5,9 +5,8 @@ import pathlib
 import ckanapi
 import requests
 
-from ckool.other.utilities import get_secret
-
 from ckool.ckan.upload import upload_resource
+from ckool.other.utilities import get_secret
 
 """
 API Documentation:

@@ -6,7 +6,10 @@ from ckool import COMPRESSION_TYPE, TEMPORARY_DIRECTORY
 from ckool.ckan.ckan import CKAN
 from ckool.interfaces.interfaces import SecureInterface
 from ckool.other.caching import read_cache, update_cache
-from ckool.other.file_management import get_compression_func, iter_package_and_prepare_for_upload
+from ckool.other.file_management import (
+    get_compression_func,
+    iter_package_and_prepare_for_upload,
+)
 from ckool.other.hashing import get_hash_func
 from ckool.other.utilities import DataIntegrityError, upload_via_api
 
@@ -47,9 +50,7 @@ def setup_progress_bar(
         )
 
 
-def collect_stats(
-    tmp_dir_name, overwrite, hash_type, filepath, progressbar_position=None
-):
+def collect_stats(tmp_dir_name, overwrite, hash_type, filepath, progressbar):
     if tmp_dir_name in filepath.as_posix():
         cache_file = filepath.with_suffix(filepath.suffix + ".json")
     else:
@@ -61,7 +62,7 @@ def collect_stats(
         stats = {
             "file": str(filepath),
             "hash": get_hash_func(hash_type)(
-                filepath=filepath, progressbar_position=progressbar_position
+                filepath=filepath, progressbar=progressbar
             ),
             "hash_type": hash_type,
             "size": filepath.stat().st_size,
@@ -202,6 +203,7 @@ def build_start_conditions_for_parallel_runner(
         TEMPORARY_DIRECTORY,
     ):
         if dynamic := static_or_dynamic.get("dynamic"):
+            dynamic["kwargs"].update({"progressbar": False})
             start_conditions.append(dynamic)
         elif filepath := static_or_dynamic.get("static"):
             start_conditions.append(

@@ -20,7 +20,7 @@ def _hash(
     filepath: pathlib.Path,
     hash_func: Callable,
     block_size: int = 65536,
-    progressbar_position: int = None,
+    progressbar: bool = True,
 ):
     """
     From python3.11 there's a native implementation which is marginally faster.
@@ -28,22 +28,26 @@ def _hash(
     """
     hf = hash_func()
     iterations = filepath.stat().st_size / block_size
-    progressbar = tqdm(
-        total=int(iterations) + 1,
-        desc=f"Hashing {filepath.name}",
-        position=progressbar_position,
-    )
+    bar = None
+    if progressbar:
+        bar = tqdm(
+            total=int(iterations) + 1,
+            desc=f"Hashing {filepath.name}",
+        )
 
     with filepath.open("rb") as f:
         chunk = f.read(block_size)
-        progressbar.update()
         while chunk:
+            if progressbar:
+                bar.update()
+                bar.refresh()
             hf.update(chunk)
             chunk = f.read(block_size)
-            progressbar.update()
-            progressbar.refresh()
 
-    progressbar.close()
+    if progressbar:
+        bar.update()
+        bar.refresh()
+        bar.close()
 
     return hf.hexdigest()
 

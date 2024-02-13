@@ -5,9 +5,10 @@ import pytest
 from ckool import HASH_TYPE, OVERWRITE_FILE_STATS, TEMPORARY_DIRECTORY
 from ckool.parallel_runner import ParallelRunner, ParallelType
 from ckool.templates import (
+    build_start_conditions_for_parallel_runner,
     collect_stats,
     compression_func,
-    upload_resource_file_via_api, build_start_conditions_for_parallel_runner,
+    upload_resource_file_via_api,
 )
 
 
@@ -127,12 +128,12 @@ def test_parallel_runner_realistic(
         compression_func.__name__: {
             "func": compression_func,
             "args": [],
-            "kwargs": {},
+            "kwargs": {"progressbar": False},
         },
         collect_stats.__name__: {
             "func": collect_stats,
             "args": [TEMPORARY_DIRECTORY, OVERWRITE_FILE_STATS, HASH_TYPE],
-            "kwargs": {},
+            "kwargs": {"progressbar": False},
         },
         upload_resource_file_via_api.__name__: {
             "func": upload_resource_file_via_api,
@@ -144,7 +145,7 @@ def test_parallel_runner_realistic(
                 },
                 ckan_envvars["test_package"],
             ],
-            "kwargs": {"progressbar": True},
+            "kwargs": {"progressbar": False},
         },
     }
 

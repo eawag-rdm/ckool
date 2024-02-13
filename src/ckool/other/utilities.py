@@ -88,5 +88,3 @@ def meta_default(
         "hash": hash_string,
         "size": file_size or filename.stat().st_size,
     }
-
-

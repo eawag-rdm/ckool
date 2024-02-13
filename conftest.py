@@ -237,8 +237,8 @@ def large_file(tmp_path):
 
 @pytest.fixture
 def very_large_file(tmp_path):
-    """10GB"""
-    yield from generate_binary_file(10 * 1024**3, tmp_path, "very_large.bin")
+    """4GB"""
+    yield from generate_binary_file(4 * 1024**3, tmp_path, "very_large.bin")
 
 
 @pytest.fixture

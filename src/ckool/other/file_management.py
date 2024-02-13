@@ -9,7 +9,6 @@ from zipfile import ZipFile
 from tqdm.auto import tqdm
 
 from ckool import TEMPORARY_DIRECTORY
-
 from ckool.other.caching import update_cache
 from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes
@@ -67,17 +66,19 @@ def zip_files(
     root_folder: pathlib.Path,
     archive_destination: pathlib.Path,
     files: list,
-    progressbar_position: int = None,
+    progressbar: bool = True,
 ) -> pathlib.Path:
-    progressbar = tqdm(
-        files, desc=f"Zipping {archive_destination.name}", position=progressbar_position
-    )
+    bar = None
+    if progressbar:
+        bar = tqdm(files, desc=f"Zipping {archive_destination.name}")
     with ZipFile(archive_destination.with_suffix(".zip"), mode="w") as _zip:
         for file in files:
             _zip.write(file, file.relative_to(root_folder))
-            progressbar.update()
-            progressbar.refresh()
-    progressbar.close()
+            if progressbar:
+                bar.update()
+                bar.refresh()
+    if progressbar:
+        bar.close()
     return archive_destination.with_suffix(".zip")
 
 
@@ -86,11 +87,11 @@ def tar_files(
     archive_destination: pathlib.Path,
     files: list,
     compression: Literal["gz", "bz2", "xz"] = "gz",
-    progressbar_position: int = None,
+    progressbar: bool = True,
 ) -> pathlib.Path:
-    progressbar = tqdm(
-        files, desc=f"Taring {archive_destination.name}", position=progressbar_position
-    )
+    bar = None
+    if progressbar:
+        bar = tqdm(files, desc=f"Taring {archive_destination.name}")
     with tarfile.open(
         archive_destination.with_suffix(f".tar.{compression}"), mode=f"w:{compression}"
     ) as tar:
@@ -101,7 +102,11 @@ def tar_files(
             )  # size needs to be set, otherwise 0 bytes will be read from each file
             with file.open("rb") as f:
                 tar.addfile(tarinfo, f)
-    progressbar.close()
+            if progressbar:
+                bar.update()
+                bar.refresh()
+    if progressbar:
+        bar.close()
     return archive_destination.with_suffix(f".tar.{compression}")
 
 
