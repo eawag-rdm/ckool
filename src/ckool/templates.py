@@ -82,7 +82,7 @@ def upload_resource_file_via_api(
         file_hash=metadata["hash"],
         file_size=metadata["size"],
         hash_type=metadata["hash_type"],
-        format=metadata["format"],
+        file_format=metadata["format"],
         progressbar=progressbar,
     )
 

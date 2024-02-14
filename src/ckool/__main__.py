@@ -16,6 +16,8 @@ from ckool.api import (
     _patch_package,
     _patch_resource,
     _prepare_package,
+    _publish_controlled_vocabulary,
+    _publish_organization,
     _publish_package,
     _upload_package,
     _upload_resource,
@@ -28,6 +30,11 @@ from .other.config_parser import (
     load_config,
     set_config_file_as_default,
 )
+
+# TODO: default should be ignore subfolders; add --include-sub-folders
+
+# TODO: publish organizations would be useful
+
 
 OPTIONS = {"config": {}, "verify": True, "ckan-instance": "None"}
 
@@ -124,6 +131,13 @@ def prepare_package(
     package_folder: str = typer.Argument(
         help="Folder that contain the package resources.",
     ),
+    include_sub_folders: bool = typer.Option(
+        None,
+        "--include-sub-folders",
+        "-isf",
+        help="By default, any folders in the package folder will be ignored. "
+        "If you provide this flag they will be included in the uploading process.",
+    ),
     compression_type: CompressionTypes = typer.Option(
         CompressionTypes.zip,
         "--compression-type",
@@ -155,25 +169,16 @@ def prepare_package(
         "-p",
         help="Use multiple threads/processes to handle job.",
     ),
-    workers: int = typer.Option(
-        None,
-        "--workers",
-        "-w",
-        help=(
-            "Parallel workers to use. Depending on the task these could be processes or threads. "
-            "If argument not provided the maximum available amount will be used."
-        ),
-    ),
 ):
     package_folder = pathlib.Path(package_folder)
     return _prepare_package(
         package_folder,
+        include_sub_folders,
         include_pattern,
         exclude_pattern,
         compression_type,
         hash_algorithm,
         parallel,
-        workers,
         OPTIONS["config"],
     )
 
@@ -185,6 +190,13 @@ def upload_package(
     ),
     package_folder: str = typer.Argument(
         help="Folder that contain the package resources.",
+    ),
+    include_sub_folders: bool = typer.Option(
+        None,
+        "--include-sub-folders",
+        "-isf",
+        help="By default, any folders in the package folder will be ignored. "
+        "If you provide this flag they will be included in the uploading process.",
     ),
     compression_type: CompressionTypes = typer.Option(
         "zip",
@@ -216,25 +228,16 @@ def upload_package(
         "-p",
         help="Use multiple threads/processes to handle job.",
     ),
-    workers: int = typer.Option(
-        None,
-        "--workers",
-        "-w",
-        help=(
-            "Parallel workers to use. Depending on the task these could be processes or threads. "
-            "If argument not provided the maximum available amount will be used."
-        ),
-    ),
 ):
     return _upload_package(
         package_name,
         package_folder,
+        include_sub_folders,
         compression_type,
         include_pattern,
         exclude_pattern,
         hash_algorithm,
         parallel,
-        workers,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
@@ -244,19 +247,23 @@ def upload_package(
 
 @create_app.command("resource")
 def upload_resource(
-    metadata_file: str = typer.Argument(
-        help="JSON file containing the metadata to create package with.",
+    package_name: str = typer.Argument(
+        help="Package name in CKAN.",
     ),
-    file: str = typer.Option(
-        None,
-        "--file",
-        "-f",
-        help="If you're uploading a file resource, please provide the filepath.",
+    filepath: str = typer.Argument(
+        help="Filepath to the resource to upload. The resource can be a file or a folder.",
+    ),
+    hash_algorithm: str = typer.Option(
+        "sha256",
+        "--hash-algorithm",
+        "-ha",
+        help="Which hash algorthm to use.",
     ),
 ):
     return _upload_resource(
-        metadata_file,
-        file,
+        package_name,
+        filepath,
+        hash_algorithm,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
@@ -284,22 +291,12 @@ def download_package(
         "-p",
         help="Use multiple threads/processes to handle job.",
     ),
-    workers: int = typer.Option(
-        None,
-        "--workers",
-        "-w",
-        help=(
-            "Parallel workers to use. Depending on the task these could be processes or threads. "
-            "If argument not provided the maximum available amount will be used."
-        ),
-    ),
 ):
     return _download_package(
         package_name,
         destination,
         chunk_size,
         parallel,
-        workers,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
@@ -493,6 +490,9 @@ def patch_datacite(
     )
 
 
+# TODO exclude resource flags comma separated list
+#  check hashes
+#  restricted sources can't be published by default
 @publish_app.command("package")
 def publish_package(
     package_name: str = typer.Argument(
@@ -516,6 +516,36 @@ def publish_package(
         package_name,
         check_data_integrity,
         track_progress,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+        OPTIONS["test"],
+    )
+
+
+@publish_app.command("organization")
+def publish_organization(
+    organization_name: str = typer.Argument(
+        help="Name of the organization to publish.",
+    ),
+):
+    return _publish_organization(
+        organization_name,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+        OPTIONS["test"],
+    )
+
+
+@publish_app.command("controlled_vocabulary")
+def publish_controlled_vocabulary(
+    organization_name: str = typer.Argument(
+        help="Name of the organization to publish.",
+    ),
+):
+    return _publish_controlled_vocabulary(
+        organization_name,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],

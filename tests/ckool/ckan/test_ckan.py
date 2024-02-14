@@ -4,9 +4,10 @@ import time
 import ckanapi
 import pytest
 
+from ckool import HASH_TYPE
 from ckool.other.hashing import get_hash_func
 
-hasher = get_hash_func("sha256")
+hasher = get_hash_func(HASH_TYPE)
 
 
 def _delete_resource_ids_and_times(data: dict):
@@ -52,6 +53,43 @@ def test_get_package_metadata_filtered(ckan_instance, ckan_envvars, ckan_setup_d
         ckan_envvars["test_package"], filter_fields=["maintainer", "author"]
     )
     assert len(data) == 2
+
+
+@pytest.mark.impure
+def test_reorder_package_resources(
+    tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
+):
+    files = [
+        tmp_path / "z.ending",
+        tmp_path / "az.txt",
+        tmp_path / "fsq.abc",
+        tmp_path / "ba.as.as.ds",
+    ]
+    for idx, f in enumerate(files):
+        f.write_text(f"file {idx}")
+        meta = {
+            "file": f,
+            "package_id": ckan_envvars["test_package"],
+            "file_size": f.stat().st_size,
+            "file_hash": hasher(f),
+            "file_format": f.suffix[1:],
+            "hash_type": HASH_TYPE,
+        }
+        ckan_instance.create_resource_of_type_file(**meta)
+    resource_names_initial = [
+        r["name"]
+        for r in ckan_instance.get_package(ckan_envvars["test_package"], ["resources"])[
+            "resources"
+        ]
+    ]
+    ckan_instance.reorder_package_resources(ckan_envvars["test_package"])
+    resource_names_ordered = [
+        r["name"]
+        for r in ckan_instance.get_package(ckan_envvars["test_package"], ["resources"])[
+            "resources"
+        ]
+    ]
+    assert sorted(resource_names_initial) == resource_names_ordered
 
 
 @pytest.mark.impure

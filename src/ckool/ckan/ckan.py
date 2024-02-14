@@ -189,7 +189,7 @@ class CKAN:
         file_size: int,
         citation: str = "",
         description: str = "",
-        format: str = "",
+        file_format: str = "",
         hash_type: str = "sha256",
         resource_type: str = "Dataset",
         restricted_level: str = "public",
@@ -208,8 +208,8 @@ class CKAN:
             file_size=file_size,
             citation=citation,
             description=description,
-            format=format,
-            hashtype=hash_type,
+            file_format=file_format,
+            hash_type=hash_type,
             resource_type=resource_type,
             restricted_level=restricted_level,
             state=state,
@@ -247,6 +247,24 @@ class CKAN:
         """
         return self.plain_action_call(
             "package_patch", id=package_name, doi=doi, citation=citation
+        )
+
+    def _update_package_resource_reorder(self, package_id, resource_ids: list):
+        return self.plain_action_call(
+            "package_resource_reorder", id=package_id, order=resource_ids
+        )
+
+    def reorder_package_resources(self, package_id, reverse=False):
+        resources = self.get_package(
+            package_name=package_id, filter_fields=["resources"]
+        )["resources"]
+        resource_ids = sorted(
+            [(r["id"], r["name"]) for r in resources],
+            reverse=reverse,
+            key=lambda x: x[1],
+        )
+        return self._update_package_resource_reorder(
+            package_id, [r[0] for r in resource_ids]
         )
 
     def update_linked_resource_url(self, resource_id, url):

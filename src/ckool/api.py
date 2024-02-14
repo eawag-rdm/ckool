@@ -20,16 +20,17 @@ from ckool.templates import get_upload_func
 #  currently upload will only start, when preparation is finished.
 
 
-# TODO adding additional resource metadata fields how?
+# TODO adding additional resource metadata fields how? Maybe via file
+#  Resource should be in alphabetical order how to set the order?
 def _upload_package(
     package_name: str,
     package_folder: str,
+    include_sub_folders: bool,
     compression_type: CompressionTypes,
     include_pattern: str,
     exclude_pattern: str,
     hash_algorithm: str,  # todo, MUST BE an enum
     parallel: bool,
-    workers: int,
     config: dict,
     ckan_instance: str,
     verify: bool,
@@ -41,7 +42,6 @@ def _upload_package(
     """
 
     section = "Production" if not test else "Test"
-
     package_folder = pathlib.Path(package_folder)
     hash_func = get_hash_func(hash_algorithm)
     compression_func = get_compression_func(compression_type)
@@ -61,7 +61,9 @@ def _upload_package(
                     progressbar=True,
                 )
                 update_cache(collect_metadata(file, hash_, hash_algorithm), cache_file)
-            elif folder := info["folder"]:  # folders are archived and then hashed
+            elif include_sub_folders and (
+                folder := info["folder"]
+            ):  # folders are archived and then hashed
                 archive = find_archive(folder["archive_destination"])
                 if not archive:
                     archive = compression_func(
@@ -128,29 +130,72 @@ def _upload_package(
 
 
 def _upload_resource(
-    metadata_file: str,
-    file: str,
+    package_name: str,
+    filepath: str,
+    hash_algorithm: str,
     config: dict,
     ckan_instance: str,
     verify: bool,
     test: bool,
 ):
-    """
-    Example calls here
-    """
-    # check if files hash and size are available
-    print(locals())
+    section = "Production" if not test else "Test"
+
+    filepath = pathlib.Path(filepath)
+    hash_func = get_hash_func(hash_algorithm)
+
+    if filepath.is_file():
+        if not (cache_file := stats_file(filepath, TEMPORARY_DIRECTORY)).exists():
+            hash_ = hash_func(
+                filepath=filepath,
+                block_size=HASH_BLOCK_SIZE,
+                progressbar=True,
+            )
+            update_cache(
+                metadata := collect_metadata(filepath, hash_, hash_algorithm),
+                cache_file,
+            )
+    else:
+        raise ValueError(
+            f"The filepath your specified '{filepath.as_posix()}' is not a file."
+        )
+
+    cfg_other = config_for_instance(config[section]["other"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api.update({"verify_certificate": verify})
+    cfg_secure_interface = config_for_instance(
+        config[section]["ckan_server"], ckan_instance
+    )
+
+    upload_func = get_upload_func(
+        file_sizes=[metadata["size"]],
+        space_available_on_server_root_disk=cfg_other[
+            "space_available_on_server_root_disk"
+        ],
+        parallel_upload=False,
+        factor=4.8,
+    )
+
+    upload_func(
+        ckan_api_input=cfg_ckan_api,
+        secure_interface_input=cfg_secure_interface,
+        ckan_storage_path=cfg_other["ckan_storage_path"],
+        package_name=package_name,
+        filepath=metadata["file"],
+        metadata=metadata,
+        empty_file_name="empty_file.empty",
+        progressbar=True,
+    )
     return
 
 
 def _prepare_package(
     package: pathlib.Path,
+    include_sub_folders: bool,
     include_pattern: str,
     exclude_pattern: str,
     compression_type: CompressionTypes,
     hash_algorithm: str,
     parallel: bool,
-    workers: int,
     config: dict,
 ):
     """
@@ -167,7 +212,6 @@ def _download_package(
     destination: str,
     chunk_size: int,
     parallel: bool,
-    workers: int,
     config: dict,
     ckan_instance: str,
     verify: bool,
@@ -297,6 +341,42 @@ def _publish_package(
     package_name: str,
     check_data_integrity: bool,
     track_progress: bool,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
+    # download package check data consistency
+
+    # upload package to eric open
+
+    # publish to datacite
+
+    # update published package
+    print(locals())
+    pass
+
+
+def _publish_organization(
+    organization_name: str,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
+    # download package check data consistency
+
+    # upload package to eric open
+
+    # publish to datacite
+
+    # update published package
+    print(locals())
+    pass
+
+
+def _publish_controlled_vocabulary(
+    organization_name: str,
     config: dict,
     ckan_instance: str,
     verify: bool,

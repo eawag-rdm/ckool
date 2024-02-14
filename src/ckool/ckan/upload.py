@@ -40,8 +40,8 @@ def upload_resource(
     file_size: int,
     citation: str = "",
     description: str = "",
-    format: str = "",
-    hashtype: str = "sha256",
+    file_format: str = "",
+    hash_type: str = "sha256",
     resource_type: str = "Dataset",
     restricted_level: str = "public",
     state: str = "active",
@@ -64,22 +64,21 @@ def upload_resource(
     """
     file_name = file_path.name
     with open(file_path, "rb") as file_stream:
-        print("FORMAT:", format)
         encoder = MultipartEncoder(
             fields={
                 "upload": (
                     file_name,
                     file_stream,
-                    format if format else "application/octet-stream",
+                    file_format if file_format else "application/octet-stream",
                 ),
                 "package_id": package_id,
                 "name": file_name,
-                "mimetype": "application/octet-stream",
+                # "mimetype": "application/octet-stream",  # this overwrites the format
                 "citation": citation,
                 "description": description,
-                "format": format,
+                "format": file_format,
                 "hash": file_hash,
-                "hashtype": hashtype,
+                "hashtype": hash_type,
                 "state": state,
                 "size": str(file_size),
                 "resource_type": resource_type,
