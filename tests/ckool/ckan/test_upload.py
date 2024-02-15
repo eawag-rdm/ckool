@@ -1,9 +1,10 @@
 import pytest
 
+from ckool import HASH_TYPE
 from ckool.ckan.upload import upload_resource
 from ckool.other.hashing import get_hash_func
 
-hasher = get_hash_func("sha256")
+hasher = get_hash_func(HASH_TYPE)
 
 
 @pytest.mark.impure
@@ -34,7 +35,7 @@ def test_upload_small_all_args(
         citation="text",
         description="text",
         file_format=".bin",
-        hash_type="sha256",
+        hash_type=HASH_TYPE,
         resource_type="Dataset",
         restricted_level="public",
         state="active",

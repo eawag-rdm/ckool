@@ -111,6 +111,7 @@ def ckan_envvars(load_env_file):
         "token": os.environ.get("CKAN_TOKEN"),
         "test_package": os.environ.get("CKAN_TEST_PACKAGE_NAME"),
         "test_organization": os.environ.get("CKAN_TEST_ORGANIZATION_NAME"),
+        "storage_path": os.environ.get("CKAN_STORAGE_PATH"),
     }
 
 
@@ -182,11 +183,6 @@ def ckan_setup_data(ckan_instance, ckan_envvars):
     setup(ckan_instance, ckan_envvars)
     yield
     teardown(ckan_instance, ckan_envvars)
-
-
-@pytest.fixture
-def ckan_test_package(load_env_file):
-    return os.environ["CKAN_TEST_PACKAGE_NAME"]
 
 
 @pytest.fixture

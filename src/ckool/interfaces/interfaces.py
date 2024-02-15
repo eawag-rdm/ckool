@@ -1,9 +1,9 @@
 import pathlib
-import sys
 from dataclasses import dataclass
 
 from paramiko import AutoAddPolicy, SSHClient
 from scp import SCPClient
+from tqdm.auto import tqdm
 
 from ckool.other.utilities import get_secret
 
@@ -76,17 +76,23 @@ class SecureInterface:
         self,
         local_filepath: str | pathlib.Path,
         remote_filepath: str | pathlib.Path,
-        show_progress: bool = False,
+        progressbar: bool = True,
     ):
         """To copy to remote host only"""
         local_filepath = to_pathlib(local_filepath)
         remote_filepath = to_pathlib(remote_filepath)
 
-        def progress4(filename, size, sent, peername):
-            sys.stdout.write(
-                "(%s:%s) %s's progress: %.2f%%   \r"
-                % (peername[0], peername[1], filename, float(sent) / float(size) * 100)
-            )
+        pbar = tqdm(
+            total=local_filepath.stat().st_size,
+            unit="B",
+            unit_scale=True,
+            desc="Uploading",
+            disable=not progressbar,
+        )
+
+        def progress(filename, size, sent, peername):
+            pbar.update(sent - pbar.n)
+            pbar.set_postfix_str("%.2f%%" % (float(sent) / float(size) * 100))
 
         with SSHClient() as ssh:
             ssh.load_system_host_keys()
@@ -100,9 +106,9 @@ class SecureInterface:
                 key_filename=self.ssh_key,
             )
 
-            kwargs = {} if not show_progress else {"progress4": progress4}
+            kwargs = {"progress4": progress} if progressbar else {}
             with SCPClient(ssh.get_transport(), **kwargs) as scp:
-                scp.put(local_filepath, remote_filepath.as_posix())
+                return scp.put(local_filepath, remote_filepath.as_posix())
 
         # TODO: add recursive uploads
         # Uploading the 'test' directory with its content in the

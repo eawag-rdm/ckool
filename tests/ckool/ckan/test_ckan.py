@@ -1,4 +1,3 @@
-import json
 import time
 
 import ckanapi
@@ -34,6 +33,9 @@ def test_get_all_packages(ckan_instance):
 @pytest.mark.impure
 def test_get_package(ckan_instance, ckan_envvars, ckan_setup_data, valid_outputs):
     data = ckan_instance.get_package(ckan_envvars["test_package"])
+    import json
+
+    print(json.dumps(data, indent=2))
     with (valid_outputs / "package_data_from_ckan.json").open() as f:
         right_data = json.load(f)
     assert _delete_resource_ids_and_times(data) == _delete_resource_ids_and_times(
@@ -55,7 +57,7 @@ def test_get_package_metadata_filtered(ckan_instance, ckan_envvars, ckan_setup_d
     assert len(data) == 2
 
 
-@pytest.mark.impure
+# @pytest.mark.impure
 def test_reorder_package_resources(
     tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
 ):
@@ -96,7 +98,7 @@ def test_reorder_package_resources(
 def test_get_package_metadata_filtered(
     tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
 ):
-    sha256 = get_hash_func("sha256")
+    sha256 = get_hash_func(HASH_TYPE)
     test_file = tmp_path / "test_file.ending"
     test_file.write_text("some text")
     ckan_instance.create_resource_of_type_file(
@@ -166,6 +168,21 @@ def test_get_local_resource_path(
         ckan_storage_path="/var/lib/ckan",
     )
     assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
+
+
+@pytest.mark.impure
+def test_resource_patch(ckan_instance, ckan_envvars, ckan_setup_data):
+    new_name = "new_name"
+    resource_id = ckan_instance.get_package(ckan_envvars["test_package"])["resources"][
+        0
+    ]["id"]
+    ckan_instance.patch_resource_metadata(
+        resource_id=resource_id, resource_data_to_update={"name": new_name}
+    )
+    name_in_ckan = ckan_instance.get_package(ckan_envvars["test_package"])["resources"][
+        0
+    ]["name"]
+    assert new_name == name_in_ckan
 
 
 @pytest.mark.impure
@@ -244,7 +261,7 @@ def test_resource_create_file_maximal(
             "file_hash": hasher(small_file),
             "citation": "Some text here",
             "description": "A very long description",
-            "format": small_file.suffix.strip("."),
+            "file_format": small_file.suffix.strip("."),
             "hash_type": "sha256",
             "resource_type": "Dataset",
             "restricted_level": "public",
@@ -276,14 +293,14 @@ def test_download_package_with_resources_sequential(
 
     st = time.time()
     downloaded_files_1 = ckan_instance.download_package_with_resources(
-        ckan_envvars["test_package"], destination=tmp_path, verify=False
+        ckan_envvars["test_package"], destination=tmp_path
     )
     en = time.time()
     print(f"Sequential download took {en-st}s.")
 
     st = time.time()
     downloaded_files_2 = ckan_instance.download_package_with_resources(
-        ckan_envvars["test_package"], destination=tmp_path, verify=False, parallel=True
+        ckan_envvars["test_package"], destination=tmp_path, parallel=True
     )
     en = time.time()
     print(f"Parallel download took {en-st}s.")

@@ -4,6 +4,8 @@ import sys
 from functools import wraps
 from subprocess import PIPE, CalledProcessError, run
 
+from ckool.other.types import HashTypes
+
 
 def get_secret(name):
     """first checking the 'environment variables' for the secret then checking 'pass' the password manager."""
@@ -90,7 +92,7 @@ def enrich_resource_metadata(
     }
 
 
-def collect_metadata(file: pathlib.Path, hash_: str, hash_type: str):
+def collect_metadata(file: pathlib.Path, hash_: str, hash_type: HashTypes):
     return {
         "file": str(file),
         "hash": hash_,

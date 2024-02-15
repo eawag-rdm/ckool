@@ -59,3 +59,23 @@ def test_scp(tmp_path, secure_interface_input_args):
 
     si.scp(file, "/tmp/test_file")
     assert md5(file) == si.ssh("md5sum /tmp/test_file")[0].split(" ")[0]
+
+
+@pytest.mark.slow
+@pytest.mark.impure
+def test_scp_large_with_progress(tmp_path, secure_interface_input_args, large_file):
+    si = SecureInterface(**secure_interface_input_args)
+
+    si.scp(large_file, "/tmp/test_file")
+    print(si.ssh("md5sum /tmp/test_file"))
+    assert md5(large_file) == si.ssh("md5sum /tmp/test_file")[0].split(" ")[0]
+
+
+@pytest.mark.slow
+@pytest.mark.impure
+def test_scp_large_without_progress(tmp_path, secure_interface_input_args, large_file):
+    si = SecureInterface(**secure_interface_input_args)
+
+    si.scp(large_file, "/tmp/test_file", progressbar=False)
+    print(si.ssh("md5sum /tmp/test_file"))
+    assert md5(large_file) == si.ssh("md5sum /tmp/test_file")[0].split(" ")[0]

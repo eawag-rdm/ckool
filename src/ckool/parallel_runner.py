@@ -3,7 +3,9 @@ import queue
 import threading
 import time
 import typing
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum
+from typing import Callable
 
 
 class ParallelType(str, Enum):
@@ -352,3 +354,30 @@ class ParallelRunner:
             self._run_process_worker(self.queue_multiprocessing)
 
         self._join_threads_and_processes()
+
+
+def map_function_with_threadpool(
+    func: Callable, args_list: list | None = None, kwargs_list: list[dict] | None = None
+) -> list:
+    """
+    Maps a function over arguments and keyword arguments using a ThreadPoolExecutor.
+
+    :param func: The function to be executed.
+    :param args_list: An iterable of tuples, each representing the positional arguments to `func`.
+    :param kwargs_list: An iterable of dictionaries, each representing the keyword arguments to `func`.
+    :return: A list containing the result of each function call.
+    """
+    if kwargs_list is None:
+        kwargs_list = [{}] * len(args_list)
+    if args_list is None:
+        args_list = [[]] * len(kwargs_list)
+
+    results = []
+    with ThreadPoolExecutor() as executor:
+        futures = [
+            executor.submit(func, *args, **kwargs)
+            for args, kwargs in zip(args_list, kwargs_list)
+        ]
+        for future in futures:
+            results.append(future.result())
+    return results

@@ -7,28 +7,28 @@ from requests_toolbelt.multipart.encoder import (
 )
 from tqdm.auto import tqdm
 
+from ckool.other.types import HashTypes
+
 
 class TqdmProgressCallback:
     def __init__(self, total_size, filename, progressbar: int = True):
         self.total_size = total_size
         self.filename = filename
         self.progressbar = progressbar
-        if progressbar:
-            self.bar = tqdm(
-                total=total_size,
-                unit="B",
-                unit_scale=True,
-                desc=f"Uploading {filename}",
-            )
+        self.bar = tqdm(
+            total=total_size,
+            unit="B",
+            unit_scale=True,
+            desc=f"Uploading {filename}",
+            disable=not progressbar,
+        )
 
     def __call__(self, monitor):
-        if self.progressbar:
-            self.bar.update(monitor.bytes_read - self.bar.n)
-            self.bar.refresh()
+        self.bar.update(monitor.bytes_read - self.bar.n)
+        self.bar.refresh()
 
     def close(self):
-        if self.progressbar:
-            self.bar.close()
+        self.bar.close()
 
 
 def upload_resource(
@@ -41,7 +41,7 @@ def upload_resource(
     citation: str = "",
     description: str = "",
     file_format: str = "",
-    hash_type: str = "sha256",
+    hash_type: HashTypes = HashTypes.sha256,
     resource_type: str = "Dataset",
     restricted_level: str = "public",
     state: str = "active",
@@ -78,7 +78,9 @@ def upload_resource(
                 "description": description,
                 "format": file_format,
                 "hash": file_hash,
-                "hashtype": hash_type,
+                "hashtype": hash_type
+                if isinstance(hash_type, str)
+                else hash_type.value,
                 "state": state,
                 "size": str(file_size),
                 "resource_type": resource_type,

@@ -22,7 +22,7 @@ from ckool.api import (
     _upload_package,
     _upload_resource,
 )
-from ckool.other.types import CompressionTypes
+from ckool.other.types import CompressionTypes, HashTypes
 
 from .other.config_parser import (
     generate_example_config,
@@ -142,7 +142,7 @@ def prepare_package(
         CompressionTypes.zip,
         "--compression-type",
         "-ct",
-        help="Available compression types are 'zip' and 'tar'.",
+        help="Default is zip.",
         case_sensitive=False,
     ),
     include_pattern: str = typer.Option(
@@ -157,11 +157,11 @@ def prepare_package(
         "-ep",
         help="Exclude files that follow a certain regex pattern. The default None will not exclude any files.",
     ),
-    hash_algorithm: str = typer.Option(
-        "sha256",
+    hash_algorithm: HashTypes = typer.Option(
+        HashTypes.sha256,
         "--hash-algorithm",
         "-ha",
-        help="Which hash algorthm to use.",
+        help="Default is sha256.",
     ),
     parallel: bool = typer.Option(
         False,
@@ -170,7 +170,6 @@ def prepare_package(
         help="Use multiple threads/processes to handle job.",
     ),
 ):
-    package_folder = pathlib.Path(package_folder)
     return _prepare_package(
         package_folder,
         include_sub_folders,
@@ -202,7 +201,7 @@ def upload_package(
         "zip",
         "--compression-type",
         "-ct",
-        help="[zip, tar] are available compression types.",
+        help="Default is zip.",
     ),
     include_pattern: str = typer.Option(
         None,
@@ -216,11 +215,11 @@ def upload_package(
         "-ep",
         help="Exclude files that follow a certain regex pattern. The default None will not exclude any files.",
     ),
-    hash_algorithm: str = typer.Option(
-        "sha256",
+    hash_algorithm: HashTypes = typer.Option(
+        HashTypes.sha256,
         "--hash-algorithm",
         "-ha",
-        help="Which hash algorthm to use.",
+        help="Default is sha256.",
     ),
     parallel: bool = typer.Option(
         False,
@@ -253,11 +252,11 @@ def upload_resource(
     filepath: str = typer.Argument(
         help="Filepath to the resource to upload. The resource can be a file or a folder.",
     ),
-    hash_algorithm: str = typer.Option(
-        "sha256",
+    hash_algorithm: HashTypes = typer.Option(
+        HashTypes.sha256,
         "--hash-algorithm",
         "-ha",
-        help="Which hash algorthm to use.",
+        help="Default is sha256.",
     ),
 ):
     return _upload_resource(
@@ -279,12 +278,6 @@ def download_package(
     destination: str = typer.Option(
         ".", "--destination", "-d", help="Where should the package be saved."
     ),
-    chunk_size: int = typer.Option(
-        8192,
-        "--chunk-size",
-        "-cs",
-        help="Chunk size to use for download [bytes].",
-    ),
     parallel: bool = typer.Option(
         False,
         "--parallel",
@@ -295,7 +288,6 @@ def download_package(
     return _download_package(
         package_name,
         destination,
-        chunk_size,
         parallel,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
@@ -310,26 +302,15 @@ def download_resource(
         help="URL of resource.",
     ),
     destination: str = typer.Option(
-        pathlib.Path.cwd(),
+        pathlib.Path.cwd().as_posix(),
         "--destination",
         "-d",
         help="Where should the resource be saved.",
-    ),
-    name: str = typer.Option(
-        None, "--name", "-n", help="Where should the resource be saved."
-    ),
-    chunk_size: int = typer.Option(
-        8192,
-        "--chunk-size",
-        "-cs",
-        help="Chunk size to use for download [bytes].",
     ),
 ):
     return _download_resource(
         url,
         destination,
-        name,
-        chunk_size,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
@@ -343,22 +324,22 @@ def download_resources(
         help="A file containing all urls that should be downloaded. Each one in a new line.",
     ),
     destination: str = typer.Option(
-        pathlib.Path.cwd(),
+        pathlib.Path.cwd().as_posix(),
         "--destination",
         "-d",
         help="Where should the resources be saved.",
     ),
-    chunk_size: int = typer.Option(
-        8192,
-        "--chunk-size",
-        "-cs",
-        help="Chunk size to use for download [bytes].",
+    parallel: bool = typer.Option(
+        False,
+        "--parallel",
+        "-p",
+        help="Use multiple threads/processes to handle job.",
     ),
 ):
     return _download_resources(
         url_file,
         destination,
-        chunk_size,
+        parallel,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
@@ -389,8 +370,16 @@ def download_metadata(
 
 
 @download_app.command("all_metadata")
-def download_all_metadata():
+def download_all_metadata(
+    include_private: str = typer.Option(
+        False,
+        "--include-private",
+        "-ip",
+        help="Also return private packages.",
+    ),
+):
     return _download_all_metadata(
+        include_private,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
@@ -403,34 +392,13 @@ def patch_package(
     metadata_file: str = typer.Argument(
         help="JSON file containing the metadata to create package with.",
     ),
-    package_folder: str = typer.Argument(
-        help="Folder that contain the package resources.",
-    ),
-    parallel: bool = typer.Option(
-        False,
-        "--parallel",
-        "-p",
-        help="Use multiple threads/processes to handle job.",
-    ),
-    skip_prompt: bool = typer.Option(
-        False,
-        "--skip-prompt",
-        "-sp",
-        help="Do not ask which resources to overwrite. All resources with different local hashes will be uploaded.",
-    ),
-    recollect_file_stats: bool = typer.Option(
-        False,
-        "--recollect",
-        "-rc",
-        help="Recollect filestats (size, hash) for all files in package folder.",
+    package_name: str = typer.Argument(
+        help="Name of package you want to patch.",
     ),
 ):
     return _patch_package(
         metadata_file,
-        package_folder,
-        parallel,
-        skip_prompt,
-        recollect_file_stats,
+        package_name,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
@@ -465,9 +433,13 @@ def patch_metadata(
     metadata_file: str = typer.Argument(
         help="JSON file containing the metadata to create package with.",
     ),
+    package_name: str = typer.Argument(
+        help="Name of package you want to patch.",
+    ),
 ):
     return _patch_metadata(
         metadata_file,
+        package_name,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],

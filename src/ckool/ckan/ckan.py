@@ -5,7 +5,9 @@ import pathlib
 import ckanapi
 import requests
 
+from ckool import EMPTY_FILE_NAME
 from ckool.ckan.upload import upload_resource
+from ckool.other.types import HashTypes
 from ckool.other.utilities import get_secret
 
 """
@@ -113,8 +115,28 @@ class CKAN:
     def get_project(self, project_name):
         return self.plain_action_call("group_show", id=project_name)
 
+    def get_organization(self, organization_name):
+        return self.plain_action_call("organization_show", id=organization_name)
+
     def get_user(self, username):
         return self.plain_action_call("group_show", id=username)
+
+    def create_project(self, **kwargs):
+        """CURL example
+
+        curl --insecure -X POST https://localhost:8443/api/3/action/organization_create \
+         -H "Content-Type: application/json" \
+         -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJEV1dtMzhzQ2ZkMk1ob2V5SmZ5ZjJ0dHRjOERIYjdEQ0pPUU93QXNSdGFYYjdDbC12THRtRlhFVTg5ZExGU096aUxWTjAxeXlvSUYwSEdLQiIsImlhdCI6MTcwNjE4NzEzMn0.3ki03QvUSKDi61cug2ooD0WL-ckVzwhnIIV1UlrgCAo" \
+         -d '{
+               "name": "test_organization",
+               "title": "Test_Organization",
+               "description": "This is my organization.",
+               "homepage": "https://www.eawag.ch/de/",
+               "datamanager": "ckan_admin",
+               "image_url": "https://www.techrepublic.com/wp-content/uploads/2017/03/meme05.jpg"
+             }'
+        """
+        return self.plain_action_call("project_create", **kwargs)
 
     def create_organization(self, **kwargs):
         """CURL example
@@ -190,7 +212,7 @@ class CKAN:
         citation: str = "",
         description: str = "",
         file_format: str = "",
-        hash_type: str = "sha256",
+        hash_type: HashTypes = HashTypes.sha256,
         resource_type: str = "Dataset",
         restricted_level: str = "public",
         state: str = "active",
@@ -220,6 +242,27 @@ class CKAN:
     def update_package_metadata(self, package_data: dict):
         """You must provide the full metadata"""
         return self.plain_action_call("package_update", **package_data)
+
+    def patch_resource_metadata(self, resource_id: str, resource_data_to_update: dict):
+        """You must provide the full metadata"""
+        resource_data_to_update.update({"id": resource_id})
+        return self.plain_action_call("resource_patch", **resource_data_to_update)
+
+    def path_empty_resource_name(
+        self,
+        package_name: str,
+        new_resource_name: str,
+        emtpy_resource_name: str = EMPTY_FILE_NAME,
+    ):
+        resource_id = [
+            r["id"]
+            for r in self.get_package(package_name)["resources"]
+            if r["name"] == emtpy_resource_name
+        ][0]
+
+        return self.patch_resource_metadata(
+            resource_id=resource_id, resource_data_to_update={"name": new_resource_name}
+        )
 
     def patch_package_metadata(self, package_name: str, package_data_to_update: dict):
         """You provide only the key-value-pairs you want to update"""
@@ -290,27 +333,21 @@ class CKAN:
     def download_resource(
         self,
         url: str,
-        destination_file_path: str | pathlib.Path,
+        destination: str | pathlib.Path,
         chunk_size=8192,
-        verify: bool = True,
     ):
-        return _download_resource(
-            url, self.token, destination_file_path, chunk_size, verify
-        )
+        return _download_resource(url, self.token, destination, chunk_size, self.verify)
 
     def _download_link_sequentially(
         self,
         links: list,
         destination: pathlib.Path,
         chunk_size=8192,
-        verify: bool = True,
     ):
         done = []
         for link in links:
             name = pathlib.Path(link).name
-            done.append(
-                self.download_resource(link, destination / name, chunk_size, verify)
-            )
+            done.append(self.download_resource(link, destination / name, chunk_size))
         return done
 
     @staticmethod
@@ -342,7 +379,6 @@ class CKAN:
         parallel: bool = False,
         max_workers: int = None,
         chunk_size: int = 8192,
-        verify: bool = True,
     ):
         """
         Significant performance differences can be seen for many large resources.
@@ -366,11 +402,13 @@ class CKAN:
                 destination,
                 max_workers=max_workers,
                 chunk_size=chunk_size,
-                verify=verify,
+                verify=self.verify,
             )
         else:
             files = self._download_link_sequentially(
-                resources_to_download, destination, chunk_size=chunk_size, verify=verify
+                resources_to_download,
+                destination,
+                chunk_size=chunk_size,
             )
 
         return files + [destination / "metadata.json"]

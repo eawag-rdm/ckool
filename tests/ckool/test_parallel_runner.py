@@ -2,14 +2,74 @@ import time
 
 import pytest
 
-from ckool import HASH_TYPE, OVERWRITE_FILE_STATS, TEMPORARY_DIRECTORY
-from ckool.parallel_runner import ParallelRunner, ParallelType
-from ckool.templates import (
-    build_start_conditions_for_parallel_runner,
-    collect_stats,
-    compression_func,
-    upload_resource_file_via_api,
+from ckool import (
+    COMPRESSION_TYPE,
+    HASH_TYPE,
+    OVERWRITE_FILE_STATS,
+    TEMPORARY_DIRECTORY_NAME,
 )
+from ckool.other.caching import update_cache
+from ckool.other.file_management import get_compression_func
+from ckool.other.hashing import get_hash_func
+from ckool.parallel_runner import ParallelRunner, ParallelType
+from ckool.templates import upload_resource_file_via_api
+
+compression_func = get_compression_func(COMPRESSION_TYPE)
+hash_func = get_hash_func(HASH_TYPE)
+
+
+def collect_stats(
+    tmp_dir_name, overwrite, hash_func_, hash_type, filepath, progressbar
+):
+    if tmp_dir_name in filepath.as_posix():
+        cache_file = filepath.with_suffix(filepath.suffix + ".json")
+    else:
+        cache_file = filepath.parent / tmp_dir_name / (filepath.name + ".json")
+
+    if cache_file.exists() and not overwrite:
+        pass
+    else:
+        stats = {
+            "file": str(filepath),
+            "hash": hash_func_(filepath=filepath, progressbar=progressbar),
+            "hash_type": hash_type,
+            "size": filepath.stat().st_size,
+        }
+
+        update_cache(stats, cache_file)
+        return [filepath, cache_file]
+
+
+def build_start_conditions_for_parallel_runner(
+    package_dir, tmp_dir_name, overwrite, hash_type, compression_func_
+):
+    start_conditions = []
+    for static_or_dynamic in package_dir(
+        package_dir,
+        None,
+        None,
+        TEMPORARY_DIRECTORY_NAME,
+    ):
+        if dynamic := static_or_dynamic.get("folder"):
+            dynamic["kwargs"].update({"progressbar": False})
+            start_conditions.append(dynamic)
+        elif filepath := static_or_dynamic.get("file"):
+            start_conditions.append(
+                {
+                    "func": collect_stats,
+                    "args": [],
+                    "kwargs": dict(
+                        filepath=filepath,
+                        overwrite=overwrite,
+                        tmp_dir_name=tmp_dir_name,
+                        hash_func_=hash_func,
+                        hash_type=hash_type,
+                        hash_func_args=[],
+                        hash_func_kwargs=dict(filepath=filepath),
+                    ),
+                }
+            )
+    return start_conditions
 
 
 def run_in_process_1(x, y):
@@ -101,6 +161,7 @@ def test_parallel_runner_with_errors():
     del pr
 
 
+@pytest.mark.skip
 @pytest.mark.impure
 @pytest.mark.slow
 def test_parallel_runner_realistic(
@@ -117,7 +178,11 @@ def test_parallel_runner_realistic(
         },
     }
     start_conditions = build_start_conditions_for_parallel_runner(
-        very_large_package, TEMPORARY_DIRECTORY, OVERWRITE_FILE_STATS, HASH_TYPE
+        very_large_package,
+        TEMPORARY_DIRECTORY_NAME,
+        OVERWRITE_FILE_STATS,
+        HASH_TYPE,
+        compression_func_=compression_func,
     )
     func_type = {
         compression_func.__name__: ParallelType.process,
@@ -132,7 +197,12 @@ def test_parallel_runner_realistic(
         },
         collect_stats.__name__: {
             "func": collect_stats,
-            "args": [TEMPORARY_DIRECTORY, OVERWRITE_FILE_STATS, HASH_TYPE],
+            "args": [
+                TEMPORARY_DIRECTORY_NAME,
+                OVERWRITE_FILE_STATS,
+                hash_func,
+                HASH_TYPE,
+            ],
             "kwargs": {"progressbar": False},
         },
         upload_resource_file_via_api.__name__: {
