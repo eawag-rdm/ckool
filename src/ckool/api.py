@@ -2,25 +2,20 @@ import pathlib
 
 from ckool import (
     DOWNLOAD_CHUNK_SIZE,
-    EMPTY_FILE_NAME,
     HASH_BLOCK_SIZE,
     TEMPORARY_DIRECTORY_NAME,
 )
 from ckool.ckan.ckan import CKAN
-from ckool.other.caching import read_cache, update_cache
+from ckool.other.caching import read_cache
 from ckool.other.config_parser import config_for_instance
 from ckool.other.file_management import (
-    find_archive,
     get_compression_func,
-    iter_files,
     iter_package,
-    stats_file,
 )
 from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
-from ckool.other.utilities import collect_metadata
 from ckool.parallel_runner import map_function_with_threadpool
-from ckool.templates import get_upload_func, handle_file, handle_upload, handle_folder
+from ckool.templates import handle_file, handle_folder, handle_upload
 
 
 # TODO adding additional resource metadata fields how? Maybe via file
@@ -89,7 +84,7 @@ def _upload_package(
             ckan_instance,
             verify,
             parallel,
-            progressbar=True
+            progressbar=True,
         )
     else:
         raise NotImplementedError("Parallel will be implemented soon.")
@@ -110,7 +105,6 @@ def _upload_resource(
     hash_func = get_hash_func(hash_algorithm)
 
     if filepath.is_file():
-
         handle_file(
             filepath,
             hash_func,
@@ -133,7 +127,7 @@ def _upload_resource(
         ckan_instance,
         verify,
         parallel=False,
-        progressbar=True
+        progressbar=True,
     )
 
 
@@ -390,7 +384,7 @@ def _patch_datacite(
 def _publish_package(
     package_name: str,
     check_data_integrity: bool,
-    track_progress: bool,
+    exclude_resources: list,
     config: dict,
     ckan_instance: str,
     verify: bool,
@@ -432,13 +426,6 @@ def _publish_controlled_vocabulary(
     verify: bool,
     test: bool,
 ):
-    # download package check data consistency
-
-    # upload package to eric open
-
-    # publish to datacite
-
-    # update published package
     print(locals())
     pass
 
@@ -455,12 +442,3 @@ def _delete_package(
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
     ckan.delete_package(package_id=package_name)
-
-
-def reserve_doi():
-    # package as input
-
-    # reserve doi
-    # save metadata locally
-
-    pass

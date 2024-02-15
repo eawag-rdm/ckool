@@ -1,22 +1,12 @@
 import pathlib
 from typing import Callable
 
-
-from ckool import (
-    EMPTY_FILE_NAME,
-    HASH_BLOCK_SIZE,
-    HASH_TYPE,
-    TEMPORARY_DIRECTORY_NAME,
-)
+from ckool import EMPTY_FILE_NAME, HASH_BLOCK_SIZE, HASH_TYPE, TEMPORARY_DIRECTORY_NAME
 from ckool.ckan.ckan import CKAN
 from ckool.interfaces.interfaces import SecureInterface
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
-from ckool.other.file_management import (
-    find_archive,
-    iter_files,
-    stats_file,
-)
+from ckool.other.file_management import find_archive, iter_files, stats_file
 from ckool.other.types import HashTypes
 from ckool.other.utilities import DataIntegrityError, collect_metadata, upload_via_api
 
@@ -203,7 +193,9 @@ def handle_folder(
     progressbar: bool = True,
 ):
     archive = archive_folder(folder, compression_func, progressbar)
-    handle_file(archive, hash_func, hash_algorithm, tmp_dir_name, block_size, progressbar)
+    handle_file(
+        archive, hash_func, hash_algorithm, tmp_dir_name, block_size, progressbar
+    )
 
 
 def handle_upload(

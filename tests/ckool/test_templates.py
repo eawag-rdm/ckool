@@ -210,7 +210,7 @@ def test_upload_func_chosen_scp(
     )
 
 
-# @pytest.mark.impure
+@pytest.mark.impure
 def test_hash_remote(
     tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_setup_data
 ):

@@ -57,7 +57,7 @@ def test_get_package_metadata_filtered(ckan_instance, ckan_envvars, ckan_setup_d
     assert len(data) == 2
 
 
-# @pytest.mark.impure
+@pytest.mark.impure
 def test_reorder_package_resources(
     tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
 ):

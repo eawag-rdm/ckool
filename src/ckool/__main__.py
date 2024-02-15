@@ -31,11 +31,6 @@ from .other.config_parser import (
     set_config_file_as_default,
 )
 
-# TODO: default should be ignore subfolders; add --include-sub-folders
-
-# TODO: publish organizations would be useful
-
-
 OPTIONS = {"config": {}, "verify": True, "ckan-instance": "None"}
 
 app = typer.Typer()
@@ -476,18 +471,19 @@ def publish_package(
         "-cdi",
         help="Check data integrity (hash) after download and upload, for each resource.",
     ),
-    track_progress: bool = typer.Option(
-        False,
-        "--track_progress",
-        "-tp",
-        help="Keep a record of the progress so that, "
-        "if some part of the operation fails, only outstanding operations will be resumed.",
+    exclude_resources: str = typer.Option(
+        None,
+        "--exclude-resources",
+        "-es",
+        help="Resource names to exclude from the publication process. Separate resource_names fields by comma. "
+        "If multiple resources in the package share the same name, resource_ids must be provided.",
     ),
 ):
+    exclude_resources = exclude_resources.split(",")
     return _publish_package(
         package_name,
         check_data_integrity,
-        track_progress,
+        exclude_resources,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],

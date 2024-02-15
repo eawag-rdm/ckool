@@ -1,4 +1,3 @@
-
 import pytest
 
 from ckool import TEMPORARY_DIRECTORY_NAME
