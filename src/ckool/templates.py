@@ -245,3 +245,6 @@ def handle_upload(
             empty_file_name=EMPTY_FILE_NAME,
             progressbar=progressbar,
         )
+
+    ckan_instance = CKAN(**cfg_ckan_api)
+    ckan_instance.reorder_package_resources(package_name)

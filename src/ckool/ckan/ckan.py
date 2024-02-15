@@ -16,6 +16,17 @@ https://docs.ckan.org/en/2.9/api/index.html#action-api-reference
 """
 
 
+def get_resource_key(resources: list, package_name: str, resource_name: str):
+    names, ids = [d["name"] for d in resources], [d["id"] for d in resources]
+
+    if len(set(names)) != len(names) and resource_name in names:
+        raise ValueError(
+            f"The resource name you provided '{resource_name}' is not unique in the package '{package_name}'. "
+            f"Please use the a resource id."
+        )
+    return "name" if resource_name in names else "id"
+
+
 def _download_resource(
     url: str,
     api_key: str,
@@ -92,9 +103,13 @@ class CKAN:
         self, package_name, resource_name, ckan_storage_path=""
     ):
         data = self.get_package(package_name, filter_fields=["resources"])
+        key = get_resource_key(data, package_name, resource_name)
 
-        resource = [r for r in data["resources"] if r["name"] == resource_name][0]
-        resource_id = resource.get("id")
+        if key == "name":
+            resource = [r for r in data["resources"] if r["key"] == resource_name][0]
+            resource_id = resource.get("id")
+        else:
+            resource_id = resource_name
 
         rsc_1, rsc_2, rsc_3 = resource_id[:3], resource_id[3:6], resource_id[6:]
         local_resource_path = f"{rsc_1}/{rsc_2}/{rsc_3}"
@@ -110,7 +125,8 @@ class CKAN:
 
     def get_resource_meta(self, package_name, resource_name):
         data = self.get_package(package_name, filter_fields=["resources"])
-        return [r for r in data["resources"] if r["name"] == resource_name][0]
+        key = get_resource_key(data, package_name, resource_name)
+        return [r for r in data["resources"] if r[key] == resource_name][0]
 
     def get_project(self, project_name):
         return self.plain_action_call("group_show", id=project_name)
@@ -297,9 +313,9 @@ class CKAN:
             "package_resource_reorder", id=package_id, order=resource_ids
         )
 
-    def reorder_package_resources(self, package_id, reverse=False):
+    def reorder_package_resources(self, package_name, reverse=False):
         resources = self.get_package(
-            package_name=package_id, filter_fields=["resources"]
+            package_name=package_name, filter_fields=["resources"]
         )["resources"]
         resource_ids = sorted(
             [(r["id"], r["name"]) for r in resources],
@@ -307,7 +323,7 @@ class CKAN:
             key=lambda x: x[1],
         )
         return self._update_package_resource_reorder(
-            package_id, [r[0] for r in resource_ids]
+            package_name, [r[0] for r in resource_ids]
         )
 
     def update_linked_resource_url(self, resource_id, url):

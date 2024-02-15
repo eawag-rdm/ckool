@@ -1,14 +1,14 @@
 import pathlib
 
 from ckool import DOWNLOAD_CHUNK_SIZE, HASH_BLOCK_SIZE, TEMPORARY_DIRECTORY_NAME
-from ckool.ckan.ckan import CKAN
-from ckool.other.caching import read_cache
+from ckool.ckan.ckan import CKAN, filter_resources, get_resource_key
+from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
 from ckool.other.file_management import get_compression_func, iter_package
 from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
 from ckool.parallel_runner import map_function_with_threadpool
-from ckool.templates import handle_file, handle_folder, handle_upload
+from ckool.templates import handle_file, handle_folder, handle_upload, hash_remote
 
 
 # TODO adding additional resource metadata fields how? Maybe via file
@@ -342,6 +342,60 @@ def _patch_resource(
     return
 
 
+def _patch_resource_hash(
+    package_name: str,
+    resource_name: str,
+    local_resource_path: str,
+    hash_algorithm: HashTypes,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
+    section = "Production" if not test else "Test"
+
+    cfg_other = config_for_instance(config[section]["other"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api.update({"verify_certificate": verify})
+    cfg_secure_interface = config_for_instance(
+        config[section]["ckan_server"], ckan_instance
+    )
+
+    ckan = CKAN(**cfg_ckan_api)
+
+    hash_rem = hash_remote(
+        ckan_api_input=cfg_ckan_api,
+        secure_interface_input=cfg_secure_interface,
+        ckan_storage_path=cfg_other["ckan_storage_path"],
+        package_name=package_name,
+        resource_name=resource_name,
+        hash_type=hash_algorithm,
+    )
+
+    if local_resource_path is not None:
+        local_resource_path = pathlib.Path(local_resource_path)
+        hash_func = get_hash_func(hash_algorithm)
+        hash_loc = hash_func(local_resource_path)
+        if hash_func != hash_loc:
+            raise ValueError(
+                f"The local file '{local_resource_path.as_posix()}' and the remote file do not have the same hash!\n"
+                f"local hash: '{hash_loc}'\n"
+                f"remote hash: '{hash_rem}'"
+            )
+
+    data = ckan.get_package(package_name)["resources"]
+    key = get_resource_key(data, package_name, resource_name)
+    if key == "id":
+        resource_id = resource_name
+    else:
+        resource_id = [d["id"] for d in data if d[key] == resource_name][0]
+
+    ckan.patch_resource_metadata(
+        resource_id=resource_id,
+        resource_data_to_update={"hash": hash_rem, "hashtype": hash_algorithm.value},
+    )
+
+
 def _patch_metadata(
     metadata_file: str,
     package_name: str,
@@ -377,13 +431,58 @@ def _patch_datacite(
 def _publish_package(
     package_name: str,
     check_data_integrity: bool,
-    exclude_resources: list,
+    exclude_resources: str,
+    parallel: bool,
     config: dict,
     ckan_instance: str,
     verify: bool,
     test: bool,
 ):
-    # download package check data consistency
+    (cwd := pathlib.Path.cwd() / TEMPORARY_DIRECTORY_NAME / package_name).mkdir(
+        exist_ok=True
+    )
+
+    exclude_resources = exclude_resources.split(",")
+
+    section = "Production" if not test else "Test"
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api.update({"verify_certificate": verify})
+
+    ckan = CKAN(**cfg_ckan_api)
+    metadata = ckan.get_package(package_name=package_name)
+
+    metadata_filtered = filter_resources(
+        metadata,
+        resources_to_exclude=exclude_resources,
+        always_to_exclude_restriction_levels=["only_allowed_users"],
+    )
+    # TODO: Must add check for .json.meta file in tmp dir, if it exists, the upload procedure is very different.
+    update_cache(
+        metadata_filtered, cache_file=(cwd / package_name).with_suffix(".json.meta")
+    )
+    temporary_resource_names = {}
+    if not parallel:
+        for resource in metadata_filtered["resources"]:
+            url = resource["url"]
+            id_ = resource["id"]
+            temporary_resource_names[id_] = f"{id_}-{pathlib.Path(url).name}"
+            downloaded_file = ckan.download_resource(
+                url=url, destination=(cwd / temporary_resource_names[id_])
+            )
+            if check_data_integrity:
+                if not resource["hash"]:
+                    raise ValueError(f"No hash value for resource '{url}' on CKAN!")
+
+                hash_func = get_hash_func(resource["hashtype"])
+                hash_local = hash_func(downloaded_file)
+                if hash_local != resource["hash"]:
+                    raise ValueError(
+                        f"Something went wrong. The hash value '{hash_local}' ('{resource['hashtype']}') of the "
+                        f"downloaded resource '{temporary_resource_names}' does not match the one "
+                        f"on CKAN '{resource['hash']}'."
+                    )
+        ...
+    # All these resources are intact Questions ( Should the resources always be downloaded again or should there be a hash_flag)
 
     # upload package to eric open
 

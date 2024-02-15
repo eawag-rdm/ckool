@@ -15,6 +15,7 @@ from ckool.api import (
     _patch_metadata,
     _patch_package,
     _patch_resource,
+    _patch_resource_hash,
     _prepare_package,
     _publish_controlled_vocabulary,
     _publish_organization,
@@ -423,6 +424,39 @@ def patch_resource(
     )
 
 
+@patch_app.command("resource_hash")
+def patch_resource_hash(
+    package_name: str = typer.Argument(
+        help="Name of package.",
+    ),
+    resource_name: str = typer.Argument(
+        help="Name of resource. If multiple resources with the same name exist, provide the id.",
+    ),
+    local_resource_path: str = typer.Option(
+        None,
+        "--local-resource-path",
+        "-lrp",
+        help="If provided a resource integrity check will be run. Without the resource will only be hashed remotely",
+    ),
+    hash_algorithm: HashTypes = typer.Option(
+        HashTypes.sha256,
+        "--hash-algorithm",
+        "-ha",
+        help="Default is sha256.",
+    ),
+):
+    return _patch_resource_hash(
+        package_name,
+        resource_name,
+        local_resource_path,
+        hash_algorithm,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+        OPTIONS["test"],
+    )
+
+
 @patch_app.command("metadata")
 def patch_metadata(
     metadata_file: str = typer.Argument(
@@ -478,12 +512,18 @@ def publish_package(
         help="Resource names to exclude from the publication process. Separate resource_names fields by comma. "
         "If multiple resources in the package share the same name, resource_ids must be provided.",
     ),
+    parallel: bool = typer.Option(
+        False,
+        "--parallel",
+        "-p",
+        help="Use multiple threads/processes to handle job.",
+    ),
 ):
-    exclude_resources = exclude_resources.split(",")
     return _publish_package(
         package_name,
         check_data_integrity,
         exclude_resources,
+        parallel,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
