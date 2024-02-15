@@ -79,7 +79,7 @@ def main(
         "Eric",
         "-ci",
         "--ckan-instance",
-        help="Which CKAN instance run API requests against.",
+        help="Which CKAN instance run API requests against. For publishing this will be the 'source' instance.",
     ),
     test: bool = typer.Option(False, "--test", help="Run commands on Test instances."),
 ):
@@ -89,6 +89,7 @@ def main(
         raise typer.Abort()
 
     OPTIONS["config"] = load_config(config_file)
+    OPTIONS["config"].update({"config_file_location": config_file.as_posix()})
     OPTIONS["verify"] = not no_verify
     OPTIONS["ckan-instance"] = ckan_instance
     OPTIONS["test"] = test
@@ -518,12 +519,20 @@ def publish_package(
         "-p",
         help="Use multiple threads/processes to handle job.",
     ),
+    ckan_instance_destination: str = typer.Option(
+        None,
+        "--ckan-instance-destination",
+        "-cid",
+        help="If more than 2 instances are defined in your .ckool.toml configuration file, "
+        "specify the instance to publish to.",
+    ),
 ):
     return _publish_package(
         package_name,
         check_data_integrity,
         exclude_resources,
         parallel,
+        ckan_instance_destination,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],

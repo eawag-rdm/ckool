@@ -85,7 +85,7 @@ def hash_remote(
     secure_interface_input: dict,
     ckan_storage_path: str,
     package_name: str,
-    resource_name: str,
+    resource_id_or_name: str,
     hash_type: HashTypes = HASH_TYPE,
 ):
     hash_type_map = {  # mapping the input one might expect to linux command
@@ -98,7 +98,7 @@ def hash_remote(
     si = SecureInterface(**secure_interface_input)
     ckan = CKAN(**ckan_api_input)
     filepath = ckan.get_local_resource_path(
-        package_name, resource_name, ckan_storage_path
+        package_name, resource_id_or_name, ckan_storage_path
     )
     out, err = si.ssh(
         f"{hash_type_map[hash_type if isinstance(hash_type, str) else hash_type.value]} {filepath}"
@@ -111,12 +111,12 @@ def resource_integrity_remote_intact(
     secure_interface_input: dict,
     ckan_storage_path: str,
     package_name: str,
-    resource_name: str,
+    resource_id_or_name: str,
 ):
     ckan = CKAN(**ckan_api_input)
     meta = ckan.get_resource_meta(
         package_name=package_name,
-        resource_name=resource_name,
+        resource_id_or_name=resource_id_or_name,
     )
     hash_local = meta["hash"]
     hash_remote_ = hash_remote(
@@ -124,7 +124,7 @@ def resource_integrity_remote_intact(
         secure_interface_input,
         ckan_storage_path,
         package_name,
-        resource_name,
+        resource_id_or_name,
         hash_type=meta["hashtype"],
     )
     if not hash_local == hash_remote_:
@@ -140,15 +140,15 @@ def resource_integrity_between_ckan_instances_intact(
     ckan_api_input_1: dict,
     ckan_api_input_2: dict,
     package_name: str,
-    resource_name: str,
+    resource_id_or_name: str,
 ):
     meta_1 = CKAN(**ckan_api_input_1).get_resource_meta(
         package_name=package_name,
-        resource_name=resource_name,
+        resource_id_or_name=resource_id_or_name,
     )
     meta_2 = CKAN(**ckan_api_input_2).get_resource_meta(
         package_name=package_name,
-        resource_name=resource_name,
+        resource_id_or_name=resource_id_or_name,
     )
     return meta_1["hash"] == meta_2["hash"]
 

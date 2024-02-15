@@ -18,7 +18,7 @@ hasher = get_hash_func(HASH_TYPE)
 def test_resource_integrity_between_ckan_instances_intact(
     tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
 ):
-    (f := tmp_path / "file.txt").write_text("test")
+    (f := tmp_path / "file_abc.txt").write_text("test")
     meta = {
         "file": f,
         "package_id": ckan_envvars["test_package"],
@@ -112,7 +112,7 @@ def test_upload_resource_file_via_scp(
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
         package_name=ckan_envvars["test_package"],
-        resource_name=f.name,
+        resource_id_or_name=f.name,
     )
 
 
@@ -159,7 +159,7 @@ def test_upload_func_chosen_api(
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
         package_name=ckan_envvars["test_package"],
-        resource_name=f.name,
+        resource_id_or_name=f.name,
     )
 
 
@@ -206,7 +206,7 @@ def test_upload_func_chosen_scp(
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
         package_name=ckan_envvars["test_package"],
-        resource_name=f.name,
+        resource_id_or_name=f.name,
     )
 
 
@@ -234,11 +234,11 @@ def test_hash_remote(
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
         package_name=ckan_envvars["test_package"],
-        resource_name=f.name,
+        resource_id_or_name=f.name,
     )
     hashed_locally = ckan_instance.get_resource_meta(
         package_name=ckan_envvars["test_package"],
-        resource_name=f.name,
+        resource_id_or_name=f.name,
     )["hash"]
 
     assert hashed_locally == hashed_remotely

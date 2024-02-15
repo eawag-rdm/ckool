@@ -1,6 +1,11 @@
 import pathlib
 
-from ckool import DOWNLOAD_CHUNK_SIZE, HASH_BLOCK_SIZE, TEMPORARY_DIRECTORY_NAME
+from ckool import (
+    DOWNLOAD_CHUNK_SIZE,
+    HASH_BLOCK_SIZE,
+    PACKAGE_META_DATA_FILE_ENDING,
+    TEMPORARY_DIRECTORY_NAME,
+)
 from ckool.ckan.ckan import CKAN, filter_resources, get_resource_key
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
@@ -433,19 +438,32 @@ def _publish_package(
     check_data_integrity: bool,
     exclude_resources: str,
     parallel: bool,
+    ckan_instance_destination: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_source: str,
     verify: bool,
     test: bool,
 ):
+    exclude_resources = exclude_resources.split(",")
     (cwd := pathlib.Path.cwd() / TEMPORARY_DIRECTORY_NAME / package_name).mkdir(
         exist_ok=True
     )
 
-    exclude_resources = exclude_resources.split(",")
-
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    instances = [i["instance"] for i in config[section]["ckan_api"]]
+
+    if ckan_instance_destination is None:
+        if len(instances) > 2 or len(instances) == 1:
+            raise ValueError(
+                f"Your configuration file '{config['config_file_location']}' "
+                f"contains more than 2 or less that 1 resources:\n{repr(instances)}."
+            )
+        instances.remove(ckan_instance_source)
+        ckan_instance_destination = instances[0]
+
+    cfg_ckan_api = config_for_instance(
+        config[section]["ckan_api"], ckan_instance_source
+    )
     cfg_ckan_api.update({"verify_certificate": verify})
 
     ckan = CKAN(**cfg_ckan_api)
@@ -457,9 +475,11 @@ def _publish_package(
         always_to_exclude_restriction_levels=["only_allowed_users"],
     )
     # TODO: Must add check for .json.meta file in tmp dir, if it exists, the upload procedure is very different.
-    update_cache(
-        metadata_filtered, cache_file=(cwd / package_name).with_suffix(".json.meta")
+    package_metadata_file = (cwd / package_name).with_suffix(
+        PACKAGE_META_DATA_FILE_ENDING
     )
+    update_cache(metadata_filtered, cache_file=package_metadata_file)
+
     temporary_resource_names = {}
     if not parallel:
         for resource in metadata_filtered["resources"]:
@@ -481,7 +501,8 @@ def _publish_package(
                         f"downloaded resource '{temporary_resource_names}' does not match the one "
                         f"on CKAN '{resource['hash']}'."
                     )
-        ...
+
+        package_metadata_file
     # All these resources are intact Questions ( Should the resources always be downloaded again or should there be a hash_flag)
 
     # upload package to eric open
