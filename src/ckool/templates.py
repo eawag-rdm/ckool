@@ -54,7 +54,7 @@ def upload_resource_file_via_scp(
 
     empty_file_location = ckan_instance.get_local_resource_path(
         package_name=package_name,
-        resource_name=empty_file_name,
+        resource_id_or_name=empty_file_name,
         ckan_storage_path=ckan_storage_path,
     )
 

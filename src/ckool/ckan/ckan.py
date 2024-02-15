@@ -27,6 +27,25 @@ def get_resource_key(resources: list, package_name: str, resource_name: str):
     return "name" if resource_name in names else "id"
 
 
+def resource_name_to_id(resources: list, package_name: str, resource_name_or_id: str):
+    names, ids = [d["name"] for d in resources], [d["id"] for d in resources]
+
+    if len(set(names)) != len(names) and resource_name_or_id in names:
+        raise ValueError(
+            f"The resource name you provided '{resource_name_or_id}' is not unique in the package '{package_name}'. "
+            f"Please use the a resource id."
+        )
+    if resource_name_or_id in names:
+        return [r["id"] for r in resources if r["name"] == resource_name_or_id][0]
+    elif resource_name_or_id in ids:
+        return resource_name_or_id
+    else:
+        raise ValueError(
+            f"Invalid resource_id or resource_name. The provided identifier '{resource_name_or_id}'"
+            f" is not present in the package '{package_name}'."
+        )
+
+
 def _download_resource(
     url: str,
     api_key: str,
@@ -65,6 +84,13 @@ class CKAN:
     def connection(self):
         return ckanapi.RemoteCKAN(self.server, apikey=self.token)
 
+    def resolve_resource_id_or_name_to_id(self, package_name, resource_id_or_name):
+        resources = self.get_package(package_name)["resources"]
+        return {
+            "id": resource_name_to_id(resources, package_name, resource_id_or_name),
+            "resources": resources,
+        }
+
     def plain_action_call(self, endpoint, **kwargs):
         with self.connection() as conn:
             return conn.call_action(
@@ -100,16 +126,11 @@ class CKAN:
         return data
 
     def get_local_resource_path(
-        self, package_name, resource_name, ckan_storage_path=""
+        self, package_name, resource_id_or_name, ckan_storage_path=""
     ):
-        data = self.get_package(package_name, filter_fields=["resources"])
-        key = get_resource_key(data, package_name, resource_name)
-
-        if key == "name":
-            resource = [r for r in data["resources"] if r["key"] == resource_name][0]
-            resource_id = resource.get("id")
-        else:
-            resource_id = resource_name
+        resource_id = self.resolve_resource_id_or_name_to_id(
+            package_name, resource_id_or_name
+        )["id"]
 
         rsc_1, rsc_2, rsc_3 = resource_id[:3], resource_id[3:6], resource_id[6:]
         local_resource_path = f"{rsc_1}/{rsc_2}/{rsc_3}"
@@ -123,10 +144,11 @@ class CKAN:
             ckan_storage_path += "/"
         return f"{ckan_storage_path}{local_resource_path}"
 
-    def get_resource_meta(self, package_name, resource_name):
-        data = self.get_package(package_name, filter_fields=["resources"])
-        key = get_resource_key(data, package_name, resource_name)
-        return [r for r in data["resources"] if r[key] == resource_name][0]
+    def get_resource_meta(self, package_name, resource_id_or_name):
+        resolved = self.resolve_resource_id_or_name_to_id(
+            package_name, resource_id_or_name
+        )
+        return [r for r in resolved["resources"] if r["id"] == resolved["id"]][0]
 
     def get_project(self, project_name):
         return self.plain_action_call("group_show", id=project_name)
@@ -270,14 +292,12 @@ class CKAN:
         new_resource_name: str,
         emtpy_resource_name: str = EMPTY_FILE_NAME,
     ):
-        resource_id = [
-            r["id"]
-            for r in self.get_package(package_name)["resources"]
-            if r["name"] == emtpy_resource_name
-        ][0]
-
+        resolved = self.resolve_resource_id_or_name_to_id(
+            package_name, emtpy_resource_name
+        )
         return self.patch_resource_metadata(
-            resource_id=resource_id, resource_data_to_update={"name": new_resource_name}
+            resource_id=resolved["id"],
+            resource_data_to_update={"name": new_resource_name},
         )
 
     def patch_package_metadata(self, package_name: str, package_data_to_update: dict):

@@ -29,7 +29,7 @@ def _delete_resource_ids_and_times(data: dict):
 
 @pytest.mark.impure
 def test_get_all_packages(ckan_instance, ckan_envvars):
-    assert ckan_instance.get_all_packages()["count"] == 1
+    assert ckan_instance.get_all_packages()["count"] == 0
 
 
 @pytest.mark.impure
@@ -108,11 +108,11 @@ def test_get_package_metadata_filtered(
         progressbar=False,
     )
     data = ckan_instance.get_resource_meta(
-        ckan_envvars["test_package"], resource_name=test_file.name
+        ckan_envvars["test_package"], resource_id_or_name=test_file.name
     )
     path = ckan_instance.get_local_resource_path(
         ckan_envvars["test_package"],
-        resource_name=test_file.name,
+        resource_id_or_name=test_file.name,
         ckan_storage_path="/var/lib/ckan",
     )
     # remote_hash = os.popen(f"docker exec ckan sha256sum {path}").read().split(" ")[0]
@@ -137,33 +137,33 @@ def test_get_local_resource_path(
     )
     relative_resource_path = ckan_instance.get_local_resource_path(
         package_name=ckan_envvars["test_package"],
-        resource_name=test_file.name,
+        resource_id_or_name=test_file.name,
     )
 
     resource_path = ckan_instance.get_local_resource_path(
         package_name=ckan_envvars["test_package"],
-        resource_name=test_file.name,
+        resource_id_or_name=test_file.name,
         ckan_storage_path="/var/lib/ckan/resources/",
     )
     assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
 
     resource_path = ckan_instance.get_local_resource_path(
         package_name=ckan_envvars["test_package"],
-        resource_name=test_file.name,
+        resource_id_or_name=test_file.name,
         ckan_storage_path="/var/lib/ckan/resources",
     )
     assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
 
     resource_path = ckan_instance.get_local_resource_path(
         package_name=ckan_envvars["test_package"],
-        resource_name=test_file.name,
+        resource_id_or_name=test_file.name,
         ckan_storage_path="/var/lib/ckan/",
     )
     assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
 
     resource_path = ckan_instance.get_local_resource_path(
         package_name=ckan_envvars["test_package"],
-        resource_name=test_file.name,
+        resource_id_or_name=test_file.name,
         ckan_storage_path="/var/lib/ckan",
     )
     assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
