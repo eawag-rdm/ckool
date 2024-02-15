@@ -412,3 +412,71 @@ class CKAN:
             )
 
         return files + [destination / "metadata.json"]
+
+
+def filter_resources(
+    package_metadata: dict,
+    resources_to_exclude: list,
+    always_to_exclude_restriction_levels=None,
+):
+    if always_to_exclude_restriction_levels is None:
+        always_to_exclude_restriction_levels = ["only_allowed_users"]
+
+    resources = package_metadata["resources"]
+
+    resources_filtered = []
+    resource_map = {resource["id"]: resource["name"] for resource in resources}
+
+    error_message = (
+        f"You may not provide a mixture of resource ids and resource names. You must use one or the other. "
+        f"You provided:\n{','.join(resources_to_exclude)}\n"
+        f"Package resources are:\n{json.dumps(resource_map, indent=2)}"
+    )
+
+    identifier_provided = None
+    for resource_to_exclude in resources_to_exclude:
+        found = False
+
+        if resource_to_exclude in resource_map.keys():
+            found = True
+            if identifier_provided == "name":
+                raise ValueError(error_message)
+            identifier_provided = "id"
+
+        if resource_to_exclude in resource_map.values():
+            found = True
+            if identifier_provided == "id":
+                raise ValueError(error_message)
+            identifier_provided = "name"
+
+        if not found:
+            raise ValueError(
+                f"The resource you provided to be excluded '{resource_to_exclude}' does not exist."
+            )
+
+    if (
+        len(resource_map.values()) != len(set(resource_map.values()))
+        and identifier_provided == "name"
+    ):
+        resource_names = sorted(list(resource_map.values()))
+        duplicates = set(
+            [
+                resource_names[i]
+                for i in range(len(resource_names))
+                if resource_names[i - 1] == resource_names[i]
+            ]
+        )
+        raise ValueError(
+            f"There are multiple resources with the same name '{duplicates}', please provide resource_ids."
+        )
+
+    for resource in resources:
+        if resource["restricted_level"] in always_to_exclude_restriction_levels:
+            continue
+        if resource[identifier_provided] in resources_to_exclude:
+            continue
+        resources_filtered.append(resource)
+
+    pmd = package_metadata.copy()
+    pmd["resources"] = resources_filtered
+    return pmd

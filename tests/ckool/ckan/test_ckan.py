@@ -1,9 +1,11 @@
+import json
 import time
 
 import ckanapi
 import pytest
 
 from ckool import HASH_TYPE
+from ckool.ckan.ckan import filter_resources
 from ckool.other.hashing import get_hash_func
 
 hasher = get_hash_func(HASH_TYPE)
@@ -26,16 +28,13 @@ def _delete_resource_ids_and_times(data: dict):
 
 
 @pytest.mark.impure
-def test_get_all_packages(ckan_instance):
-    assert ckan_instance.get_all_packages()
+def test_get_all_packages(ckan_instance, ckan_envvars):
+    assert ckan_instance.get_all_packages()["count"] == 1
 
 
 @pytest.mark.impure
 def test_get_package(ckan_instance, ckan_envvars, ckan_setup_data, valid_outputs):
     data = ckan_instance.get_package(ckan_envvars["test_package"])
-    import json
-
-    print(json.dumps(data, indent=2))
     with (valid_outputs / "package_data_from_ckan.json").open() as f:
         right_data = json.load(f)
     assert _delete_resource_ids_and_times(data) == _delete_resource_ids_and_times(
@@ -306,3 +305,69 @@ def test_download_package_with_resources_sequential(
     print(f"Parallel download took {en-st}s.")
     assert downloaded_files_1 == downloaded_files_2
     assert len(list(tmp_path.iterdir())) == 9
+
+
+@pytest.mark.impure
+def test_filter_resource(tmp_path, ckan_instance, ckan_envvars, ckan_setup_data):
+    for i in range(3):
+        (file := tmp_path / f"file_{i}.txt").write_text(f"{i}")
+        ckan_instance.create_resource_of_type_file(
+            **{
+                "file": file,
+                "package_id": ckan_envvars["test_package"],
+                "file_size": file.stat().st_size,
+                "file_hash": hasher(file),
+            },
+        )
+
+    data = ckan_instance.get_package(ckan_envvars["test_package"])
+    resource_ids = [i["id"] for i in data["resources"]]
+    resource_names = [i["name"] for i in data["resources"]]
+
+    assert filter_resources(data, resources_to_exclude=resource_ids)["resources"] == []
+    assert (
+        filter_resources(data, resources_to_exclude=resource_names)["resources"] == []
+    )
+    assert filter_resources(data, resources_to_exclude=resource_ids[1:])[
+        "resources"
+    ] == [data["resources"][0]]
+
+    with pytest.raises(ValueError):
+        filter_resources(data, resources_to_exclude=["undefined_name"])
+        filter_resources(
+            data, resources_to_exclude=[resource_ids[0], resource_names[0]]
+        )
+
+
+@pytest.mark.impure
+def test_filter_resource_requires_resource_ids(
+    tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
+):
+    for i in range(2):
+        (file := tmp_path / "file.txt").write_text(f"{i}")
+        ckan_instance.create_resource_of_type_file(
+            **{
+                "file": file,
+                "package_id": ckan_envvars["test_package"],
+                "file_size": file.stat().st_size,
+                "file_hash": hasher(file),
+            },
+        )
+        (file := tmp_path / "file_1.txt").write_text(f"1_{i}")
+        ckan_instance.create_resource_of_type_file(
+            **{
+                "file": file,
+                "package_id": ckan_envvars["test_package"],
+                "file_size": file.stat().st_size,
+                "file_hash": hasher(file),
+            },
+        )
+
+    data = ckan_instance.get_package(ckan_envvars["test_package"])
+    resource_ids = [i["id"] for i in data["resources"]]
+    resource_names = [i["name"] for i in data["resources"]]
+
+    assert filter_resources(data, resources_to_exclude=resource_ids)["resources"] == []
+
+    with pytest.raises(ValueError):
+        filter_resources(data, resources_to_exclude=resource_names)

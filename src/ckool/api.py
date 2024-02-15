@@ -1,17 +1,10 @@
 import pathlib
 
-from ckool import (
-    DOWNLOAD_CHUNK_SIZE,
-    HASH_BLOCK_SIZE,
-    TEMPORARY_DIRECTORY_NAME,
-)
+from ckool import DOWNLOAD_CHUNK_SIZE, HASH_BLOCK_SIZE, TEMPORARY_DIRECTORY_NAME
 from ckool.ckan.ckan import CKAN
 from ckool.other.caching import read_cache
 from ckool.other.config_parser import config_for_instance
-from ckool.other.file_management import (
-    get_compression_func,
-    iter_package,
-)
+from ckool.other.file_management import get_compression_func, iter_package
 from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
 from ckool.parallel_runner import map_function_with_threadpool
