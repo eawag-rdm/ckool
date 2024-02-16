@@ -7,6 +7,13 @@ from ckool import (
     TEMPORARY_DIRECTORY_NAME,
 )
 from ckool.ckan.ckan import CKAN, filter_resources, get_resource_key
+from ckool.ckan.publishing import (
+    any_missing_organization_projects_variables,
+    create_missing_organization_projects_variables,
+    get_missing_organization_projects_variables,
+    pre_publication_checks,
+)
+from ckool.datacite.doi_store import LocalDoiStore
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
 from ckool.other.file_management import get_compression_func, iter_package
@@ -436,6 +443,7 @@ def _patch_datacite(
 def _publish_package(
     package_name: str,
     check_data_integrity: bool,
+    create_missing_: bool,
     exclude_resources: str,
     parallel: bool,
     ckan_instance_destination: str,
@@ -450,6 +458,7 @@ def _publish_package(
     )
 
     section = "Production" if not test else "Test"
+    local_doi_store = config[section]["local_doi_store_path"]
     instances = [i["instance"] for i in config[section]["ckan_api"]]
 
     if ckan_instance_destination is None:
@@ -461,13 +470,22 @@ def _publish_package(
         instances.remove(ckan_instance_source)
         ckan_instance_destination = instances[0]
 
-    cfg_ckan_api = config_for_instance(
+    doi = LocalDoiStore(local_doi_store).get_doi_from_package(package_name)
+
+    cfg_ckan_source = config_for_instance(
         config[section]["ckan_api"], ckan_instance_source
     )
-    cfg_ckan_api.update({"verify_certificate": verify})
+    cfg_ckan_source.update({"verify_certificate": verify})
 
-    ckan = CKAN(**cfg_ckan_api)
-    metadata = ckan.get_package(package_name=package_name)
+    cfg_ckan_destination = config_for_instance(
+        config[section]["ckan_api"], ckan_instance_destination
+    )
+    cfg_ckan_destination.update({"verify_certificate": verify})
+
+    ckan_source = CKAN(**cfg_ckan_source)
+    ckan_destination = CKAN(**cfg_ckan_destination)
+
+    metadata = ckan_source.get_package(package_name=package_name)
 
     metadata_filtered = filter_resources(
         metadata,
@@ -486,7 +504,7 @@ def _publish_package(
             url = resource["url"]
             id_ = resource["id"]
             temporary_resource_names[id_] = f"{id_}-{pathlib.Path(url).name}"
-            downloaded_file = ckan.download_resource(
+            downloaded_file = ckan_source.download_resource(
                 url=url, destination=(cwd / temporary_resource_names[id_])
             )
             if check_data_integrity:
@@ -502,7 +520,25 @@ def _publish_package(
                         f"on CKAN '{resource['hash']}'."
                     )
 
-        package_metadata_file
+        # run checks
+        existing_and_missing_entities = pre_publication_checks(
+            ckan_instance_destination=ckan_destination,
+            package_metadata=metadata_filtered,
+        )
+
+        if create_missing_:
+            create_missing_organization_projects_variables(
+                cfg_ckan_destination, metadata_filtered, existing_and_missing_entities
+            )
+
+        elif any_missing_organization_projects_variables(existing_and_missing_entities):
+            missing = get_missing_organization_projects_variables(
+                existing_and_missing_entities
+            )
+            raise ValueError(
+                f"Publication can not continue. These entities are missing: {repr(missing)}"
+            )
+
     # All these resources are intact Questions ( Should the resources always be downloaded again or should there be a hash_flag)
 
     # upload package to eric open

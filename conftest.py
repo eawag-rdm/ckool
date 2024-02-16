@@ -111,6 +111,8 @@ def ckan_envvars(load_env_file):
         "token": os.environ.get("CKAN_TOKEN"),
         "test_package": os.environ.get("CKAN_TEST_PACKAGE_NAME"),
         "test_organization": os.environ.get("CKAN_TEST_ORGANIZATION_NAME"),
+        "test_project": os.environ.get("CKAN_TEST_GROUP_NAME"),
+        "test_resource": os.environ.get("CKAN_TEST_RESOURCE_NAME"),
         "storage_path": os.environ.get("CKAN_STORAGE_PATH"),
     }
 
@@ -125,9 +127,15 @@ def ckan_instance(ckan_envvars):
 
 
 def setup(ckan_instance, ckan_envvars):
-    organization_data.update({"name": f"{ckan_envvars['test_organization']}"})
-    package_data.update({"name": f"{ckan_envvars['test_package']}"})
-    resource_data.update({"package_id": f"{ckan_envvars['test_package']}"})
+    organization_data.update({"name": ckan_envvars["test_organization"]})
+    package_data.update({"name": ckan_envvars["test_package"]})
+    resource_data.update(
+        {
+            "package_id": ckan_envvars["test_package"],
+            "name": ckan_envvars["test_resource"],
+        }
+    )
+    project_data.update({"name": ckan_envvars["test_project"]})
     try:
         ckan_instance.create_organization(**organization_data)
     except ckanapi.ValidationError:
@@ -140,10 +148,18 @@ def setup(ckan_instance, ckan_envvars):
         ckan_instance.create_resource_of_type_link(**resource_data)
     except ckanapi.ValidationError:
         pass
+    try:
+        ckan_instance.create_project(**project_data)
+    except ckanapi.ValidationError:
+        pass
 
 
 def teardown(ckan_instance, ckan_envvars):
-    ckan_instance.delete_package(ckan_envvars["test_package"])
+    packages = ckan_instance.get_all_packages()["results"]
+    for package in packages:
+        ckan_instance.delete_package(package["id"])
+    ckan_instance.delete_project(ckan_envvars["test_project"])
+    ckan_instance.purge_group(ckan_envvars["test_project"])
     ckan_instance.delete_organization(ckan_envvars["test_organization"])
     ckan_instance.purge_organization(ckan_envvars["test_organization"])
 

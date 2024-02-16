@@ -1,5 +1,8 @@
 import pathlib
+import re
 import shutil
+
+from ckool import LOCAL_DOI_STORE_DOI_FILE_NAME, LOCAL_DOI_STORE_FOLDERS_TO_IGNORE
 
 
 def _iter_dir(path: pathlib.Path):
@@ -10,10 +13,30 @@ def _iter_dir(path: pathlib.Path):
             yield from _iter_dir(candidate)
 
 
+def retrieve_doi_from_doi_file(package_name: str, file: pathlib.Path):
+    content = file.read_text()
+    dois = re.findall(r"10\.[0-9]{5}/[0-9A-Z]{6}", content)
+    if len(set(dois)) > 1:
+        raise ValueError(
+            f"Conflicting dois for package '{package_name}' found in file '{file.as_posix()}':\n{set(dois)}"
+        )
+    if not dois:
+        raise ValueError(
+            f"No dois for package '{package_name}' found in file '{file.as_posix()}'."
+        )
+    return dois[0]
+
+
 class LocalDoiStore:
-    def __init__(self, path, top_folders_to_ignore=(".git")):
+    def __init__(
+        self,
+        path,
+        top_folders_to_ignore=LOCAL_DOI_STORE_FOLDERS_TO_IGNORE,
+        doi_file=LOCAL_DOI_STORE_DOI_FILE_NAME,
+    ):
         self.path = pathlib.Path(path)
         self.ignore = top_folders_to_ignore
+        self.doi_file = doi_file
         if not self.path.exists():
             raise ValueError(f"The path your provided '{path}' does not exist.")
 
@@ -39,6 +62,17 @@ class LocalDoiStore:
 
             basic_map[name][package].append("/".join(other))
         return basic_map
+
+    def get_doi_from_package(self, package_name):
+        found = False
+        for file in _iter_dir(self.path):
+            if package_name in file and file.name == self.doi_file:
+                return retrieve_doi_from_doi_file(package_name, file)
+
+        if not found:
+            raise FileNotFoundError(
+                f"No doi file '{self.doi_file}' for package '{package_name}' could be found."
+            )
 
     def write(
         self,
@@ -83,6 +117,7 @@ class LocalDoiStore:
 
         elif filename_content_map is not None:
             for filename, content in filename_content_map.items():
+                dst = pkg_path / filename
                 dst = pkg_path / filename
                 if not overwrite and dst.exists():
                     raise ValueError(

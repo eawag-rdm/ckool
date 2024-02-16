@@ -506,6 +506,12 @@ def publish_package(
         "-cdi",
         help="Check data integrity (hash) after download and upload, for each resource.",
     ),
+    create_missing: bool = typer.Option(
+        False,
+        "--create-missing",
+        "-cm",
+        help="Create missing Organization and Projects required.",
+    ),
     exclude_resources: str = typer.Option(
         None,
         "--exclude-resources",
@@ -530,6 +536,7 @@ def publish_package(
     return _publish_package(
         package_name,
         check_data_integrity,
+        create_missing,
         exclude_resources,
         parallel,
         ckan_instance_destination,

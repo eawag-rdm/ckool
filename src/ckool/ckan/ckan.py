@@ -151,13 +151,18 @@ class CKAN:
         return [r for r in resolved["resources"] if r["id"] == resolved["id"]][0]
 
     def get_project(self, project_name):
-        return self.plain_action_call("group_show", id=project_name)
+        return self.plain_action_call(
+            "group_show", id=project_name, include_datasets=True
+        )
 
     def get_organization(self, organization_name):
         return self.plain_action_call("organization_show", id=organization_name)
 
     def get_user(self, username):
         return self.plain_action_call("group_show", id=username)
+
+    def get_vocabulary(self):
+        return self.plain_action_call("vocabulary_list")
 
     def create_project(self, **kwargs):
         """CURL example
@@ -174,7 +179,7 @@ class CKAN:
                "image_url": "https://www.techrepublic.com/wp-content/uploads/2017/03/meme05.jpg"
              }'
         """
-        return self.plain_action_call("project_create", **kwargs)
+        return self.plain_action_call("group_create", **kwargs)
 
     def create_organization(self, **kwargs):
         """CURL example
@@ -352,6 +357,9 @@ class CKAN:
     def delete_resource(self, resource_id):
         return self.plain_action_call("resource_delete", id=resource_id)
 
+    def delete_project(self, project_id):
+        return self.plain_action_call("group_delete", id=project_id)
+
     def delete_package(self, package_id):
         return self.plain_action_call("package_delete", id=package_id)
 
@@ -360,6 +368,15 @@ class CKAN:
 
     def purge_organization(self, organization_id):
         return self.plain_action_call("organization_purge", id=organization_id)
+
+    def purge_group(self, group_id):
+        return self.plain_action_call("group_purge", id=group_id)
+
+    def add_package_to_project(self, package_name, project_name):
+        self.patch_package_metadata(
+            package_name=package_name,
+            package_data_to_update={"groups": [{"name": project_name}]},
+        )
 
     def delete_all_resources_from_package(self, package_name):
         pkg = self.get_package(package_name)

@@ -2,7 +2,6 @@ import json
 import pathlib
 
 
-
 def _write_cache(meta: dict, cache_file: pathlib.Path):
     with cache_file.open("w+") as cache:
         json.dump(meta, cache)
