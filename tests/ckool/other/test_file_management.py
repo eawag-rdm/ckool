@@ -54,7 +54,7 @@ def test_iter_files(tmp_path, my_package_dir):
         len(
             [
                 file.relative_to(tmp_path)
-                for file in iter_files(tmp_path, include_pattern="\.py")
+                for file in iter_files(tmp_path, include_pattern=r"\.py")
             ]
         )
         == 1
