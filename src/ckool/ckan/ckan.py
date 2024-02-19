@@ -250,12 +250,13 @@ class CKAN:
         self,
         file: str | pathlib.Path,
         package_id: str,
-        file_hash: str,
-        file_size: int,
+        hash: str,
+        size: int,
         citation: str = "",
         description: str = "",
-        file_format: str = "",
-        hash_type: HashTypes = HashTypes.sha256,
+        format: str = "",
+        name: str = None,
+        hashtype: HashTypes = HashTypes.sha256,
         resource_type: str = "Dataset",
         restricted_level: str = "public",
         state: str = "active",
@@ -269,12 +270,13 @@ class CKAN:
             package_id=package_id,
             ckan_url=self.server,
             api_key=self.token,
-            file_hash=file_hash,
-            file_size=file_size,
+            hash=hash,
+            size=size,
             citation=citation,
             description=description,
-            file_format=file_format,
-            hash_type=hash_type,
+            format=format,
+            name=name,
+            hashtype=hashtype,
             resource_type=resource_type,
             restricted_level=restricted_level,
             state=state,
@@ -369,7 +371,7 @@ class CKAN:
     def purge_organization(self, organization_id):
         return self.plain_action_call("organization_purge", id=organization_id)
 
-    def purge_group(self, group_id):
+    def purge_project(self, group_id):
         return self.plain_action_call("group_purge", id=group_id)
 
     def add_package_to_project(self, package_name, project_name):

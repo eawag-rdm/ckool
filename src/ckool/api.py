@@ -5,11 +5,15 @@ from ckool import (
     HASH_BLOCK_SIZE,
     PACKAGE_META_DATA_FILE_ENDING,
     TEMPORARY_DIRECTORY_NAME,
+    UPLOAD_FUNC_FACTOR,
 )
 from ckool.ckan.ckan import CKAN, filter_resources, get_resource_key
 from ckool.ckan.publishing import (
     any_missing_organization_projects_variables,
+    collect_missing_entity,
     create_missing_organization_projects_variables,
+    create_package_raw,
+    create_resource_raw,
     get_missing_organization_projects_variables,
     pre_publication_checks,
 )
@@ -19,8 +23,15 @@ from ckool.other.config_parser import config_for_instance
 from ckool.other.file_management import get_compression_func, iter_package
 from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
+from ckool.other.utilities import resource_is_link
 from ckool.parallel_runner import map_function_with_threadpool
-from ckool.templates import handle_file, handle_folder, handle_upload, hash_remote
+from ckool.templates import (
+    get_upload_func,
+    handle_file,
+    handle_folder,
+    handle_upload,
+    hash_remote,
+)
 
 
 # TODO adding additional resource metadata fields how? Maybe via file
@@ -482,6 +493,14 @@ def _publish_package(
     )
     cfg_ckan_destination.update({"verify_certificate": verify})
 
+    cfg_secure_interface_destination = config_for_instance(
+        config[section]["ckan_server"], ckan_instance_destination
+    )
+
+    cfg_other_destination = config_for_instance(
+        config[section]["other"], ckan_instance_destination
+    )
+
     ckan_source = CKAN(**cfg_ckan_source)
     ckan_destination = CKAN(**cfg_ckan_destination)
 
@@ -500,6 +519,8 @@ def _publish_package(
 
     temporary_resource_names = {}
     if not parallel:
+        metadata_filtered = read_cache(package_metadata_file)
+
         for resource in metadata_filtered["resources"]:
             url = resource["url"]
             id_ = resource["id"]
@@ -527,9 +548,17 @@ def _publish_package(
         )
 
         if create_missing_:
-            create_missing_organization_projects_variables(
-                cfg_ckan_destination, metadata_filtered, existing_and_missing_entities
-            )
+            if any_missing_organization_projects_variables(
+                existing_and_missing_entities
+            ):
+                for to_create in collect_missing_entity(
+                    ckan_source, existing_and_missing_entities
+                ):
+                    create_missing_organization_projects_variables(
+                        ckan_destination,
+                        **to_create,
+                        org_data_manager=cfg_other_destination["datamanager"],
+                    )
 
         elif any_missing_organization_projects_variables(existing_and_missing_entities):
             missing = get_missing_organization_projects_variables(
@@ -538,6 +567,42 @@ def _publish_package(
             raise ValueError(
                 f"Publication can not continue. These entities are missing: {repr(missing)}"
             )
+        # NOW ALL ENTITIES EXIST
+        if existing_and_missing_entities["missing"]["package"]:
+            created = create_package_raw(ckan_destination, metadata_filtered)
+
+            upload_func = get_upload_func(
+                file_sizes=[int(r["size"]) for r in metadata_filtered["resources"]],
+                space_available_on_server_root_disk=cfg_other_destination[
+                    "space_available_on_server_root_disk"
+                ],
+                parallel_upload=False,
+                factor=UPLOAD_FUNC_FACTOR,
+            )
+            # TODO temporary_resource_map needs_cache also.
+            for resource in metadata_filtered["resources"]:
+                filepath = cwd / temporary_resource_names[resource["id"]]
+
+                upload_func = get_upload_func(
+                    file_sizes=[int(r["size"]) for r in metadata_filtered["resources"]],
+                    space_available_on_server_root_disk=cfg_other_destination[
+                        "space_available_on_server_root_disk"
+                    ],
+                    parallel_upload=False,
+                    factor=UPLOAD_FUNC_FACTOR,
+                    is_link=resource_is_link(resource),
+                )
+
+                create_resource_raw(
+                    ckan_api_input=cfg_ckan_destination,
+                    secure_interface_input=cfg_secure_interface_destination,
+                    ckan_storage_path=cfg_other_destination["ckan_storage_path"],
+                    package_name=metadata_filtered["name"],
+                    metadata=resource,
+                    file_path=filepath,
+                    upload_func=upload_func,
+                    progressbar=True,
+                )
 
     # All these resources are intact Questions ( Should the resources always be downloaded again or should there be a hash_flag)
 

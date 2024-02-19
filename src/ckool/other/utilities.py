@@ -39,7 +39,10 @@ def partial(func, /, *args, **keywords):
 
 
 def upload_via_api(
-    file_sizes, space_available_on_server_root_disk, parallel_upload, factor: int = 4.8
+    file_sizes,
+    space_available_on_server_root_disk,
+    parallel_upload,
+    factor: float = 4.8,
 ):
     """
     This function is used to decide, if data should be uploaded via the API or via the hacky way.
@@ -100,3 +103,13 @@ def collect_metadata(file: pathlib.Path, hash_: str, hash_type: HashTypes):
         "size": file.stat().st_size,
         "format": file.suffix[1:],  # erasing the point from suffix
     }
+
+
+def resource_is_link(resource_metadata: dict):
+    link = True
+    if (
+        resource_metadata["url_type"] == "upload"
+        and pathlib.Path(resource_metadata["url"]).parent.name == "download"
+    ):  # the resource is a link
+        link = False
+    return link

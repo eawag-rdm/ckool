@@ -19,15 +19,15 @@ def test_resource_integrity_between_ckan_instances_intact(
     tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
 ):
     (f := tmp_path / "file_abc.txt").write_text("test")
-    meta = {
+    kwargs = {
         "file": f,
         "package_id": ckan_envvars["test_package"],
-        "file_size": f.stat().st_size,
-        "file_hash": hasher(f),
-        "file_format": f.suffix[1:],
-        "hash_type": HASH_TYPE,
+        "size": f.stat().st_size,
+        "hash": hasher(f),
+        "format": f.suffix[1:],
+        "hashtype": HASH_TYPE,
     }
-    ckan_instance.create_resource_of_type_file(**meta)
+    ckan_instance.create_resource_of_type_file(**kwargs)
 
     assert resource_integrity_between_ckan_instances_intact(
         {
@@ -54,7 +54,7 @@ def test_upload_resource_file_via_api(
         "size": f.stat().st_size,
         "hash": hasher(f),
         "format": f.suffix[1:],
-        "hash_type": HASH_TYPE,
+        "hashtype": HASH_TYPE,
     }
 
     upload_resource_file_via_api(
@@ -85,7 +85,7 @@ def test_upload_resource_file_via_scp(
         "size": f.stat().st_size,
         "hash": hasher(f),
         "format": f.suffix[1:],
-        "hash_type": HASH_TYPE,
+        "hashtype": HASH_TYPE,
     }
 
     ckan_input_args = {
@@ -117,7 +117,7 @@ def test_upload_resource_file_via_scp(
 
 
 @pytest.mark.impure
-def test_upload_func_chosen_api(
+def test_upload_func_chosen_api_file(
     tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_setup_data
 ):
     (f := tmp_path / "file.txt").write_text("test")
@@ -125,7 +125,7 @@ def test_upload_func_chosen_api(
         "size": f.stat().st_size,
         "hash": hasher(f),
         "format": f.suffix[1:],
-        "hash_type": HASH_TYPE,
+        "hashtype": HASH_TYPE,
     }
 
     upload = get_upload_func(
@@ -133,6 +133,7 @@ def test_upload_func_chosen_api(
         space_available_on_server_root_disk=1000 * 1024**2,
         parallel_upload=False,
         factor=2,
+        is_link=False,
     )
     ckan_input_args = {
         "token": ckan_instance.token,
@@ -172,7 +173,7 @@ def test_upload_func_chosen_scp(
         "size": f.stat().st_size,
         "hash": hasher(f),
         "format": f.suffix[1:],
-        "hash_type": HASH_TYPE,
+        "hashtype": HASH_TYPE,
     }
 
     upload = get_upload_func(
@@ -180,6 +181,7 @@ def test_upload_func_chosen_scp(
         space_available_on_server_root_disk=100 * 1024**2,
         parallel_upload=False,
         factor=2,
+        is_link=False,
     )
     ckan_input_args = {
         "token": ckan_instance.token,
@@ -218,10 +220,10 @@ def test_hash_remote(
     meta = {
         "file": f,
         "package_id": ckan_envvars["test_package"],
-        "file_size": f.stat().st_size,
-        "file_hash": hasher(f),
-        "file_format": f.suffix[1:],
-        "hash_type": HASH_TYPE,
+        "size": f.stat().st_size,
+        "hash": hasher(f),
+        "format": f.suffix[1:],
+        "hashtype": HASH_TYPE,
     }
     response = ckan_instance.create_resource_of_type_file(**meta)
     ckan_input_args = {

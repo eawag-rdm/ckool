@@ -1,7 +1,13 @@
 import pathlib
 from typing import Callable
 
-from ckool import EMPTY_FILE_NAME, HASH_BLOCK_SIZE, HASH_TYPE, TEMPORARY_DIRECTORY_NAME
+from ckool import (
+    EMPTY_FILE_NAME,
+    HASH_BLOCK_SIZE,
+    HASH_TYPE,
+    TEMPORARY_DIRECTORY_NAME,
+    UPLOAD_FUNC_FACTOR,
+)
 from ckool.ckan.ckan import CKAN
 from ckool.interfaces.interfaces import SecureInterface
 from ckool.other.caching import read_cache, update_cache
@@ -16,13 +22,16 @@ def upload_resource_file_via_api(
 ):
     ckan_instance = CKAN(**ckan_api_input)
     return ckan_instance.create_resource_of_type_file(
-        file=filepath,
-        package_id=package_name,
-        file_hash=metadata["hash"],
-        file_size=metadata["size"],
-        hash_type=metadata["hash_type"],
-        file_format=metadata["format"],
-        progressbar=progressbar,
+        file=filepath, package_id=package_name, progressbar=progressbar, **metadata
+    )
+
+
+def upload_resource_link_via_api(
+    ckan_api_input, package_name, metadata, *args, **kwargs
+):
+    ckan_instance = CKAN(**ckan_api_input)
+    return ckan_instance.create_resource_of_type_link(
+        package_id=package_name, **metadata
     )
 
 
@@ -44,12 +53,7 @@ def upload_resource_file_via_scp(
 
     ckan_instance = CKAN(**ckan_api_input)
     ckan_instance.create_resource_of_type_file(
-        file=empty,
-        package_id=package_name,
-        file_hash=metadata["hash"],
-        file_size=metadata["size"],
-        hash_type=metadata["hash_type"],
-        progressbar=False,
+        file=empty, package_id=package_name, progressbar=False, **metadata
     )
 
     empty_file_location = ckan_instance.get_local_resource_path(
@@ -63,8 +67,10 @@ def upload_resource_file_via_scp(
         remote_filepath=empty_file_location,
         progressbar=progressbar,
     )
+
+    new_resource_name = name if (name := metadata.get("name")) else filepath.name
     return ckan_instance.path_empty_resource_name(
-        package_name=package_name, new_resource_name=filepath.name
+        package_name=package_name, new_resource_name=new_resource_name
     )
 
 
@@ -72,9 +78,18 @@ def get_upload_func(
     file_sizes,
     space_available_on_server_root_disk,
     parallel_upload,
-    factor: float = 4.8,
+    factor: float = UPLOAD_FUNC_FACTOR,
+    is_link: bool = False,
 ):
-    if upload_via_api(**locals()):
+    if is_link:
+        return upload_resource_link_via_api
+
+    if upload_via_api(
+        file_sizes=file_sizes,
+        space_available_on_server_root_disk=space_available_on_server_root_disk,
+        parallel_upload=parallel_upload,
+        factor=factor,
+    ):
         return upload_resource_file_via_api
     else:
         return upload_resource_file_via_scp
@@ -232,7 +247,7 @@ def handle_upload(
             "space_available_on_server_root_disk"
         ],
         parallel_upload=parallel,
-        factor=4.8,
+        factor=UPLOAD_FUNC_FACTOR,
     )
     for meta in metadata_map.values():
         upload_func(

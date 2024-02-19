@@ -159,7 +159,7 @@ def teardown(ckan_instance, ckan_envvars):
     for package in packages:
         ckan_instance.delete_package(package["id"])
     ckan_instance.delete_project(ckan_envvars["test_project"])
-    ckan_instance.purge_group(ckan_envvars["test_project"])
+    ckan_instance.purge_project(ckan_envvars["test_project"])
     ckan_instance.delete_organization(ckan_envvars["test_organization"])
     ckan_instance.purge_organization(ckan_envvars["test_organization"])
 
@@ -180,8 +180,8 @@ def add_file_resources(tmp_path, ckan_instance, ckan_envvars):
                     package_id=ckan_envvars["test_package"],
                     ckan_url=ckan_envvars["host"],
                     api_key=ckan_envvars["token"],
-                    file_size=file.stat().st_size,
-                    file_hash="absd",
+                    size=file.stat().st_size,
+                    hash="absd",
                     resource_type="Dataset",
                     restricted_level="public",
                     verify=False,

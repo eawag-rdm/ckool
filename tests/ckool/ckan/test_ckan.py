@@ -76,10 +76,10 @@ def test_reorder_package_resources(
         meta = {
             "file": f,
             "package_id": ckan_envvars["test_package"],
-            "file_size": f.stat().st_size,
-            "file_hash": hasher(f),
-            "file_format": f.suffix[1:],
-            "hash_type": HASH_TYPE,
+            "size": f.stat().st_size,
+            "hash": hasher(f),
+            "format": f.suffix[1:],
+            "hashtype": HASH_TYPE,
         }
         ckan_instance.create_resource_of_type_file(**meta)
     resource_names_initial = [
@@ -108,8 +108,8 @@ def test_get_package_metadata_filtered(
     ckan_instance.create_resource_of_type_file(
         file=test_file,
         package_id=ckan_envvars["test_package"],
-        file_hash=sha256(test_file),
-        file_size=test_file.stat().st_size,
+        hash=sha256(test_file),
+        size=test_file.stat().st_size,
         progressbar=False,
     )
     data = ckan_instance.get_resource_meta(
@@ -136,8 +136,8 @@ def test_get_local_resource_path(
     ckan_instance.create_resource_of_type_file(
         file=test_file,
         package_id=ckan_envvars["test_package"],
-        file_hash="abc",
-        file_size=test_file.stat().st_size,
+        hash="abc",
+        size=test_file.stat().st_size,
         progressbar=False,
     )
     relative_resource_path = ckan_instance.get_local_resource_path(
@@ -247,8 +247,8 @@ def test_resource_create_file_minimal(
         **{
             "file": small_file,
             "package_id": ckan_envvars["test_package"],
-            "file_size": small_file.stat().st_size,
-            "file_hash": hasher(small_file),
+            "size": small_file.stat().st_size,
+            "hash": hasher(small_file),
         },
     )
 
@@ -261,12 +261,12 @@ def test_resource_create_file_maximal(
         **{
             "file": small_file,
             "package_id": ckan_envvars["test_package"],
-            "file_size": small_file.stat().st_size,
-            "file_hash": hasher(small_file),
+            "size": small_file.stat().st_size,
+            "hash": hasher(small_file),
             "citation": "Some text here",
             "description": "A very long description",
-            "file_format": small_file.suffix.strip("."),
-            "hash_type": "sha256",
+            "format": small_file.suffix.strip("."),
+            "hashtype": "sha256",
             "resource_type": "Dataset",
             "restricted_level": "public",
             "state": "active",
@@ -320,8 +320,8 @@ def test_filter_resource(tmp_path, ckan_instance, ckan_envvars, ckan_setup_data)
             **{
                 "file": file,
                 "package_id": ckan_envvars["test_package"],
-                "file_size": file.stat().st_size,
-                "file_hash": hasher(file),
+                "size": file.stat().st_size,
+                "hash": hasher(file),
             },
         )
 
@@ -354,8 +354,8 @@ def test_filter_resource_requires_resource_ids(
             **{
                 "file": file,
                 "package_id": ckan_envvars["test_package"],
-                "file_size": file.stat().st_size,
-                "file_hash": hasher(file),
+                "size": file.stat().st_size,
+                "hash": hasher(file),
             },
         )
         (file := tmp_path / "file_1.txt").write_text(f"1_{i}")
@@ -363,8 +363,8 @@ def test_filter_resource_requires_resource_ids(
             **{
                 "file": file,
                 "package_id": ckan_envvars["test_package"],
-                "file_size": file.stat().st_size,
-                "file_hash": hasher(file),
+                "size": file.stat().st_size,
+                "hash": hasher(file),
             },
         )
 
@@ -399,95 +399,3 @@ def test_add_package_to_project(ckan_instance, ckan_envvars, ckan_setup_data):
     )
     assert len(ckan_instance.get_project(ckan_envvars["test_project"])["packages"]) == 1
     assert len(ckan_instance.get_package(ckan_envvars["test_package"])["groups"]) == 1
-
-
-# @pytest.mark.skip
-# def test_package_creation(ckan_instance, ckan_envvars):
-#     data = {
-#         "author": [
-#             "ckan_admin"
-#         ],
-#         "author_email": "example@localhost.ch",
-#         "isopen": False,
-#         "license_id": None,
-#         "license_title": None,
-#         "maintainer": "ckan_admin",
-#         "maintainer_email": None,
-#         "metadata_created": "2024-02-16T08:40:31.384512",
-#         "metadata_modified": "2024-02-16T08:40:31.674098",
-#         "name": "test_package",
-#         "notes": "some_note",
-#         "num_resources": 1,
-#         "num_tags": 1,
-#         "organization": {
-#             "id": "86ba959a-434a-4262-b8c9-e6e85f466f51",
-#             "name": "test_organization",
-#             "title": "Test_Organization",
-#             "type": "organization",
-#             "description": "This is my organization.",
-#             "image_url": "https://www.techrepublic.com/wp-content/uploads/2017/03/meme05.jpg",
-#             "created": "2024-02-16T08:40:31.287509",
-#             "is_organization": True,
-#             "approval_status": "approved",
-#             "state": "active"
-#         },
-#         "owner_org": "86ba959a-434a-4262-b8c9-e6e85f466f51",
-#         "private": True,
-#         "publicationlink": "",
-#         "review_level": "none",
-#         "reviewed_by": "",
-#         "spatial": "{\"type\": \"Point\", \"coordinates\": [8.609776496939471, 47.40384502816517]}",
-#         "state": "active",
-#         "status": "incomplete",
-#         "tags_string": "some_tag",
-#         "timerange": [
-#             "*"
-#         ],
-#         "title": "Test_Package",
-#         "type": "dataset",
-#         "url": None,
-#         "usage_contact": "ckan_admin",
-#         "variables": [
-#             "none"
-#         ],
-#         "version": None,
-#         "resources": [
-#             {
-#                 "cache_last_updated": None,
-#                 "cache_url": None,
-#                 "created": "2024-02-16T08:40:31.680654",
-#                 "datastore_active": False,
-#                 "description": None,
-#                 "format": "JPEG",
-#                 "hash": "",
-#                 "id": "d613a3ca-5859-4f5b-ac75-eaec0216b126",
-#                 "last_modified": None,
-#                 "metadata_modified": "2024-02-16T08:40:31.677822",
-#                 "mimetype": "image/jpeg",
-#                 "mimetype_inner": None,
-#                 "name": "test_resource_link",
-#                 "package_id": "de7bb307-f95d-4d92-ab4f-4741934b4790",
-#                 "position": 0,
-#                 "resource_type": "Dataset",
-#                 "restricted_level": "public",
-#                 "size": None,
-#                 "state": "active",
-#                 "url": "https://static.demilked.com/wp-content/uploads/2021/07/60ed37b256b80-it-rage-comics-memes-reddit-60e6fee1e7dca__700.jpg",
-#                 "url_type": None
-#             }
-#         ],
-#         "tags": [
-#             {
-#                 "display_name": "some_tag",
-#                 "id": "817c946f-d18e-493a-a2b7-ff22d1e4d650",
-#                 "name": "some_tag",
-#                 "state": "active",
-#                 "vocabulary_id": None
-#             }
-#         ],
-#         "groups": [],
-#         "relationships_as_subject": [],
-#         "relationships_as_object": []
-#     }
-#
-#     ckan_instance.create_package(**data)

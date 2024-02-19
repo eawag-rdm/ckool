@@ -36,12 +36,13 @@ def upload_resource(
     package_id: str,
     ckan_url: str,
     api_key: str,
-    file_hash: str,
-    file_size: int,
+    hash: str,
+    size: int,
     citation: str = "",
     description: str = "",
-    file_format: str = "",
-    hash_type: HashTypes = HashTypes.sha256,
+    format: str = "",
+    name: str = None,
+    hashtype: HashTypes = HashTypes.sha256,
     resource_type: str = "Dataset",
     restricted_level: str = "public",
     state: str = "active",
@@ -69,26 +70,24 @@ def upload_resource(
                 "upload": (
                     file_name,
                     file_stream,
-                    file_format if file_format else "application/octet-stream",
+                    format if format else "application/octet-stream",
                 ),
                 "package_id": package_id,
-                "name": file_name,
+                "name": file_name if name is None else name,
                 # "mimetype": "application/octet-stream",  # this overwrites the format
                 "citation": citation,
                 "description": description,
-                "format": file_format,
-                "hash": file_hash,
-                "hashtype": hash_type
-                if isinstance(hash_type, str)
-                else hash_type.value,
+                "format": format,
+                "hash": hash,
+                "hashtype": hashtype if isinstance(hashtype, str) else hashtype.value,
                 "state": state,
-                "size": str(file_size),
+                "size": str(size),
                 "resource_type": resource_type,
                 "restricted_level": restricted_level,
             }
         )
 
-        progress_callback = TqdmProgressCallback(file_size, file_name, progressbar)
+        progress_callback = TqdmProgressCallback(size, file_name, progressbar)
         monitor = MultipartEncoderMonitor(encoder, progress_callback)
 
         headers = {"Authorization": api_key, "Content-Type": monitor.content_type}

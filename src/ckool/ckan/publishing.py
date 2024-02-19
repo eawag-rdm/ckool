@@ -1,7 +1,9 @@
+from copy import deepcopy
 from typing import Callable
 
 import ckanapi.errors
 
+from ckool import EMPTY_FILE_NAME
 from ckool.ckan.ckan import CKAN
 
 
@@ -53,6 +55,8 @@ def pre_publication_checks(ckan_instance_destination: CKAN, package_metadata: di
             if r["name"] in resources_on_destination:
                 flag = "exist"
             results[flag]["resources"].append(r["name"])
+    else:
+        results["missing"]["resources"] = names["resources"]
 
     # Check if organization exists
     _ = check_existence(
@@ -96,30 +100,138 @@ def any_missing_organization_projects_variables(existing_and_missing_entities):
     )
 
 
-def create_missing_organization():
-    ...
+def create_organization_raw(
+    ckan_instance_destination: CKAN, data: dict, datamanager: str
+):
+    org = deepcopy(data)
+    del org["id"]
+    del org["created"]
+    del org["package_count"]
+    del org["num_followers"]
+    del org["users"]
+    org["datamanager"] = datamanager
+    return ckan_instance_destination.create_organization(**org)
 
 
-def create_missing_project():
-    ...
+def create_project_raw(ckan_instance_destination: CKAN, data: dict):
+    proj = deepcopy(data)
+    del proj["id"]
+    del proj["created"]
+    del proj["package_count"]
+    del proj["num_followers"]
+    del proj["users"]
+    return ckan_instance_destination.create_project(**proj)
 
 
 def create_missing_variables():
     print("The creation of missing variables is not implemented yet.")
 
 
-def create_missing_resources():
-    """This will requires it's own ckan instance, when parallel task"""
-    ...
+def create_package_raw(
+    ckan_instance_destination: CKAN,
+    data: dict,
+    new_maintainer: str = None,
+    new_usage_contact: str = None,
+):
+    pkg = deepcopy(data)
+    org_name = pkg["organization"]["name"]
+    org_id = ckan_instance_destination.get_organization(org_name)["id"]
+    proj_names = [group["name"] for group in pkg["groups"]]
+    proj_ids = [
+        {"id": ckan_instance_destination.get_project(name)["id"]} for name in proj_names
+    ]
+    pkg["owner_org"] = org_id
+    pkg["groups"] = proj_ids
+    for name in [
+        "id",
+        "resources",
+        "organization",
+        "creator_user_id",
+        "metadata_created",
+        "metadata_modified",
+        "num_resources",
+    ]:
+        del pkg[name]
+
+    if new_maintainer:
+        pkg["maintainer"] = new_maintainer
+    if new_usage_contact:
+        pkg["usage_contact"] = new_usage_contact
+
+    return ckan_instance_destination.create_package(**pkg)
+
+
+def create_resource_raw(
+    ckan_api_input: dict,
+    secure_interface_input: dict,
+    ckan_storage_path: str,
+    package_name: str,
+    metadata: dict,
+    file_path: str,
+    upload_func: Callable,
+    empty_file_name: str = EMPTY_FILE_NAME,
+    progressbar: bool = True,
+    is_link: bool = False,
+):
+    data = deepcopy(metadata)
+    for field in [
+        "id",
+        "created",
+        "position",
+        "last_modified",
+        "metadata_modified",
+        "package_id",
+        "cache_last_updated",
+        "cache_url",
+        "datastore_active",
+        "mimetype",
+        "mimetype_inner",
+    ]:
+        del data[field]
+
+    if not is_link:
+        del data["url"]
+        del data["url_type"]
+
+    return upload_func(
+        ckan_api_input=ckan_api_input,
+        secure_interface_input=secure_interface_input,
+        ckan_storage_path=ckan_storage_path,
+        package_name=package_name,
+        filepath=file_path,
+        metadata=data,
+        empty_file_name=empty_file_name,
+        progressbar=progressbar,
+    )
+
+
+def collect_missing_entity(
+    ckan_instance_source: CKAN, existing_and_missing_entities: dict
+):
+    for name in existing_and_missing_entities["missing"]["projects"]:
+        yield {"entity": "project", "data": ckan_instance_source.get_project(name)}
+    for name in existing_and_missing_entities["missing"]["organization"]:
+        yield {
+            "entity": "organization",
+            "data": ckan_instance_source.get_organization(name),
+        }
 
 
 def create_missing_organization_projects_variables(
-    ckan_instance_destination_args: dict,
-    package_metadata: dict,
-    existing_and_missing_entities: dict,
+    ckan_instance_destination: CKAN, entity: str, data: dict, org_data_manager: str
 ):
-    create_missing_organization()
-    create_missing_project()
+    created = []
+    if entity.startswith("organization"):
+        created.append(
+            {
+                "organization": create_organization_raw(
+                    ckan_instance_destination, data, org_data_manager
+                )
+            }
+        )
+    elif entity.startswith("project"):
+        created.append({"project": create_project_raw(ckan_instance_destination, data)})
+    return created
 
 
 def update_existing(existing_and_missing_entities):
