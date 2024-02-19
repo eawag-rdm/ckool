@@ -4,7 +4,7 @@ import re
 import sys
 from datetime import datetime
 
-from ..interfaces.dora import Dora
+from ckool.interfaces.dora import Dora
 
 PUBLISHER = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"
 DEFAULT_AFFILIATION = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"
@@ -142,7 +142,7 @@ class MetaDataFormatter:
 
     def xs_creators(self):
         # distinction between personal name and organization name as author
-        def get_nametype(author):
+        def get_name_type(author):
             if "," in author:
                 return "Personal"
             else:
@@ -180,7 +180,7 @@ class MetaDataFormatter:
                 first = rest
             last = last.strip()
             first = first.strip()
-            return (first, last, email)
+            return first, last, email
 
         def add_orcid(first, last, creator):
             orcid = self.orcids.get(f"{last}, {first}")
@@ -207,19 +207,19 @@ class MetaDataFormatter:
 
         # main loop starts here
         creators = {"creators": []}
-        for author in self.package_metadata["author"]:
-            namtype = get_nametype(author)
-            if namtype == "Organizational":
-                creator = [
-                    {"creatorName": {"val": author, "att": {"nameType": namtype}}}
+        for _author in self.package_metadata["author"]:
+            name_type = get_name_type(_author)
+            if name_type == "Organizational":
+                _creator = [
+                    {"creatorName": {"val": _author, "att": {"nameType": name_type}}}
                 ]
             else:
-                first, last, email = split_author(author)
-                creator = mk_creator(first, last)
-                creator = add_orcid(first, last, creator)
-                creator = add_affiliation(first, last, creator)
+                _first, _last, _email = split_author(_author)
+                _creator = mk_creator(_first, _last)
+                _creator = add_orcid(_first, _last, _creator)
+                _creator = add_affiliation(_first, _last, _creator)
 
-            creators["creators"].append({"creator": creator})
+            creators["creators"].append({"creator": _creator})
 
         self.output["resource"].append(creators)
 
@@ -353,7 +353,7 @@ class MetaDataFormatter:
         else:
             publicationlink = self.package_metadata.get("publicationlink")
             if publicationlink:
-                paperdoi = Dora._doi_from_publicationlink(publicationlink)
+                paperdoi = Dora.doi_from_publication_link(publicationlink)
                 relatedIdentifiers += [
                     {
                         "relatedIdentifier": {
