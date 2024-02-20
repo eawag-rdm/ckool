@@ -1,4 +1,3 @@
-import json
 from copy import deepcopy
 from typing import Callable
 
@@ -156,12 +155,11 @@ def format_package_metadata_raw(
         {"id": ckan_instance_destination.get_project(name)["id"]} for name in proj_names
     ]
     maintainer_record = ckan_instance_destination.get_user(pkg["maintainer"])
-    usage_contact_record = ckan_instance_destination.get_user(
-        pkg["usage_contact"]
-    )
+    usage_contact_record = ckan_instance_destination.get_user(pkg["usage_contact"])
 
     pkg["owner_org"] = org_id
     pkg["groups"] = proj_ids
+    fields = pkg.keys()
     for name in [
         "id",
         "resources",
@@ -171,7 +169,8 @@ def format_package_metadata_raw(
         "metadata_modified",
         "num_resources",
     ]:
-        del pkg[name]
+        if name in fields:
+            del pkg[name]
 
     if prepare_for_publication and not doi:
         raise ValueError(
@@ -201,9 +200,8 @@ def create_package_raw(
         data=data,
         doi=doi,
         custom_citation_publication=custom_citation_publication,
-        prepare_for_publication=prepare_for_publication
+        prepare_for_publication=prepare_for_publication,
     )
-    print("ID", pkg.get("id"))
     return ckan_instance_destination.create_package(**pkg)
 
 
@@ -212,16 +210,49 @@ def patch_package_raw(
     data: dict,
     doi: str = None,
     custom_citation_publication: str = None,
-    prepare_for_publication: bool = True,
+    prepare_for_publication: bool = False,
 ):
     pkg = format_package_metadata_raw(
         ckan_instance_destination=ckan_instance_destination,
         data=data,
         doi=doi,
         custom_citation_publication=custom_citation_publication,
-        prepare_for_publication=prepare_for_publication
+        prepare_for_publication=prepare_for_publication,
     )
     return ckan_instance_destination.patch_package_metadata(**pkg)
+
+
+def format_resource_metadata_raw(
+    metadata: dict,
+    is_link: bool = False,
+    prepare_for_publication: bool = True,
+):
+    data = deepcopy(metadata)
+    fields = data.keys()
+    for field in [
+        "id",
+        "created",
+        "position",
+        "last_modified",
+        "metadata_modified",
+        "package_id",
+        "cache_last_updated",
+        "cache_url",
+        "datastore_active",
+        "mimetype",
+        "mimetype_inner",
+    ]:
+        if field in fields:
+            del data[field]
+
+    if not is_link:
+        del data["url"]
+        del data["url_type"]
+
+    if prepare_for_publication:
+        data = prepare_metadata_for_publication_resource(data)
+
+    return data
 
 
 def create_resource_raw(
@@ -237,28 +268,11 @@ def create_resource_raw(
     is_link: bool = False,
     prepare_for_publication: bool = True,
 ):
-    data = deepcopy(metadata)
-    for field in [
-        "id",
-        "created",
-        "position",
-        "last_modified",
-        "metadata_modified",
-        "package_id",
-        "cache_last_updated",
-        "cache_url",
-        "datastore_active",
-        "mimetype",
-        "mimetype_inner",
-    ]:
-        del data[field]
-
-    if not is_link:
-        del data["url"]
-        del data["url_type"]
-
-    if prepare_for_publication:
-        data = prepare_metadata_for_publication_resource(data)
+    data = format_resource_metadata_raw(
+        metadata=metadata,
+        is_link=is_link,
+        prepare_for_publication=prepare_for_publication,
+    )
 
     return upload_func(
         ckan_api_input=ckan_api_input,
@@ -269,6 +283,29 @@ def create_resource_raw(
         metadata=data,
         empty_file_name=empty_file_name,
         progressbar=progressbar,
+    )
+
+
+def patch_resource_metadata_raw(
+    ckan_api_input: dict,
+    package_name: str,
+    resource_name: str,
+    metadata: dict,
+    is_link: bool = False,
+    prepare_for_publication: bool = True,
+):
+    data = format_resource_metadata_raw(
+        metadata=metadata,
+        is_link=is_link,
+        prepare_for_publication=prepare_for_publication,
+    )
+
+    ckan = CKAN(**ckan_api_input)
+    rsc_id = ckan.resolve_resource_id_or_name_to_id(
+        package_name=package_name, resource_id_or_name=resource_name
+    )
+    return ckan.patch_resource_metadata(
+        resource_id=rsc_id, resource_data_to_update=data
     )
 
 

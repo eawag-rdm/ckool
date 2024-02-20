@@ -525,6 +525,12 @@ def publish_package(
         "-p",
         help="Use multiple threads/processes to handle job.",
     ),
+    no_prompt: bool = typer.Option(
+        False,
+        "--no-prompt",
+        "-np",
+        help="If you want to skip prompts, or run publishing in parallel use this flag.",
+    ),
     ckan_instance_destination: str = typer.Option(
         None,
         "--ckan-instance-destination",
@@ -539,11 +545,13 @@ def publish_package(
         create_missing,
         exclude_resources,
         parallel,
+        no_prompt,
         ckan_instance_destination,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],
         OPTIONS["test"],
+        Prompt.ask,
     )
 
 

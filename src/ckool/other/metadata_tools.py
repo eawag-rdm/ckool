@@ -68,7 +68,6 @@ def prepare_metadata_for_publication_project(project: dict):
 
 
 def prepare_metadata_for_publication_resource(resource: dict):
-
     if resource.get("restricted_level") != "public":
         raise Exception("Resource {} is restricted. Aborting")
 

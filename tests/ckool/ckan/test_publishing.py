@@ -1,5 +1,3 @@
-import json
-import time
 from copy import deepcopy
 
 import pytest
@@ -17,11 +15,11 @@ from ckool.ckan.publishing import (
 from ckool.other.utilities import resource_is_link
 from ckool.templates import upload_resource_file_via_api, upload_resource_link_via_api
 from tests.ckool.data.inputs.ckan_entity_data import (
-    package_data,
-    test_resources,
+    full_organization_data,
     full_package_data,
     full_project_data,
-    full_organization_data
+    package_data,
+    test_resources,
 )
 
 
@@ -155,7 +153,9 @@ def test_create_missing_organization(ckan_instance, ckan_envvars, ckan_setup_dat
     new_org_name = "new_test_organization"
     full_organization_data["name"] = new_org_name
 
-    created = create_organization_raw(ckan_instance, full_organization_data, datamanager="ckan_admin")
+    created = create_organization_raw(
+        ckan_instance, full_organization_data, datamanager="ckan_admin"
+    )
     assert created["name"] == "new_test_organization"
     ckan_instance.delete_organization(created["id"])
     ckan_instance.purge_organization(created["id"])
@@ -166,12 +166,16 @@ def test_create_missing_project(ckan_instance, ckan_envvars, ckan_setup_data):
     new_proj_name = "new_test_group"
     full_project_data["name"] = new_proj_name
 
-    proj_id = create_project_raw(ckan_instance, full_project_data, prepare_for_publication=False)["id"]
+    proj_id = create_project_raw(
+        ckan_instance, full_project_data, prepare_for_publication=False
+    )["id"]
     assert ckan_instance.get_project(proj_id)["name"] == "new_test_group"
     ckan_instance.delete_project(proj_id)
     ckan_instance.purge_project(proj_id)
 
-    proj_id = create_project_raw(ckan_instance, full_project_data, prepare_for_publication=True)["id"]
+    proj_id = create_project_raw(
+        ckan_instance, full_project_data, prepare_for_publication=True
+    )["id"]
     assert ckan_instance.get_project(proj_id)["name"] == "new_test_group"
     ckan_instance.delete_project(proj_id)
     ckan_instance.purge_project(proj_id)
@@ -202,7 +206,10 @@ def test_create_missing_organization_projects_variables(
             ckan_instance.purge_organization(to_create["data"]["id"])
 
         create_missing_organization_projects_variables(
-            ckan_instance, **to_create, org_data_manager="ckan_admin", prepare_for_publication=False
+            ckan_instance,
+            **to_create,
+            org_data_manager="ckan_admin",
+            prepare_for_publication=False,
         )
 
 
@@ -210,11 +217,7 @@ def test_create_missing_organization_projects_variables(
 def test_create_missing_package(ckan_instance, ckan_envvars, ckan_setup_data):
     pkg = deepcopy(full_package_data)
 
-    res = create_package_raw(
-        ckan_instance,
-        pkg,
-        prepare_for_publication=False
-    )
+    res = create_package_raw(ckan_instance, pkg, prepare_for_publication=False)
 
     assert res["name"] == "new_test_package"
     ckan_instance.delete_package(res["id"])
@@ -235,7 +238,7 @@ def test_create_missing_package(ckan_instance, ckan_envvars, ckan_setup_data):
         create_package_raw(
             ckan_instance_destination=ckan_instance,
             data=pkg,
-            prepare_for_publication=True
+            prepare_for_publication=True,
         )
 
 
@@ -266,7 +269,7 @@ def test_create_resource_raw(tmp_path, ckan_instance, ckan_envvars, ckan_setup_d
             upload_func=upload_func,
             progressbar=False,
             is_link=resource_is_link(resource),
-            prepare_for_publication=False
+            prepare_for_publication=False,
         )
 
         # create_resource_raw(

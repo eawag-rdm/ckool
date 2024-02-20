@@ -308,8 +308,7 @@ class CKAN:
 
     def add_package_to_project(self, package_name, project_name):
         self.patch_package_metadata(
-            package_id=package_name,
-            data={"groups": [{"name": project_name}]}
+            package_id=package_name, data={"groups": [{"name": project_name}]}
         )
 
     def delete_all_resources_from_package(self, package_name):
