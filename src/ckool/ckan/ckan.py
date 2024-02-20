@@ -159,91 +159,21 @@ class CKAN:
         return self.plain_action_call("organization_show", id=organization_name)
 
     def get_user(self, username):
-        return self.plain_action_call("group_show", id=username)
+        return self.plain_action_call("user_show", id=username)
 
     def get_vocabulary(self):
         return self.plain_action_call("vocabulary_list")
 
     def create_project(self, **kwargs):
-        """CURL example
-
-        curl --insecure -X POST https://localhost:8443/api/3/action/organization_create \
-         -H "Content-Type: application/json" \
-         -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJEV1dtMzhzQ2ZkMk1ob2V5SmZ5ZjJ0dHRjOERIYjdEQ0pPUU93QXNSdGFYYjdDbC12THRtRlhFVTg5ZExGU096aUxWTjAxeXlvSUYwSEdLQiIsImlhdCI6MTcwNjE4NzEzMn0.3ki03QvUSKDi61cug2ooD0WL-ckVzwhnIIV1UlrgCAo" \
-         -d '{
-               "name": "test_organization",
-               "title": "Test_Organization",
-               "description": "This is my organization.",
-               "homepage": "https://www.eawag.ch/de/",
-               "datamanager": "ckan_admin",
-               "image_url": "https://www.techrepublic.com/wp-content/uploads/2017/03/meme05.jpg"
-             }'
-        """
         return self.plain_action_call("group_create", **kwargs)
 
     def create_organization(self, **kwargs):
-        """CURL example
-
-        curl --insecure -X POST https://localhost:8443/api/3/action/organization_create \
-         -H "Content-Type: application/json" \
-         -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJEV1dtMzhzQ2ZkMk1ob2V5SmZ5ZjJ0dHRjOERIYjdEQ0pPUU93QXNSdGFYYjdDbC12THRtRlhFVTg5ZExGU096aUxWTjAxeXlvSUYwSEdLQiIsImlhdCI6MTcwNjE4NzEzMn0.3ki03QvUSKDi61cug2ooD0WL-ckVzwhnIIV1UlrgCAo" \
-         -d '{
-               "name": "test_organization",
-               "title": "Test_Organization",
-               "description": "This is my organization.",
-               "homepage": "https://www.eawag.ch/de/",
-               "datamanager": "ckan_admin",
-               "image_url": "https://www.techrepublic.com/wp-content/uploads/2017/03/meme05.jpg"
-             }'
-        """
         return self.plain_action_call("organization_create", **kwargs)
 
     def create_package(self, **kwargs):
-        """CURL example
-
-        curl --insecure -X POST "https://localhost:8443/api/3/action/package_create" \
-         -H "Content-Type: application/json" \
-         -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJEV1dtMzhzQ2ZkMk1ob2V5SmZ5ZjJ0dHRjOERIYjdEQ0pPUU93QXNSdGFYYjdDbC12THRtRlhFVTg5ZExGU096aUxWTjAxeXlvSUYwSEdLQiIsImlhdCI6MTcwNjE4NzEzMn0.3ki03QvUSKDi61cug2ooD0WL-ckVzwhnIIV1UlrgCAo" \
-         -d '{
-               "name": "test_package",
-               "title": "Test_Package",
-               "private": false,
-               "description": "This is my package.",
-               "author": "ckan_admin",
-               "author_email": "your_email@example.com",
-               "state": "active",
-               "type": "dataset",
-               "owner_org": "test_organization",
-               "reviewed_by": "",
-               "maintainer": "ckan_admin",
-               "usage_contact": "ckan_admin",
-               "notes": "some_note",
-               "review_level": "none",
-               "spatial": "{\"type\": \"Point\", \"coordinates\": [8.609776496939471, 47.40384502816517]}",
-               "status": "incomplete",
-               "tags_string": "some_tag",
-               "timerange": "*",
-               "variables": "none"
-             }'
-        """
         return self.plain_action_call("package_create", **kwargs)
 
     def create_resource_of_type_link(self, **kwargs):
-        """CURL example
-
-        curl --insecure -X POST "https://localhost:8443/api/3/action/resource_create" \
-         -H "Content-Type: application/json" \
-         -H "Authorization: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJjdDdKUWNKMUkzaXFSRGUtVFUzd0x4eG1fWjMyWkFwZG53eU80ejh3d1dRd240ZkljcEh0UXpBS0RJSWVsUUhuMU92NHRNU0dLNVZncWdHNyIsImlhdCI6MTcwNjE3NDc3OH0.Qvz3CSL9lmYtboxfMTw5Pa6vOCttNuqpPYIcih5nvig" \
-         -d '{
-               "package_id": "test_package",
-               "name": "test_resource",
-               "resource_type": "Dataset",
-               "restricted_level": "public",
-               "url": "https://static.demilked.com/wp-content/uploads/2021/07/60ed37b256b80-it-rage-comics-memes-reddit-60e6fee1e7dca__700.jpg"
-             }'
-
-        This does not work for files, as the ckanapi package is currently broken.
-        """
         return self.plain_action_call("resource_create", **kwargs)
 
     def create_resource_of_type_file(
@@ -307,11 +237,13 @@ class CKAN:
             resource_data_to_update={"name": new_resource_name},
         )
 
-    def patch_package_metadata(self, package_name: str, package_data_to_update: dict):
-        """You provide only the key-value-pairs you want to update"""
-        all_metadata_of_package = self.get_package(package_name)
-        all_metadata_of_package.update(package_data_to_update)
-        return self.update_package_metadata(all_metadata_of_package)
+    def patch_package_metadata(self, package_id: str, data: dict):
+        data.update({"id": package_id})
+        return self.plain_action_call("package_patch", **data)
+
+    def patch_user(self, user_id: str, data: dict):
+        data.update({"id": user_id})
+        return self.plain_action_call("user_patch", **data)
 
     def update_package_from_file(self, package_data_file: str | pathlib.Path):
         if isinstance(package_data_file, str):
@@ -376,8 +308,8 @@ class CKAN:
 
     def add_package_to_project(self, package_name, project_name):
         self.patch_package_metadata(
-            package_name=package_name,
-            package_data_to_update={"groups": [{"name": project_name}]},
+            package_id=package_name,
+            data={"groups": [{"name": project_name}]}
         )
 
     def delete_all_resources_from_package(self, package_name):

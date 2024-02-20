@@ -558,6 +558,7 @@ def _publish_package(
                         ckan_destination,
                         **to_create,
                         org_data_manager=cfg_other_destination["datamanager"],
+                        prepare_for_publication=True,
                     )
 
         elif any_missing_organization_projects_variables(existing_and_missing_entities):
@@ -569,7 +570,12 @@ def _publish_package(
             )
         # NOW ALL ENTITIES EXIST
         if existing_and_missing_entities["missing"]["package"]:
-            created = create_package_raw(ckan_destination, metadata_filtered)
+
+            created = create_package_raw(
+                ckan_destination,
+                metadata_filtered,
+                prepare_for_publication=True,
+            )
 
             upload_func = get_upload_func(
                 file_sizes=[int(r["size"]) for r in metadata_filtered["resources"]],
@@ -602,7 +608,17 @@ def _publish_package(
                     file_path=filepath,
                     upload_func=upload_func,
                     progressbar=True,
+                    prepare_for_publication=True,
                 )
+        elif existing_and_missing_entities["exist"]["package"]:
+
+            ...
+
+        else:
+            raise ValueError(
+                "Oops, this should not happen, seems like the package your trying to publish "
+                "is not flagged as 'missing' neither as 'existing'."
+            )
 
     # All these resources are intact Questions ( Should the resources always be downloaded again or should there be a hash_flag)
 

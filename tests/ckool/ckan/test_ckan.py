@@ -399,3 +399,8 @@ def test_add_package_to_project(ckan_instance, ckan_envvars, ckan_setup_data):
     )
     assert len(ckan_instance.get_project(ckan_envvars["test_project"])["packages"]) == 1
     assert len(ckan_instance.get_package(ckan_envvars["test_package"])["groups"]) == 1
+
+
+@pytest.mark.impure
+def test_get_user(ckan_instance, ckan_envvars, ckan_setup_data):
+    assert ckan_instance.get_user("ckan_admin")

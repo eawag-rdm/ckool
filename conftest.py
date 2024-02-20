@@ -126,7 +126,15 @@ def ckan_instance(ckan_envvars):
     )
 
 
+def patch_user(ckan_instance):
+    user_record = ckan_instance.get_user("ckan_admin")
+    if not user_record["fullname"]:
+        ckan_instance.patch_user(user_id=user_record["id"], data={"fullname": "ckan_admin"})
+
+
 def setup(ckan_instance, ckan_envvars):
+    patch_user(ckan_instance)
+
     organization_data.update({"name": ckan_envvars["test_organization"]})
     package_data.update({"name": ckan_envvars["test_package"]})
     resource_data.update(
