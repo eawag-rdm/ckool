@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from ckool.datacite.doi_store import LocalDoiStore
@@ -65,3 +67,51 @@ def test_write_valid(tmp_path, local_structure_doi):
     )
     assert (tmp_path / "name-23/package-url-232/file-1.txt").exists()
     assert (tmp_path / "name-23/package-url-232/file-2.pdf").exists()
+
+
+def test_get_doi(tmp_path, local_structure_doi):
+    _doi = "10.45934/25AZ53"
+    lds = LocalDoiStore(tmp_path)
+    lds.write(
+        name="person-2323",
+        package="package-url-232",
+        filename_content_map={
+            "doi.txt": _doi,
+        },
+    )
+    doi = lds.get_doi(
+        package_name="package-url-232",
+    )
+
+    assert doi == _doi
+
+
+def test_get_doi_not_found(tmp_path, local_structure_doi):
+    lds = LocalDoiStore(tmp_path)
+    with pytest.raises(FileNotFoundError):
+        doi = lds.get_doi(
+            package_name="package-url-232",
+        )
+
+
+def test_get_json_file_content(tmp_path, local_structure_doi):
+    _affiliation = {"name": "the affiliation"}
+    lds = LocalDoiStore(tmp_path)
+    lds.write(
+        name="person-2323",
+        package="package-url-232",
+        filename_content_map={
+            "affiliation.json": json.dumps(_affiliation),
+        },
+    )
+    aff = lds.get_affiliations(
+        package_name="package-url-232", filename="affiliation.json"
+    )
+    assert aff == _affiliation
+
+
+def test_get_json_file_content_not_found(tmp_path, local_structure_doi):
+    lds = LocalDoiStore(tmp_path)
+
+    orc = lds.get_orcids(package_name="package-url-232", filename="orcids.json")
+    assert orc is None

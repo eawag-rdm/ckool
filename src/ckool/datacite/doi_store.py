@@ -1,8 +1,15 @@
+import json
 import pathlib
 import re
 import shutil
 
-from ckool import LOCAL_DOI_STORE_DOI_FILE_NAME, LOCAL_DOI_STORE_FOLDERS_TO_IGNORE
+from ckool import (
+    LOCAL_DOI_STORE_AFFILIATION_FILE_NAME,
+    LOCAL_DOI_STORE_DOI_FILE_NAME,
+    LOCAL_DOI_STORE_FOLDERS_TO_IGNORE,
+    LOCAL_DOI_STORE_ORCIDS_FILE_NAME,
+    LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME,
+)
 
 
 def _iter_dir(path: pathlib.Path):
@@ -63,16 +70,47 @@ class LocalDoiStore:
             basic_map[name][package].append("/".join(other))
         return basic_map
 
-    def get_doi_from_package(self, package_name):
+    def _find_file(self, package_name: str, filename: str, raise_error: bool = True):
         found = False
         for file in _iter_dir(self.path):
-            if package_name in file and file.name == self.doi_file:
-                return retrieve_doi_from_doi_file(package_name, file)
+            if package_name in file.as_posix() and file.name == filename:
+                return file
 
-        if not found:
+        if not found and raise_error:
             raise FileNotFoundError(
                 f"No doi file '{self.doi_file}' for package '{package_name}' could be found."
             )
+
+    @staticmethod
+    def __return_file_content(file):
+        if file:
+            with file.open() as f:
+                return json.load(f)
+        return None
+
+    def get_doi(self, package_name: str, filename: str = LOCAL_DOI_STORE_DOI_FILE_NAME):
+        file = self._find_file(package_name, filename)
+        return retrieve_doi_from_doi_file(package_name, file)
+
+    def get_orcids(
+        self, package_name: str, filename: str = LOCAL_DOI_STORE_ORCIDS_FILE_NAME
+    ):
+        file = self._find_file(package_name, filename, raise_error=False)
+        return self.__return_file_content(file)
+
+    def get_affiliations(
+        self, package_name: str, filename: str = LOCAL_DOI_STORE_AFFILIATION_FILE_NAME
+    ):
+        file = self._find_file(package_name, filename, raise_error=False)
+        return self.__return_file_content(file)
+
+    def get_related_publications(
+        self,
+        package_name: str,
+        filename: str = LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME,
+    ):
+        file = self._find_file(package_name, filename, raise_error=False)
+        return self.__return_file_content(file)
 
     def write(
         self,

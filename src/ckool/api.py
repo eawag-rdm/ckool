@@ -486,8 +486,8 @@ def _publish_package(
             )
         instances.remove(ckan_instance_source)
         ckan_instance_destination = instances[0]
-
-    doi = LocalDoiStore(local_doi_store).get_doi_from_package(package_name)
+    lds = LocalDoiStore(local_doi_store)
+    doi = lds.get_doi(package_name)
 
     cfg_ckan_source = config_for_instance(
         config[section]["ckan_api"], ckan_instance_source
@@ -712,6 +712,24 @@ def _publish_package(
 
 
 def _publish_organization(
+    organization_name: str,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
+    # download package check data consistency
+
+    # upload package to eric open
+
+    # publish to datacite
+
+    # update published package
+    print(locals())
+    pass
+
+
+def _publish_project(
     organization_name: str,
     config: dict,
     ckan_instance: str,
