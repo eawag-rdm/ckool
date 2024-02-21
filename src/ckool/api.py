@@ -26,6 +26,7 @@ from ckool.ckan.publishing import (
 )
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
+from ckool.interfaces.mixed_requests import get_citation_from_doi
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
 from ckool.other.file_management import get_compression_func, iter_package
@@ -358,8 +359,6 @@ def _patch_package(
     # ckan = CKAN(**cfg_ckan_api)
     # metadata_in_ckan = ckan.get_package(package_name)
 
-    return
-
 
 def _patch_resource(
     metadata_file: str,
@@ -369,9 +368,8 @@ def _patch_resource(
     verify: bool,
     test: bool,
 ):
-    raise NotImplementedError("Parallel will be implemented soon.")
     """should be interactive, show diff, let user select what to patch"""
-    return
+    raise NotImplementedError("Parallel will be implemented soon.")
 
 
 def _patch_resource_hash(
@@ -400,7 +398,7 @@ def _patch_resource_hash(
         secure_interface_input=cfg_secure_interface,
         ckan_storage_path=cfg_other["ckan_storage_path"],
         package_name=package_name,
-        resource_name=resource_name,
+        resource_id_or_name=resource_name,
         hash_type=hash_algorithm,
     )
 
@@ -633,9 +631,7 @@ def _publish_package(
                 filepath = cwd / temporary_resource_names[resource["id"]]
 
                 patch_metadata = True
-                the_resource_is_a_link = resource_is_link(resource)
-
-                if not the_resource_is_a_link:
+                if not resource_is_link(resource):
                     resource_integrity_intact = (
                         resource_integrity_between_ckan_instances_intact(
                             ckan_api_input_1=cfg_ckan_source,
@@ -738,6 +734,12 @@ def _publish_package(
             )
         else:
             print("Publication aborted.")
+
+    ckan_destination.update_doi(
+        package_name=metadata_filtered["name"],
+        doi=doi,
+        citation=get_citation_from_doi(doi),
+    )
 
 
 def _publish_organization(
