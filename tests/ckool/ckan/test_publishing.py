@@ -1,7 +1,14 @@
+import json
 from copy import deepcopy
 
 import pytest
 
+from ckool import (
+    LOCAL_DOI_STORE_AFFILIATION_FILE_NAME,
+    LOCAL_DOI_STORE_DOI_FILE_NAME,
+    LOCAL_DOI_STORE_ORCIDS_FILE_NAME,
+    LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME,
+)
 from ckool.ckan.publishing import (
     any_missing_organization_projects_variables,
     collect_missing_entity,
@@ -10,8 +17,11 @@ from ckool.ckan.publishing import (
     create_package_raw,
     create_project_raw,
     create_resource_raw,
+    enrich_and_store_metadata,
     pre_publication_checks,
+    update_datacite_doi,
 )
+from ckool.datacite.doi_store import LocalDoiStore
 from ckool.other.utilities import resource_is_link
 from ckool.templates import upload_resource_file_via_api, upload_resource_link_via_api
 from tests.ckool.data.inputs.ckan_entity_data import (
@@ -290,3 +300,127 @@ def test_create_resource_raw(tmp_path, ckan_instance, ckan_envvars, ckan_setup_d
         # )
 
     assert len(ckan_instance.get_package("new-test-package")["resources"]) == 2
+
+
+@pytest.mark.impure
+def test_enrich_and_store_metadata(
+    tmp_path,
+    ckan_instance,
+    secure_interface_input_args,
+    ckan_envvars,
+    json_test_data,
+    ckan_setup_data,
+):
+    (tmp_path / "person-2323" / ckan_envvars["test_package"]).mkdir(parents=True)
+
+    lds = LocalDoiStore(tmp_path)
+    lds.write(
+        name="person-2323",
+        package=ckan_envvars["test_package"],
+        filename_content_map={
+            "doi.txt": "10.45934/25AZ53",
+        },
+    )
+
+    # The metadata seems to be the one from eric open.
+    metadata = ckan_instance.get_package(ckan_envvars["test_package"])
+    metadata["author"] = ["Foerster, Christian <christian.foerster@eawag.ch>"]
+    metadata["geographic_name"] = []
+
+    files = enrich_and_store_metadata(
+        metadata=metadata,
+        local_doi_store_instance=lds,
+        package_name=ckan_envvars["test_package"],
+    )
+    assert files["json"].exists()
+    assert files["xml"].exists()
+
+
+@pytest.mark.impure
+def test_enrich_and_store_metadata(
+    tmp_path,
+    ckan_instance,
+    ckan_envvars,
+    json_test_data,
+    ckan_setup_data,
+):
+    (tmp_path / "person-2323" / ckan_envvars["test_package"]).mkdir(parents=True)
+
+    lds = LocalDoiStore(tmp_path)
+    lds.write(
+        name="person-2323",
+        package=ckan_envvars["test_package"],
+        filename_content_map={
+            "doi.txt": "10.45934/25AZ53",
+        },
+    )
+
+    # The metadata seems to be the one from eric open.
+    metadata = ckan_instance.get_package(ckan_envvars["test_package"])
+    metadata["author"] = ["Foerster, Christian <christian.foerster@eawag.ch>"]
+    metadata["geographic_name"] = []
+
+    files = enrich_and_store_metadata(
+        metadata=metadata,
+        local_doi_store_instance=lds,
+        package_name=ckan_envvars["test_package"],
+    )
+    assert files["json"].exists()
+    assert files["xml"].exists()
+
+
+@pytest.mark.impure
+def test_update_datacite_doi(
+    tmp_path,
+    datacite_instance,
+    ckan_instance,
+    ckan_envvars,
+    json_test_data,
+    ckan_setup_data,
+):
+    (_dir := tmp_path / "person-2323" / ckan_envvars["test_package"]).mkdir(
+        parents=True
+    )
+    _doi = f"{datacite_instance.prefix}/25AZ53"
+    lds = LocalDoiStore(tmp_path)
+    lds.write(
+        name="person-2323",
+        package=ckan_envvars["test_package"],
+        filename_content_map={
+            _dir / LOCAL_DOI_STORE_DOI_FILE_NAME: _doi,
+            _dir
+            / LOCAL_DOI_STORE_ORCIDS_FILE_NAME: json.dumps(
+                json_test_data["orcids"], indent=2
+            ),
+            _dir
+            / LOCAL_DOI_STORE_AFFILIATION_FILE_NAME: json.dumps(
+                json_test_data["affiliations"], indent=2
+            ),
+            _dir
+            / LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME: json.dumps(
+                json_test_data["related_publications"], indent=2
+            ),
+        },
+    )
+
+    # The metadata seems to be the one from eric open.
+    metadata = ckan_instance.get_package(ckan_envvars["test_package"])
+    metadata["author"] = ["Foerster, Christian <christian.foerster@eawag.ch>"]
+    metadata["geographic_name"] = []
+
+    _ = enrich_and_store_metadata(
+        metadata=metadata,
+        local_doi_store_instance=lds,
+        package_name=ckan_envvars["test_package"],
+    )
+
+    datacite_instance.doi_reserve(_doi)
+    success = update_datacite_doi(
+        datacite_api_instance=datacite_instance,
+        local_doi_store_instance=lds,
+        package_name=ckan_envvars["test_package"],
+    )
+    assert success
+    assert datacite_instance.doi_retrieve(_doi)
+
+    datacite_instance.doi_delete(_doi)

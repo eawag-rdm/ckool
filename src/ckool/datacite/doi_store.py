@@ -23,7 +23,8 @@ def _iter_dir(path: pathlib.Path):
 
 def retrieve_doi_from_doi_file(package_name: str, file: pathlib.Path):
     content = file.read_text()
-    dois = re.findall(r"10\.[0-9]{5}/[0-9A-Z]{6}", content)
+    print("CONTENT", content)
+    dois = re.findall(r"10\.[0-9]{4,5}/[0-9A-Z]{6}", content)
     if len(set(dois)) > 1:
         raise ValueError(
             f"Conflicting dois for package '{package_name}' found in file '{file.as_posix()}':\n{set(dois)}"
@@ -47,10 +48,15 @@ class LocalDoiStore:
             raise ValueError(f"The path your provided '{path}' does not exist.")
 
     def generate_xml_filepath(self, package_name):
+        name = None
         for name in self.path.iterdir():
             for package in name.iterdir():
                 if package.name == package_name:
                     break
+        if name is None:
+            raise ValueError(
+                f"The package '{package_name}' you're referring to can not be found in the datastore."
+            )
         return self.path / name / package_name / LOCAL_DOI_STORE_METADATA_XML_FILE_NAME
 
     def parse(self):

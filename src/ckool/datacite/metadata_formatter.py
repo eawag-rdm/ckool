@@ -131,7 +131,7 @@ class MetaDataFormatter:
         self.affiliations = affiliations
         self.orcids = orcids
         self.related_publications = related_publications
-        self.related_identifiers_from_file = (self.related_publications,)
+        self.related_identifiers_from_file = self.related_publications
         self.author_is_organization = author_is_organization
         self.resource_type = resource_type
         self.resource_type_general = resource_type_general

@@ -1,8 +1,6 @@
 import pytest
 
 from ckool import HASH_TYPE
-from ckool.ckan.publishing import enrich_and_store_metadata
-from ckool.datacite.doi_store import LocalDoiStore
 from ckool.other.hashing import get_hash_func
 from ckool.templates import (
     get_upload_func,
@@ -246,37 +244,3 @@ def test_hash_remote(
     )["hash"]
 
     assert hashed_locally == hashed_remotely
-
-
-# @pytest.mark.impure
-def test_enrich_and_store_metadata(
-    tmp_path,
-    ckan_instance,
-    secure_interface_input_args,
-    ckan_envvars,
-    json_test_data,
-    ckan_setup_data,
-):
-    (tmp_path / "person-2323" / ckan_envvars["test_package"]).mkdir(parents=True)
-
-    lds = LocalDoiStore(tmp_path)
-    lds.write(
-        name="person-2323",
-        package=ckan_envvars["test_package"],
-        filename_content_map={
-            "doi.txt": "10.45934/25AZ53",
-        },
-    )
-
-    # The metadata seems to be the one from eric open.
-    metadata = ckan_instance.get_package(ckan_envvars["test_package"])
-    metadata["author"] = ["Foerster, Christian <christian.foerster@eawag.ch>"]
-    metadata["geographic_name"] = []
-
-    files = enrich_and_store_metadata(
-        metadata=metadata,
-        local_doi_store_instance=lds,
-        package_name=ckan_envvars["test_package"],
-    )
-    assert files["json"].exists()
-    assert files["xml"].exists()
