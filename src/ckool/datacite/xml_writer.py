@@ -103,7 +103,7 @@ class MetaDataToXMLConverter:
                 el.append(self._build_tree(d=child))
             return el
 
-    def convert_json_to_xml(self, pretty_print=True):
+    def convert_json_to_xml(self):
         self.official_datacite_schema = read_official_datacite_schema(self.typ)
         self.attribute_defaults = generate_attribute_defaults(self.typ)
         self.attribute_map = generate_attribute_map(self.typ)
@@ -115,3 +115,8 @@ class MetaDataToXMLConverter:
         return ET.tostring(self.root, encoding="utf-8", xml_declaration=True).decode(
             "utf-8"
         )
+
+    @staticmethod
+    def write_xml(xml, filepath: pathlib.Path):
+        with filepath.open("w") as f:
+            f.write(xml)

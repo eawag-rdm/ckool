@@ -95,19 +95,25 @@ def test_get_doi_not_found(tmp_path, local_structure_doi):
 
 
 def test_get_json_file_content(tmp_path, local_structure_doi):
-    _affiliation = {"name": "the affiliation"}
+    _json = {"name": "the affiliation"}
     lds = LocalDoiStore(tmp_path)
     lds.write(
         name="person-2323",
         package="package-url-232",
         filename_content_map={
-            "affiliation.json": json.dumps(_affiliation),
+            "affiliation.json": json.dumps(_json),
         },
     )
     aff = lds.get_affiliations(
         package_name="package-url-232", filename="affiliation.json"
     )
-    assert aff == _affiliation
+    assert aff == _json
+    orc = lds.get_orcids(package_name="package-url-232", filename="affiliation.json")
+    assert orc == _json
+    pub = lds.get_related_publications(
+        package_name="package-url-232", filename="affiliation.json"
+    )
+    assert pub == _json
 
 
 def test_get_json_file_content_not_found(tmp_path, local_structure_doi):

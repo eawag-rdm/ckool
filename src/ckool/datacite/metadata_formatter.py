@@ -475,3 +475,5 @@ class MetaDataFormatter:
             getattr(self, f)()
         with open(self.outfile, "w") as f_out:
             json.dump(self.output, f_out, indent=2)
+
+        return self.output

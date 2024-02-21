@@ -15,11 +15,14 @@ from ckool.ckan.publishing import (
     create_missing_organization_projects_variables,
     create_package_raw,
     create_resource_raw,
+    enrich_and_store_metadata,
     get_missing_organization_projects_variables,
     patch_package_raw,
     patch_resource_metadata_raw,
     pre_publication_checks,
+    update_datacite_doi,
 )
+from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
@@ -486,8 +489,12 @@ def _publish_package(
             )
         instances.remove(ckan_instance_source)
         ckan_instance_destination = instances[0]
+
     lds = LocalDoiStore(local_doi_store)
     doi = lds.get_doi(package_name)
+
+    cfg_datacite = config[section]["datacite"]
+    datacite = DataCiteAPI(**cfg_datacite)
 
     cfg_ckan_source = config_for_instance(
         config[section]["ckan_api"], ckan_instance_source
@@ -699,10 +706,21 @@ def _publish_package(
                 "Oops, this should not happen, seems like the package your trying to publish "
                 "is not flagged as 'missing' neither as 'existing'."
             )
+    else:
+        raise NotImplementedError("Parallel is not implemented yet.")
 
-    # All these resources are intact Questions ( Should the resources always be downloaded again or should there be a hash_flag)
+    # TODO: should this be metadata found in the ckan source instance or destination instance
+    enrich_and_store_metadata(
+        ckan_instance=ckan_destination,
+        local_doi_store_instance=lds,
+        package_name=metadata_filtered["name"],
+    )
 
-    # upload package to eric open
+    update_datacite_doi(
+        datacite_api_instance=datacite,
+        local_doi_store_instance=lds,
+        package_name=metadata_filtered["name"],
+    )
 
     # publish to datacite
 

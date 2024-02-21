@@ -25,15 +25,19 @@ class DataCiteException(Exception):
 
 class DataCiteAPI:
     def __init__(
-        self, host, prefix, username, password=None, secret_password=None, offset=0
+        self, host, prefix, user, password=None, secret_password=None, offset=0
     ):
         if secret_password is not None:
             password = get_secret(secret_password)
-        self.auth = HTTPBasicAuth(username=username, password=password)
-        self.username = username
+        self.auth = HTTPBasicAuth(username=user, password=password)
+        self.username = user
         self.host = host
         self.prefix = prefix
         self.offset = offset
+
+    @staticmethod
+    def generate_doi_url(package_name: str):
+        return f"https://opendata.eawag.ch/dataset/{package_name}"
 
     def doi_generate_string(self, n, offset=None):
         if offset is None:

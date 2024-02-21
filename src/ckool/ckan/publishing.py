@@ -5,6 +5,10 @@ import ckanapi.errors
 
 from ckool import EMPTY_FILE_NAME
 from ckool.ckan.ckan import CKAN
+from ckool.datacite.datacite import DataCiteAPI
+from ckool.datacite.doi_store import LocalDoiStore
+from ckool.datacite.metadata_formatter import MetaDataFormatter
+from ckool.datacite.xml_writer import MetaDataToXMLConverter
 from ckool.other.metadata_tools import (
     prepare_metadata_for_publication_package,
     prepare_metadata_for_publication_project,
@@ -348,5 +352,42 @@ def create_missing_organization_projects_variables(
     return created
 
 
-def update_existing(existing_and_missing_entities):
-    ...
+def enrich_and_store_metadata(
+    ckan_instance: CKAN, local_doi_store_instance: LocalDoiStore, package_name: str
+):
+    metadata = ckan_instance.get_package(package_name)
+    xml_filepath = local_doi_store_instance.generate_xml_filepath(package_name)
+
+    # enrich metadata save json
+    mdf = MetaDataFormatter(
+        package_metadata=metadata,
+        doi=local_doi_store_instance.get_doi(package_name),
+        outfile=xml_filepath.with_suffix(".json"),
+        affiliations=local_doi_store_instance.get_affiliations(package_name),
+        orcids=local_doi_store_instance.get_orcids(package_name),
+        related_publications=local_doi_store_instance.get_related_publications(
+            package_name
+        ),
+        author_is_organization=False,
+        resource_type="Publication Data Package",
+        resource_type_general="Collection",
+        version="1.0",
+    )
+    enriched_metadata = mdf.main()
+
+    # convert to xml and save
+    mdxmlc = MetaDataToXMLConverter(enriched_metadata, typ="datacite4.4")
+    xml = mdxmlc.convert_json_to_xml()
+    mdxmlc.write_xml(xml, xml_filepath)
+
+
+def update_datacite_doi(
+    datacite_api_instance: DataCiteAPI,
+    local_doi_store_instance: LocalDoiStore,
+    package_name: str,
+):
+    datacite_api_instance.doi_update(
+        doi=local_doi_store_instance.get_doi(package_name),
+        url=datacite_api_instance.generate_doi_url(package_name),
+        metadata_xml_file=local_doi_store_instance.get_xml_file(package_name),
+    )

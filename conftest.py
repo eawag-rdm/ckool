@@ -214,7 +214,7 @@ def ckan_setup_data(ckan_instance, ckan_envvars):
 @pytest.fixture
 def datacite_instance(load_env_file):
     return DataCiteAPI(
-        username=os.environ["TEST_DATACITE_USER"],
+        user=os.environ["TEST_DATACITE_USER"],
         password=os.environ["TEST_DATACITE_PASSWORD"],
         prefix=os.environ["TEST_DATACITE_PREFIX"],
         host=os.environ["TEST_DATACITE_URL"],
