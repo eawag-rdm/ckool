@@ -30,6 +30,7 @@ package_data = {
 resource_data = {
     "resource_type": "Dataset",
     "restricted_level": "public",
+    "description": "this is a link",
     "url": "https://static.demilked.com/wp-content/uploads/2021/07/60ed37b256b80-it-rage-comics-memes-reddit-60e6fee1e7dca__700.jpg",
 }
 

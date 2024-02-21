@@ -5,6 +5,7 @@ import sys
 from datetime import datetime
 
 from ckool.interfaces.dora import Dora
+from ckool.other.metadata_tools import prepare_metadata_for_publication_package
 
 PUBLISHER = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"
 DEFAULT_AFFILIATION = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"
@@ -129,11 +130,21 @@ class MetaDataFormatter:
         self.outfile = outfile
         self.affiliations = affiliations
         self.orcids = orcids
-        self.related_identifiers_from_file = (related_publications,)
+        self.related_publications = related_publications
+        self.related_identifiers_from_file = (self.related_publications,)
         self.author_is_organization = author_is_organization
         self.resource_type = resource_type
         self.resource_type_general = resource_type_general
         self.version = version
+
+        if self.orcids is None:
+            self.orcids = {}
+
+        if self.affiliations is None:
+            self.affiliations = {}
+
+        if self.related_publications is None:
+            self.related_identifiers_from_file = None
 
     def xs_identifier(self):
         self.output["resource"].append(
@@ -147,10 +158,9 @@ class MetaDataFormatter:
                 return "Personal"
             else:
                 print(
-                    'WARNING: Author "{}" doesn\'t have standard'
-                    " format (no comma). If the author is an organization you can use the parameter 'author_is_organization' to indicate this.".format(
-                        author
-                    )
+                    f"WARNING: Author '{author}' doesn't have standard "
+                    f"format (no comma). If the author is an organization "
+                    f"you can use the parameter 'author_is_organization' to indicate this."
                 )
                 if not self.author_is_organization:
                     sys.exit("ABORT: illegal author name")
@@ -200,9 +210,10 @@ class MetaDataFormatter:
             return creator
 
         def add_affiliation(first, last, creator):
-            affiliation = self.affiliations.get(f"{last}, {first}")
-            if affiliation:
-                creator.append({"affiliation": affiliation})
+            if self.affiliations is not None:
+                affiliation = self.affiliations.get(f"{last}, {first}")
+                if affiliation:
+                    creator.append({"affiliation": affiliation})
             return creator
 
         # main loop starts here
@@ -376,7 +387,6 @@ class MetaDataFormatter:
                         }
                     },
                 ]
-
         if relatedIdentifiers:
             self.output["resource"].append({"relatedIdentifiers": relatedIdentifiers})
 
@@ -468,6 +478,20 @@ class MetaDataFormatter:
     def xs_fundingReferences(self):
         # Not implemented
         return
+
+    def prepare_raw_for_publication(
+        self,
+        maintainer_record: dict,
+        usage_contact_record: dict,
+        custom_citation_publication: str = None,
+    ):
+        self.package_metadata = prepare_metadata_for_publication_package(
+            pkg=self.package_metadata,
+            doi=self.doi,
+            maintainer_record=maintainer_record,
+            usage_contact_record=usage_contact_record,
+            custom_citation_publication=custom_citation_publication,
+        )
 
     def main(self):
         funcnames = ["xs_{}".format(e[1]) for e in self.elements()]

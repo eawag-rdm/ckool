@@ -110,8 +110,6 @@ class MetaDataToXMLConverter:
 
         self.root = self._build_tree()
 
-        # Note: ElementTree does not have a built-in pretty print option.
-        # The 'pretty_print' parameter will not have any effect.
         return ET.tostring(self.root, encoding="utf-8", xml_declaration=True).decode(
             "utf-8"
         )

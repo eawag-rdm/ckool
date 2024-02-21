@@ -36,3 +36,11 @@ def test_metadata_to_xml_converter(json_test_data, data_directory):
         (data_directory / "enriched_package_metadata.xml").read_text().replace("\n", "")
     )
     assert xml == xml_correct
+
+    md_converter = MetaDataToXMLConverter(
+        json_test_data["enriched_package_metadata"], typ="datacite4.4"
+    )
+    xml = md_converter.convert_json_to_xml().replace("\n", "")
+    xml_correct = (
+        (data_directory / "enriched_package_metadata.xml").read_text().replace("\n", "")
+    )

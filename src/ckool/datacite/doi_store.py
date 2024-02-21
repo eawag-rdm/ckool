@@ -38,16 +38,20 @@ def retrieve_doi_from_doi_file(package_name: str, file: pathlib.Path):
 class LocalDoiStore:
     def __init__(
         self,
-        path: str,
+        path: str | pathlib.Path,
         top_folders_to_ignore: str = LOCAL_DOI_STORE_FOLDERS_TO_IGNORE,
     ):
-        self.path = pathlib.Path(path)
+        self.path = pathlib.Path(path) if isinstance(path, pathlib.Path) else path
         self.ignore = top_folders_to_ignore
         if not self.path.exists():
             raise ValueError(f"The path your provided '{path}' does not exist.")
 
     def generate_xml_filepath(self, package_name):
-        return self.path / package_name / LOCAL_DOI_STORE_METADATA_XML_FILE_NAME
+        for name in self.path.iterdir():
+            for package in name.iterdir():
+                if package.name == package_name:
+                    break
+        return self.path / name / package_name / LOCAL_DOI_STORE_METADATA_XML_FILE_NAME
 
     def parse(self):
         basic_map = {"other": []}

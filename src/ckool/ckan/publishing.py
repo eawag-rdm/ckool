@@ -353,9 +353,8 @@ def create_missing_organization_projects_variables(
 
 
 def enrich_and_store_metadata(
-    ckan_instance: CKAN, local_doi_store_instance: LocalDoiStore, package_name: str
+    metadata, local_doi_store_instance: LocalDoiStore, package_name: str
 ):
-    metadata = ckan_instance.get_package(package_name)
     xml_filepath = local_doi_store_instance.generate_xml_filepath(package_name)
 
     # enrich metadata save json
@@ -380,6 +379,8 @@ def enrich_and_store_metadata(
     xml = mdxmlc.convert_json_to_xml()
     mdxmlc.write_xml(xml, xml_filepath)
 
+    return {"json": xml_filepath.with_suffix(".json"), "xml": xml_filepath}
+
 
 def update_datacite_doi(
     datacite_api_instance: DataCiteAPI,
@@ -390,4 +391,14 @@ def update_datacite_doi(
         doi=local_doi_store_instance.get_doi(package_name),
         url=datacite_api_instance.generate_doi_url(package_name),
         metadata_xml_file=local_doi_store_instance.get_xml_file(package_name),
+    )
+
+
+def publish_datacite_doi(
+    datacite_api_instance: DataCiteAPI,
+    local_doi_store_instance: LocalDoiStore,
+    package_name: str,
+):
+    return datacite_api_instance.doi_publish(
+        doi=local_doi_store_instance.get_doi(package_name),
     )

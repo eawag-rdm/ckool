@@ -1,5 +1,6 @@
 import pathlib
-from typing import Callable
+
+from rich.prompt import Prompt
 
 from ckool import (
     DOWNLOAD_CHUNK_SIZE,
@@ -20,6 +21,7 @@ from ckool.ckan.publishing import (
     patch_package_raw,
     patch_resource_metadata_raw,
     pre_publication_checks,
+    publish_datacite_doi,
     update_datacite_doi,
 )
 from ckool.datacite.datacite import DataCiteAPI
@@ -470,7 +472,7 @@ def _publish_package(
     ckan_instance_source: str,
     verify: bool,
     test: bool,
-    prompt_function: Callable,
+    prompt_function: Prompt.ask,
 ):
     exclude_resources = exclude_resources.split(",")
     (cwd := pathlib.Path.cwd() / TEMPORARY_DIRECTORY_NAME / package_name).mkdir(
@@ -711,7 +713,7 @@ def _publish_package(
 
     # TODO: should this be metadata found in the ckan source instance or destination instance
     enrich_and_store_metadata(
-        ckan_instance=ckan_destination,
+        metadata=metadata_filtered,
         local_doi_store_instance=lds,
         package_name=metadata_filtered["name"],
     )
@@ -722,11 +724,20 @@ def _publish_package(
         package_name=metadata_filtered["name"],
     )
 
-    # publish to datacite
-
-    # update published package
-    print(locals())
-    pass
+    if not no_prompt:
+        confirmation = prompt_function(
+            "Should the doi be published? This is irreversible.",
+            choices=["no", "yes"],
+            default="no",
+        )
+        if confirmation == "yes":
+            publish_datacite_doi(
+                datacite_api_instance=datacite,
+                local_doi_store_instance=lds,
+                package_name=metadata_filtered["name"],
+            )
+        else:
+            print("Publication aborted.")
 
 
 def _publish_organization(
