@@ -4,6 +4,7 @@ import pathlib
 
 import ckanapi
 import requests
+from tqdm.auto import tqdm
 
 from ckool import EMPTY_FILE_NAME
 from ckool.ckan.upload import upload_resource
@@ -46,20 +47,48 @@ def resource_name_to_id(resources: list, package_name: str, resource_name_or_id:
         )
 
 
+# def _download_resource(
+#     url: str,
+#     api_key: str,
+#     destination_file_path: str | pathlib.Path,
+#     chunk_size: int = 8192,
+#     verify: bool = True,
+# ):
+#     with requests.get(
+#         url, headers={"X-CKAN-API-Key": api_key}, stream=True, verify=verify
+#     ) as req:
+#         req.raise_for_status()
+#         with open(destination_file_path, "wb") as f:
+#             for chunk in req.iter_content(chunk_size=chunk_size):
+#                 f.write(chunk)
+#     return destination_file_path
+
+
 def _download_resource(
     url: str,
     api_key: str,
     destination_file_path: str | pathlib.Path,
     chunk_size: int = 8192,
     verify: bool = True,
+    progressbar: bool = True,
 ):
     with requests.get(
         url, headers={"X-CKAN-API-Key": api_key}, stream=True, verify=verify
     ) as req:
         req.raise_for_status()
+        total_size = int(req.headers.get("content-length", 0))
+        pbar = tqdm(
+            total=total_size,
+            unit="B",
+            unit_scale=True,
+            desc=f"Downloading '{destination_file_path.name}'",
+            disable=not progressbar,
+        )
         with open(destination_file_path, "wb") as f:
             for chunk in req.iter_content(chunk_size=chunk_size):
                 f.write(chunk)
+                pbar.update(len(chunk))
+        pbar.close()
     return destination_file_path
 
 

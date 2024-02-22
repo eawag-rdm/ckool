@@ -10,6 +10,7 @@ from ckool.api import (
     _download_package,
     _download_resource,
     _download_resources,
+    _get_local_resource_location,
     _patch_datacite,
     _patch_metadata,
     _patch_package,
@@ -21,7 +22,6 @@ from ckool.api import (
     _publish_package,
     _upload_package,
     _upload_resource,
-    _get_local_resource_location
 )
 from ckool.other.types import CompressionTypes, HashTypes
 

@@ -216,14 +216,18 @@ def _get_local_resource_location(
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
     cfg_ckan_api.update({"verify_certificate": verify})
-    storage_path = config_for_instance(config[section]["other"], ckan_instance)["ckan_storage_path"]
+    storage_path = config_for_instance(config[section]["other"], ckan_instance)[
+        "ckan_storage_path"
+    ]
     ckan = CKAN(**cfg_ckan_api)
-    print(ckan.get_local_resource_path(
-        package_name=package_name,
-        resource_id_or_name=resource_name,
-        ckan_storage_path=storage_path
-    ))
-    
+    print(
+        ckan.get_local_resource_path(
+            package_name=package_name,
+            resource_id_or_name=resource_name,
+            ckan_storage_path=storage_path,
+        )
+    )
+
 
 def _download_package(
     package_name: str,
@@ -240,17 +244,14 @@ def _download_package(
     cfg_ckan_api.update({"verify_certificate": verify})
 
     ckan = CKAN(**cfg_ckan_api)
-    print(
-        json.dumps(
-            ckan.download_package_with_resources(
-                package_name=package_name,
-                destination=destination,
-                parallel=parallel,
-                max_workers=None,
-                chunk_size=chunk_size,
-            ),
-            indent=4,
-        )
+    return (
+        ckan.download_package_with_resources(
+            package_name=package_name,
+            destination=destination,
+            parallel=parallel,
+            max_workers=None,
+            chunk_size=chunk_size,
+        ),
     )
 
 
@@ -476,9 +477,7 @@ def _patch_metadata(
     metadata = read_cache(metadata_file)
 
     ckan = CKAN(**cfg_ckan_api)
-    print(
-        json.dumps(ckan.patch_package_metadata(package_name, metadata), indent=4)
-    )
+    print(json.dumps(ckan.patch_package_metadata(package_name, metadata), indent=4))
 
 
 def _patch_datacite(
