@@ -291,7 +291,7 @@ def download_package(
     )
 
 
-@get_app.command("package")
+@get_app.command("local-path")
 def get_local_resource_location(
     package_name: str = typer.Argument(
         help="Name of the package to download",
