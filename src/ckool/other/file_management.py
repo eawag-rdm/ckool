@@ -244,6 +244,8 @@ def iter_package(
 
 
 def stats_file(file: pathlib.Path, tmp_dir: str = TEMPORARY_DIRECTORY_NAME):
+    if file.parent.name == tmp_dir:
+        tmp_dir = ""
     return file.parent / tmp_dir / (file.name + ".json")
 
 
