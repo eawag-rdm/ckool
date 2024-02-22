@@ -1,6 +1,8 @@
 import pathlib
 import tomllib
 from textwrap import dedent
+from ckool import DEFAULT_TOML_NAME
+
 
 CKOOL_TOML = dedent(
     """
@@ -67,6 +69,8 @@ def parse_config(config_file: pathlib.Path):
 
 
 def generate_example_config(config_file: pathlib.Path = None):
+    if config_file.exists() and config_file.is_dir():
+        config_file = config_file / DEFAULT_TOML_NAME
     with open(config_file, "w+") as file:
         file.write(CKOOL_TOML)
 

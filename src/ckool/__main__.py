@@ -97,14 +97,14 @@ def main(
 
 @config_app.command("generate_example", help="Generate example .toml file.")
 def generate_example(
-    filepath: Annotated[
+    target_path: Annotated[
         str,
         typer.Option(
-            help="A filepath where the example .toml file will be saved.",
+            help="A folder path where the example .toml file will be saved.",
         ),
     ]
 ):
-    generate_example_config(pathlib.Path(filepath))
+    generate_example_config(pathlib.Path(target_path))
 
 
 @config_app.command(

@@ -1,5 +1,6 @@
 from ckool.other.types import CompressionTypes, HashTypes
 
+DEFAULT_TOML_NAME = ".ckool.toml"
 TEMPORARY_DIRECTORY_NAME = ".tmp_ckan_tool"
 LOGGER = None
 HASH_TYPE = HashTypes.sha256
