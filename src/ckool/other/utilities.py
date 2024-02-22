@@ -99,7 +99,7 @@ def enrich_resource_metadata(
 
 def collect_metadata(file: pathlib.Path, hash_: str, hash_type: HashTypes):
     return {
-        "file": str(file),
+        "file": file.as_posix(),
         "hash": hash_,
         "hash_type": hash_type.value,
         "size": file.stat().st_size,

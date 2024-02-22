@@ -250,12 +250,15 @@ def handle_upload(
         factor=UPLOAD_FUNC_FACTOR,
     )
     for meta in metadata_map.values():
+        filepath = meta["file"]
+        del meta["file"]
+
         upload_func(
             ckan_api_input=cfg_ckan_api,
             secure_interface_input=cfg_secure_interface,
             ckan_storage_path=cfg_other["ckan_storage_path"],
             package_name=package_name,
-            filepath=meta["file"],
+            filepath=filepath,
             metadata=meta,
             empty_file_name=EMPTY_FILE_NAME,
             progressbar=progressbar,
