@@ -375,6 +375,7 @@ def download_all_metadata(
         help="Also return private packages.",
     ),
 ):
+
     return _download_all_metadata(
         include_private,
         OPTIONS["config"],

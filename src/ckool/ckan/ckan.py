@@ -104,7 +104,7 @@ class CKAN:
         https://docs.ckan.org/en/2.9/api/#ckan.logic.action.get.package_search
         """
 
-        if not kwargs.get("include_private"):
+        if kwargs.get("include_private", None) is None:
             kwargs["include_private"] = True
         if not kwargs.get("rows"):
             kwargs["rows"] = 1000
