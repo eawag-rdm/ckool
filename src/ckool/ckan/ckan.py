@@ -78,7 +78,7 @@ class CKAN:
         verify_certificate: bool = True,
     ):
         self.server = server
-        self.token = token if token is not None else get_secret(secret_token)
+        self.token = token if token else get_secret(secret_token)
         self.verify = verify_certificate
 
     def connection(self):

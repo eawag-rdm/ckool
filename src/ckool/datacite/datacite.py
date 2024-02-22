@@ -27,7 +27,7 @@ class DataCiteAPI:
     def __init__(
         self, host, prefix, user, password=None, secret_password=None, offset=0
     ):
-        if secret_password is not None:
+        if secret_password:
             password = get_secret(secret_password)
         self.auth = HTTPBasicAuth(username=user, password=password)
         self.username = user

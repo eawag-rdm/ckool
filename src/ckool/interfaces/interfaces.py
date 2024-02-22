@@ -29,16 +29,16 @@ class SecureInterface:
                 self.secret_password and self.ssh_key and self.secret_passphrase,
                 self.secret_password
                 and self.ssh_key
-                and self.secret_passphrase is None,
+                and not self.secret_passphrase,
                 self.secret_password
-                and self.ssh_key is None
+                and not self.ssh_key
                 and self.secret_passphrase,
-                self.secret_password is None
-                and self.ssh_key is None
+                not self.secret_password
+                and not self.ssh_key
                 and self.secret_passphrase,
-                self.secret_password is None
-                and self.ssh_key is None
-                and self.secret_passphrase is None,
+                not self.secret_password
+                and not self.ssh_key
+                and not self.secret_passphrase,
             ]
         ):
             raise ValueError(
