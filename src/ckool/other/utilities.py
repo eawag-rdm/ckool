@@ -17,7 +17,7 @@ def get_secret(name):
         proc = run(["pass", name], stdout=PIPE, stderr=PIPE)
         proc.check_returncode()
     except CalledProcessError:
-        sys.exit("ERROR: Didn't find {} in .password-store either")
+        sys.exit(f"ERROR: Could not find '{name}' in 'pass' password-store or 'env' variables.")
     else:
         secret = proc.stdout.decode("utf-8")
         if "\n" in secret:
