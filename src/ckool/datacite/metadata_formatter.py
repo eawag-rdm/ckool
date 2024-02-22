@@ -41,7 +41,7 @@ def _date_from_iso(isodate):
 
 def _converttime(solrtimerange):
     # Converts SOLR date & daterange - format to RKMS-ISO8601
-    if re.search("\s+TO\s+", solrtimerange):
+    if re.search(r"\s+TO\s+", solrtimerange):
         fro, to = solrtimerange.split("TO")
         fro = fro.strip()
         fro = "" if fro == "*" else fro
