@@ -186,7 +186,7 @@ def upload_package(
         help="Folder that contain the package resources.",
     ),
     include_sub_folders: bool = typer.Option(
-        None,
+        False,
         "--include-sub-folders",
         "-isf",
         help="By default, any folders in the package folder will be ignored. "
@@ -266,7 +266,7 @@ def upload_resource(
 
 
 @get_app.command("package")
-def download_package(
+def get_package(
     package_name: str = typer.Argument(
         help="Name of the package to download",
     ),
@@ -310,8 +310,9 @@ def get_local_resource_location(
     )
 
 
+# TODO: is this useful?
 @get_app.command("resource")
-def download_resource(
+def get_resource(
     url: str = typer.Argument(
         help="URL of resource.",
     ),
@@ -332,8 +333,9 @@ def download_resource(
     )
 
 
+# TODO: is this useful?
 @get_app.command("resources")
-def download_resources(
+def get_resources(
     url_file: str = typer.Argument(
         help="A file containing all urls that should be downloaded. Each one in a new line.",
     ),
@@ -362,7 +364,7 @@ def download_resources(
 
 
 @get_app.command("metadata")
-def download_metadata(
+def get_metadata(
     package_name: str = typer.Argument(
         help="Name of the package, for which to get the metadata.",
     ),
@@ -384,7 +386,7 @@ def download_metadata(
 
 
 @get_app.command("all_metadata")
-def download_all_metadata(
+def get_all_metadata(
     include_private: bool = typer.Option(
         False,
         "--include-private",

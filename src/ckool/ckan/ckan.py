@@ -6,7 +6,7 @@ import ckanapi
 import requests
 from tqdm.auto import tqdm
 
-from ckool import EMPTY_FILE_NAME
+from ckool import EMPTY_FILE_NAME, PACKAGE_META_DATA_FILE_ENDING
 from ckool.ckan.upload import upload_resource
 from ckool.other.types import HashTypes
 from ckool.other.utilities import get_secret
@@ -403,8 +403,8 @@ class CKAN:
             destination = pathlib.Path(destination)
 
         metadata = self.get_package(package_name)
-        with (destination / "metadata.json").open("w") as f:
-            json.dump(metadata, f)
+        with (destination / f"metadata{PACKAGE_META_DATA_FILE_ENDING}").open("w") as f:
+            json.dump(metadata, f, indent=4)
 
         resources_to_download = [
             res["url"] for res in metadata["resources"] if res["url_type"] == "upload"
@@ -426,7 +426,7 @@ class CKAN:
                 chunk_size=chunk_size,
             )
 
-        return files + [destination / "metadata.json"]
+        return files + [destination / f"metadata{PACKAGE_META_DATA_FILE_ENDING}"]
 
 
 def filter_resources(
