@@ -46,22 +46,44 @@ app.add_typer(
 )
 
 prepare_app = typer.Typer()
-app.add_typer(prepare_app, name="prepare")
+app.add_typer(
+    prepare_app,
+    name="prepare",
+    help="Get everything ready for your package upload, compress folders and collect metadata for your files.",
+)
 
 create_app = typer.Typer()
-app.add_typer(create_app, name="upload")
+app.add_typer(
+    create_app, name="upload", help="Upload an entire package or a single resources."
+)
 
 get_app = typer.Typer()
-app.add_typer(get_app, name="get")
+app.add_typer(
+    get_app,
+    name="get",
+    help="Retrieve data from ckan, metadata, resources, entire packages or maybe the local file path of a resource.",
+)
 
 patch_app = typer.Typer()
-app.add_typer(patch_app, name="patch")
+app.add_typer(
+    patch_app,
+    name="patch",
+    help="Patching hashes, metadata, resources, packages. You can also patch datacite records.",
+)
 
 delete_app = typer.Typer()
-app.add_typer(delete_app, name="delete")
+app.add_typer(
+    delete_app,
+    name="delete",
+    help="Delete a package or ALL resources in a package that have a certain name.",
+)
 
 publish_app = typer.Typer()
-app.add_typer(publish_app, name="publish")
+app.add_typer(
+    publish_app,
+    name="publish",
+    help="Publish an organization, project or a data package.",
+)
 
 
 @create_app.callback()
@@ -123,7 +145,7 @@ def set_default(
     set_config_file_as_default(pathlib.Path(filepath))
 
 
-@prepare_app.command("package")
+@prepare_app.command("package", help="Compress folders, determine file stats.")
 def prepare_package(
     package_folder: str = typer.Argument(
         help="Folder that contain the package resources.",
@@ -186,7 +208,9 @@ def prepare_package(
 
 
 # TODO: add check integrity after upload as an option
-@create_app.command("package")
+@create_app.command(
+    "package", help="Upload resources and their metadata to an existing package."
+)
 def upload_package(
     package_name: str = typer.Argument(
         help="Package name in CKAN.",
@@ -248,7 +272,7 @@ def upload_package(
     )
 
 
-@create_app.command("resource")
+@create_app.command("resource", help="Upload a single resource.")
 def upload_resource(
     package_name: str = typer.Argument(
         help="Package name in CKAN.",
@@ -274,7 +298,9 @@ def upload_resource(
     )
 
 
-@get_app.command("package")
+@get_app.command(
+    "package", help="Download all resources of a package and the metadata."
+)
 def get_package(
     package_name: str = typer.Argument(
         help="Name of the package to download",
@@ -300,7 +326,7 @@ def get_package(
     )
 
 
-@get_app.command("local-path")
+@get_app.command("local-path", help="Returns the local filepath of a resource.")
 def get_local_resource_location(
     package_name: str = typer.Argument(
         help="Name of the package to download",
@@ -320,7 +346,7 @@ def get_local_resource_location(
 
 
 # TODO: is this useful?
-@get_app.command("resource")
+@get_app.command("resource", help="Download a single resource.")
 def get_resource(
     url: str = typer.Argument(
         help="URL of resource.",
@@ -343,7 +369,7 @@ def get_resource(
 
 
 # TODO: is this useful?
-@get_app.command("resources")
+@get_app.command("resources", help="Download all resources, specified in a file.")
 def get_resources(
     url_file: str = typer.Argument(
         help="A file containing all urls that should be downloaded. Each one in a new line.",
@@ -372,7 +398,7 @@ def get_resources(
     )
 
 
-@get_app.command("metadata")
+@get_app.command("metadata", help="Only get the metadata.")
 def get_metadata(
     package_name: str = typer.Argument(
         help="Name of the package, for which to get the metadata.",
@@ -394,7 +420,7 @@ def get_metadata(
     )
 
 
-@get_app.command("all_metadata")
+@get_app.command("all_metadata", help="Get all metadata in ckan instance.")
 def get_all_metadata(
     include_private: bool = typer.Option(
         False,
@@ -412,7 +438,7 @@ def get_all_metadata(
     )
 
 
-@patch_app.command("package")
+@patch_app.command("package", help="Update specified files and fields of package.")
 def patch_package(
     metadata_file: str = typer.Argument(
         help="JSON file containing the metadata to create package with.",
@@ -431,7 +457,7 @@ def patch_package(
     )
 
 
-@patch_app.command("resource")
+@patch_app.command("resource", help="Update specified file and fields of resource.")
 def patch_resource(
     metadata_file: str = typer.Argument(
         help="JSON file containing the metadata to create package with.",
@@ -453,7 +479,9 @@ def patch_resource(
     )
 
 
-@patch_app.command("resource_hash")
+@patch_app.command(
+    "resource_hash", help="Update the 'hash' and 'hashtype' field for resource."
+)
 def patch_resource_hash(
     package_name: str = typer.Argument(
         help="Name of package.",
@@ -486,7 +514,7 @@ def patch_resource_hash(
     )
 
 
-@patch_app.command("metadata")
+@patch_app.command("metadata", help="Update specified metadata fields of package only.")
 def patch_metadata(
     package_name: str = typer.Argument(
         help="Name of package you want to patch.",
@@ -505,7 +533,7 @@ def patch_metadata(
     )
 
 
-@patch_app.command("datacite")
+@patch_app.command("datacite", help="Update datacite record.")
 def patch_datacite(
     metadata_file: str = typer.Argument(
         help="JSON file containing the metadata to create package with.",
@@ -523,7 +551,10 @@ def patch_datacite(
 # TODO exclude resource flags comma separated list
 #  check hashes
 #  restricted sources can't be published by default
-@publish_app.command("package")
+@publish_app.command(
+    "package",
+    help="Publish a package, retrieving the data from one ckan instance, enriching the metadata and uploading it to another ckan isntance.",
+)
 def publish_package(
     package_name: str = typer.Argument(
         help="Name of the data package you would like to publish.",
@@ -583,7 +614,10 @@ def publish_package(
     )
 
 
-@publish_app.command("organization")
+@publish_app.command(
+    "organization",
+    help="Publish an organization, copying it from one ckan instance to another.",
+)
 def publish_organization(
     organization_name: str = typer.Argument(
         help="Name of the organization to publish.",
@@ -598,7 +632,9 @@ def publish_organization(
     )
 
 
-@publish_app.command("project")
+@publish_app.command(
+    "project", help="Publish a project, copying it from one ckan instance to another."
+)
 def publish_organization(
     project_name: str = typer.Argument(
         help="Name of the organization to publish.",
@@ -613,7 +649,10 @@ def publish_organization(
     )
 
 
-@publish_app.command("controlled_vocabulary")
+@publish_app.command(
+    "controlled_vocabulary",
+    help="Publishing the controlled vocabulary, copying it from one ckan instance to another.",
+)
 def publish_controlled_vocabulary(
     organization_name: str = typer.Argument(
         help="Name of the organization to publish.",
@@ -628,7 +667,7 @@ def publish_controlled_vocabulary(
     )
 
 
-@delete_app.command("package")
+@delete_app.command("package", help="Delete a package.")
 def delete_package(
     package_name: str = typer.Argument(
         help="Name of the package, for which to get the metadata.",
@@ -651,7 +690,9 @@ def delete_package(
         print("Deletion aborted.")
 
 
-@delete_app.command("resource")
+@delete_app.command(
+    "resource", help="Delete all resource of a give name in a specified package."
+)
 def delete_resource(
     package_name: str = typer.Argument(
         help="Name of the package, that should be deleted",

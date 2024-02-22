@@ -5,28 +5,17 @@ import sys
 
 from rich.prompt import Prompt
 
-from ckool import (
-    DOWNLOAD_CHUNK_SIZE,
-    HASH_BLOCK_SIZE,
-    PACKAGE_META_DATA_FILE_ENDING,
-    TEMPORARY_DIRECTORY_NAME,
-    UPLOAD_FUNC_FACTOR,
-)
+from ckool import (DOWNLOAD_CHUNK_SIZE, HASH_BLOCK_SIZE,
+                   PACKAGE_META_DATA_FILE_ENDING, TEMPORARY_DIRECTORY_NAME,
+                   UPLOAD_FUNC_FACTOR)
 from ckool.ckan.ckan import CKAN, filter_resources
 from ckool.ckan.publishing import (
-    any_missing_organization_projects_variables,
-    collect_missing_entity,
-    create_missing_organization_projects_variables,
-    create_package_raw,
-    create_resource_raw,
-    enrich_and_store_metadata,
-    get_missing_organization_projects_variables,
-    patch_package_raw,
-    patch_resource_metadata_raw,
-    pre_publication_checks,
-    publish_datacite_doi,
-    update_datacite_doi,
-)
+    any_missing_organization_projects_variables, collect_missing_entity,
+    create_missing_organization_projects_variables, create_package_raw,
+    create_resource_raw, enrich_and_store_metadata,
+    get_missing_organization_projects_variables, patch_package_raw,
+    patch_resource_metadata_raw, pre_publication_checks, publish_datacite_doi,
+    update_datacite_doi)
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
 from ckool.interfaces.mixed_requests import get_citation_from_doi
@@ -37,14 +26,9 @@ from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
 from ckool.other.utilities import resource_is_link
 from ckool.parallel_runner import map_function_with_threadpool
-from ckool.templates import (
-    get_upload_func,
-    handle_file,
-    handle_folder,
-    handle_upload,
-    hash_remote,
-    resource_integrity_between_ckan_instances_intact,
-)
+from ckool.templates import (get_upload_func, handle_file, handle_folder,
+                             handle_upload, hash_remote,
+                             resource_integrity_between_ckan_instances_intact)
 
 
 # TODO adding additional resource metadata fields how? Maybe via file
