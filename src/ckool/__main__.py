@@ -53,7 +53,7 @@ get_app = typer.Typer()
 app.add_typer(get_app, name="get")
 
 patch_app = typer.Typer()
-app.add_typer(get_app, name="patch")
+app.add_typer(patch_app, name="patch")
 
 delete_app = typer.Typer()
 app.add_typer(delete_app, name="delete")
