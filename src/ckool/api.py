@@ -192,9 +192,10 @@ def _prepare_package(
                     block_size=HASH_BLOCK_SIZE,
                     progressbar=True,
                 )
-            elif include_sub_folders and (
-                folder := info["folder"]
-            ):  # folders are archived and then hashed
+            elif folder := info["folder"]:  # folders are archived and then hashed
+                if not include_sub_folders:
+                    continue
+
                 handle_folder(
                     folder,
                     hash_func,
