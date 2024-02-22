@@ -2,7 +2,6 @@ import pathlib
 
 import typer
 from rich.prompt import Prompt
-from typing_extensions import Annotated
 
 from ckool.api import (
     _delete_package,
@@ -22,6 +21,7 @@ from ckool.api import (
     _publish_package,
     _upload_package,
     _upload_resource,
+    _get_local_resource_location
 )
 from ckool.other.types import CompressionTypes, HashTypes
 
@@ -49,11 +49,11 @@ app.add_typer(prepare_app, name="prepare")
 create_app = typer.Typer()
 app.add_typer(create_app, name="upload")
 
-download_app = typer.Typer()
-app.add_typer(download_app, name="download")
+get_app = typer.Typer()
+app.add_typer(get_app, name="get")
 
 patch_app = typer.Typer()
-app.add_typer(download_app, name="patch")
+app.add_typer(get_app, name="patch")
 
 delete_app = typer.Typer()
 app.add_typer(delete_app, name="delete")
@@ -63,7 +63,7 @@ app.add_typer(publish_app, name="publish")
 
 
 @create_app.callback()
-@download_app.callback()
+@get_app.callback()
 @patch_app.callback()
 @prepare_app.callback()
 @publish_app.callback()
@@ -101,7 +101,6 @@ def generate_example(
         default=None,
         help="A folder path where the example .toml file will be saved.",
     ),
-
 ):
     if target_path is None:
         generate_example_config(pathlib.Path.cwd())
@@ -266,7 +265,7 @@ def upload_resource(
     )
 
 
-@download_app.command("package")
+@get_app.command("package")
 def download_package(
     package_name: str = typer.Argument(
         help="Name of the package to download",
@@ -292,7 +291,26 @@ def download_package(
     )
 
 
-@download_app.command("resource")
+@get_app.command("package")
+def get_local_resource_location(
+    package_name: str = typer.Argument(
+        help="Name of the package to download",
+    ),
+    resource_name: str = typer.Argument(
+        help="Name of the resource",
+    ),
+):
+    return _get_local_resource_location(
+        package_name=package_name,
+        resource_name=resource_name,
+        config=OPTIONS["config"],
+        ckan_instance=OPTIONS["ckan-instance"],
+        verify=OPTIONS["verify"],
+        test=OPTIONS["test"],
+    )
+
+
+@get_app.command("resource")
 def download_resource(
     url: str = typer.Argument(
         help="URL of resource.",
@@ -314,7 +332,7 @@ def download_resource(
     )
 
 
-@download_app.command("resources")
+@get_app.command("resources")
 def download_resources(
     url_file: str = typer.Argument(
         help="A file containing all urls that should be downloaded. Each one in a new line.",
@@ -343,7 +361,7 @@ def download_resources(
     )
 
 
-@download_app.command("metadata")
+@get_app.command("metadata")
 def download_metadata(
     package_name: str = typer.Argument(
         help="Name of the package, for which to get the metadata.",
@@ -365,7 +383,7 @@ def download_metadata(
     )
 
 
-@download_app.command("all_metadata")
+@get_app.command("all_metadata")
 def download_all_metadata(
     include_private: bool = typer.Option(
         False,
@@ -374,7 +392,6 @@ def download_all_metadata(
         help="Also return private packages.",
     ),
 ):
-
     return _download_all_metadata(
         include_private,
         OPTIONS["config"],

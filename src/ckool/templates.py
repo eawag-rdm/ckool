@@ -69,7 +69,7 @@ def upload_resource_file_via_scp(
     )
 
     new_resource_name = name if (name := metadata.get("name")) else filepath.name
-    return ckan_instance.path_empty_resource_name(
+    return ckan_instance.patch_empty_resource_name(
         package_name=package_name, new_resource_name=new_resource_name
     )
 

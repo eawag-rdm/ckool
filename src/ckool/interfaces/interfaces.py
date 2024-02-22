@@ -27,12 +27,8 @@ class SecureInterface:
         if any(
             [
                 self.secret_password and self.ssh_key and self.secret_passphrase,
-                self.secret_password
-                and self.ssh_key
-                and not self.secret_passphrase,
-                self.secret_password
-                and not self.ssh_key
-                and self.secret_passphrase,
+                self.secret_password and self.ssh_key and not self.secret_passphrase,
+                self.secret_password and not self.ssh_key and self.secret_passphrase,
                 not self.secret_password
                 and not self.ssh_key
                 and self.secret_passphrase,

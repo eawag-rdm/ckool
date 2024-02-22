@@ -1,8 +1,8 @@
 import pathlib
 import tomllib
 from textwrap import dedent
-from ckool import DEFAULT_TOML_NAME
 
+from ckool import DEFAULT_TOML_NAME
 
 CKOOL_TOML = dedent(
     """

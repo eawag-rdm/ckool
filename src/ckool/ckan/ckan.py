@@ -223,7 +223,7 @@ class CKAN:
         resource_data_to_update.update({"id": resource_id})
         return self.plain_action_call("resource_patch", **resource_data_to_update)
 
-    def path_empty_resource_name(
+    def patch_empty_resource_name(
         self,
         package_name: str,
         new_resource_name: str,

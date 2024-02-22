@@ -1,5 +1,6 @@
 import json
 import time
+from copy import deepcopy
 
 import ckanapi
 import pytest
@@ -7,6 +8,7 @@ import pytest
 from ckool import HASH_TYPE
 from ckool.ckan.ckan import filter_resources
 from ckool.other.hashing import get_hash_func
+from tests.ckool.data.inputs.ckan_entity_data import package_data
 
 hasher = get_hash_func(HASH_TYPE)
 
@@ -404,3 +406,18 @@ def test_add_package_to_project(ckan_instance, ckan_envvars, ckan_setup_data):
 @pytest.mark.impure
 def test_get_user(ckan_instance, ckan_envvars, ckan_setup_data):
     assert ckan_instance.get_user("ckan_admin")
+
+
+@pytest.mark.impure
+def test_create_package_with_additional_field(
+    ckan_instance, ckan_envvars, ckan_setup_data
+):
+    pkg_name = "another_new_package"
+    pkg = deepcopy(package_data)
+
+    pkg.update({"geographic_name": ["Switzerland"]})
+    pkg["name"] = pkg_name
+
+    ckan_instance.create_package(**pkg)
+
+    assert "geographic_name" in ckan_instance.get_package(pkg_name).keys()
