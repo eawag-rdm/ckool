@@ -1,6 +1,7 @@
 import json
 import pathlib
 import shutil
+import sys
 
 from rich.prompt import Prompt
 
@@ -819,3 +820,30 @@ def _delete_package(
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
     print(json.dumps(ckan.delete_package(package_id=package_name), indent=4))
+
+
+def _delete_resource(
+    package_name: str,
+    resource_name: str,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
+    section = "Production" if not test else "Test"
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api.update({"verify_certificate": verify})
+    ckan = CKAN(**cfg_ckan_api)
+
+    to_delete = [
+        r["id"]
+        for r in ckan.get_package(package_name)["resources"]
+        if r["name"] == resource_name
+    ]
+    if not to_delete:
+        sys.exit(
+            f"EXIT: No resource '{resource_name}' exists in the package '{package_name}'."
+        )
+
+    for resource_id in to_delete:
+        ckan.delete_resource(resource_id=resource_id)

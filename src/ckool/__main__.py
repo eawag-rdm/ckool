@@ -5,6 +5,7 @@ from rich.prompt import Prompt
 
 from ckool.api import (
     _delete_package,
+    _delete_resource,
     _download_all_metadata,
     _download_metadata,
     _download_package,
@@ -20,8 +21,9 @@ from ckool.api import (
     _publish_controlled_vocabulary,
     _publish_organization,
     _publish_package,
+    _publish_project,
     _upload_package,
-    _upload_resource, _publish_project,
+    _upload_resource,
 )
 from ckool.other.types import CompressionTypes, HashTypes
 
@@ -640,6 +642,33 @@ def delete_package(
     if confirmation == "yes":
         return _delete_package(
             package_name,
+            OPTIONS["config"],
+            OPTIONS["ckan-instance"],
+            OPTIONS["verify"],
+            OPTIONS["test"],
+        )
+    else:
+        print("Deletion aborted.")
+
+
+@delete_app.command("resource")
+def delete_resource(
+    package_name: str = typer.Argument(
+        help="Name of the package, that should be deleted",
+    ),
+    resource_name: str = typer.Argument(
+        help="Name of the resource, that should be deleted. All resources with that name will be deleted.",
+    ),
+):
+    confirmation = Prompt.ask(
+        f"Are you sure you want to delete the package '{package_name}' on '{OPTIONS['ckan-instance']}'?",
+        choices=["no", "yes"],
+        default="no",
+    )
+    if confirmation == "yes":
+        return _delete_resource(
+            package_name,
+            resource_name,
             OPTIONS["config"],
             OPTIONS["ckan-instance"],
             OPTIONS["verify"],
