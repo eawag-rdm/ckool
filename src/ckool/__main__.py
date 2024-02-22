@@ -97,28 +97,27 @@ def main(
 
 @config_app.command("generate_example", help="Generate example .toml file.")
 def generate_example(
-    target_path: Annotated[
-        str,
-        typer.Option(
-            help="A folder path where the example .toml file will be saved.",
-        ),
-    ]
+    target_path: str = typer.Option(
+        default=None,
+        help="A folder path where the example .toml file will be saved.",
+    ),
+
 ):
-    generate_example_config(pathlib.Path(target_path))
+    if target_path is None:
+        generate_example_config(pathlib.Path.cwd())
+    else:
+        generate_example_config(pathlib.Path(target_path))
 
 
 @config_app.command(
     "set_default", help="Set and existing .toml file as the default configuration."
 )
 def set_default(
-    filepath: Annotated[
-        str,
-        typer.Option(
-            help="Path to your .toml file, containing your desired settings. "
-            "Setting a default will save this file in your home_directory, "
-            "the program will then use this file automatically if not other file is provided.",
-        ),
-    ]
+    filepath: str = typer.Argument(
+        help="Path to your .toml file, containing your desired settings. "
+        "Setting a default will save this file in your home_directory, "
+        "the program will then use this file automatically if not other file is provided.",
+    ),
 ):
     set_config_file_as_default(pathlib.Path(filepath))
 
