@@ -22,8 +22,8 @@ CKOOL_TOML = dedent(
     ]
     
     ckan_server = [
-        {instance = "...", host = "...", port = ..., user = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..." },
-        {instance = "...", host = "...", port = ..., user = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..."}
+        {instance = "...", host = "...", port = ..., username = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..." },
+        {instance = "...", host = "...", port = ..., username = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..."}
     ]
     other = [
         {instance = "...", ckan_storage_path = "...", space_available_on_server_root_disk=...},
@@ -40,7 +40,7 @@ CKOOL_TOML = dedent(
     ]
     
     ckan_server = [
-        {instance = "...", host = "...", port = 5224, user = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..." },
+        {instance = "...", host = "...", port = 5224, username = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..." },
     ]
     
     other = [

@@ -17,24 +17,14 @@ https://docs.ckan.org/en/2.9/api/index.html#action-api-reference
 """
 
 
-def get_resource_key(resources: list, package_name: str, resource_name: str):
-    names, ids = [d["name"] for d in resources], [d["id"] for d in resources]
-
-    if len(set(names)) != len(names) and resource_name in names:
-        raise ValueError(
-            f"The resource name you provided '{resource_name}' is not unique in the package '{package_name}'. "
-            f"Please use the a resource id."
-        )
-    return "name" if resource_name in names else "id"
-
-
 def resource_name_to_id(resources: list, package_name: str, resource_name_or_id: str):
     names, ids = [d["name"] for d in resources], [d["id"] for d in resources]
 
     if len(set(names)) != len(names) and resource_name_or_id in names:
         raise ValueError(
             f"The resource name you provided '{resource_name_or_id}' is not unique in the package '{package_name}'. "
-            f"Please use the a resource id."
+            f"Please use the a resource id.\n{repr(list(zip(names, ids)))}"
+
         )
     if resource_name_or_id in names:
         return [r["id"] for r in resources if r["name"] == resource_name_or_id][0]
