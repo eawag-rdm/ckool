@@ -1,3 +1,4 @@
+import json
 import pathlib
 
 from rich.prompt import Prompt
@@ -316,7 +317,10 @@ def _download_metadata(
     filter_fields = filter_fields.split(",")
 
     ckan = CKAN(**cfg_ckan_api)
-    return ckan.get_package(package_name=package_name, filter_fields=filter_fields)
+    return json.dumps(
+        ckan.get_package(package_name=package_name, filter_fields=filter_fields),
+        indent=4
+    )
 
 
 def _download_all_metadata(
@@ -337,7 +341,7 @@ def _download_all_metadata(
             "Please check the ckanapi documentation for the package_search function "
             "on how to implement retrieval of more rows."
         )
-    return result
+    return json.dumps(result, indent=4)
 
 
 def _patch_package(
@@ -444,7 +448,10 @@ def _patch_metadata(
     metadata = read_cache(metadata_file)
 
     ckan = CKAN(**cfg_ckan_api)
-    return ckan.patch_package_metadata(package_name, metadata)
+    return json.dumps(
+        ckan.patch_package_metadata(package_name, metadata),
+        indent=4
+    )
 
 
 def _patch_datacite(
@@ -800,4 +807,7 @@ def _delete_package(
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
-    ckan.delete_package(package_id=package_name)
+    return json.dumps(
+        ckan.delete_package(package_id=package_name),
+        indent=4
+    )
