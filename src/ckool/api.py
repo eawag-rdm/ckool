@@ -493,8 +493,7 @@ def _patch_datacite(
     verify: bool,
     test: bool,
 ):
-    print(locals())
-    return
+    raise NotImplementedError("This feature is not implemented yet.")
 
 
 def _publish_package(
