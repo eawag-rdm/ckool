@@ -101,14 +101,14 @@ def hash_remote(
     ckan_storage_path: str,
     package_name: str,
     resource_id_or_name: str,
-    hash_type: HashTypes = HASH_TYPE,
+    hash_type: HashTypes | str = HASH_TYPE.sha256,
 ):
-    hash_type_map = {  # mapping the input one might expect to linux command
+    hash_type_map = {  # mapping the input one might expect to linux command CKAN only supports md5 and sha256
         "md5": "md5sum",
-        "sha1": "sha1sum",
-        "sha224": "sha224sum",
+        # "sha1": "sha1sum",
+        # "sha224": "sha224sum",
         "sha256": "sha256sum",
-        "sha512": "sha512sum",
+        # "sha512": "sha512sum",
     }
     si = SecureInterface(**secure_interface_input)
     ckan = CKAN(**ckan_api_input)

@@ -5,17 +5,28 @@ import sys
 
 from rich.prompt import Prompt
 
-from ckool import (DOWNLOAD_CHUNK_SIZE, HASH_BLOCK_SIZE,
-                   PACKAGE_META_DATA_FILE_ENDING, TEMPORARY_DIRECTORY_NAME,
-                   UPLOAD_FUNC_FACTOR)
+from ckool import (
+    DOWNLOAD_CHUNK_SIZE,
+    HASH_BLOCK_SIZE,
+    PACKAGE_META_DATA_FILE_ENDING,
+    TEMPORARY_DIRECTORY_NAME,
+    UPLOAD_FUNC_FACTOR,
+)
 from ckool.ckan.ckan import CKAN, filter_resources
 from ckool.ckan.publishing import (
-    any_missing_organization_projects_variables, collect_missing_entity,
-    create_missing_organization_projects_variables, create_package_raw,
-    create_resource_raw, enrich_and_store_metadata,
-    get_missing_organization_projects_variables, patch_package_raw,
-    patch_resource_metadata_raw, pre_publication_checks, publish_datacite_doi,
-    update_datacite_doi)
+    any_missing_organization_projects_variables,
+    collect_missing_entity,
+    create_missing_organization_projects_variables,
+    create_package_raw,
+    create_resource_raw,
+    enrich_and_store_metadata,
+    get_missing_organization_projects_variables,
+    patch_package_raw,
+    patch_resource_metadata_raw,
+    pre_publication_checks,
+    publish_datacite_doi,
+    update_datacite_doi,
+)
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
 from ckool.interfaces.mixed_requests import get_citation_from_doi
@@ -26,9 +37,14 @@ from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
 from ckool.other.utilities import resource_is_link
 from ckool.parallel_runner import map_function_with_threadpool
-from ckool.templates import (get_upload_func, handle_file, handle_folder,
-                             handle_upload, hash_remote,
-                             resource_integrity_between_ckan_instances_intact)
+from ckool.templates import (
+    get_upload_func,
+    handle_file,
+    handle_folder,
+    handle_upload,
+    hash_remote,
+    resource_integrity_between_ckan_instances_intact,
+)
 
 
 # TODO adding additional resource metadata fields how? Maybe via file
@@ -650,6 +666,53 @@ def _publish_package(
             for resource in metadata_filtered["resources"]:
                 filepath = cwd / temporary_resource_names[resource["id"]]
 
+                if not ckan_destination.resource_exists(  # Create resource fresh.
+                    package_name=metadata_filtered["name"],
+                    resource_name=resource["name"],
+                ):
+                    upload_func = get_upload_func(
+                        file_sizes=int(resource["size"]),
+                        space_available_on_server_root_disk=cfg_other_destination[
+                            "space_available_on_server_root_disk"
+                        ],
+                        parallel_upload=False,
+                        factor=UPLOAD_FUNC_FACTOR,
+                        is_link=resource_is_link(resource),
+                    )
+                    # Needs fresh uploading and integrity check
+                    create_resource_raw(
+                        ckan_api_input=cfg_ckan_destination,
+                        secure_interface_input=cfg_secure_interface_destination,
+                        ckan_storage_path=cfg_other_destination["ckan_storage_path"],
+                        package_name=metadata_filtered["name"],
+                        metadata=resource,
+                        file_path=filepath,
+                        upload_func=upload_func,
+                        progressbar=True,
+                        prepare_for_publication=True,
+                    )
+
+                    hash_rem = hash_remote(
+                        ckan_api_input=cfg_ckan_destination,
+                        secure_interface_input=cfg_secure_interface_destination,
+                        ckan_storage_path=cfg_other_destination["ckan_storage_path"],
+                        package_name=package_name,
+                        resource_id_or_name=resource["name"],
+                        hash_type=resource["hashtype"],
+                    )
+
+                    ckan_destination.patch_resource_metadata(
+                        resource_id=ckan_destination.resolve_resource_id_or_name_to_id(
+                            package_name, resource["name"]
+                        )["id"],
+                        resource_data_to_update={
+                            "hash": hash_rem,
+                            "hashtype": resource["hashtype"],
+                        },
+                    )
+
+                    continue
+
                 patch_metadata = True
                 if not resource_is_link(resource):
                     resource_integrity_intact = (
@@ -737,7 +800,7 @@ def _publish_package(
     update_datacite_doi(
         datacite_api_instance=datacite,
         local_doi_store_instance=lds,
-        package_name=metadata_filtered["name"],
+        package_name=package_name,
     )
 
     if not no_prompt:
@@ -750,7 +813,7 @@ def _publish_package(
             publish_datacite_doi(
                 datacite_api_instance=datacite,
                 local_doi_store_instance=lds,
-                package_name=metadata_filtered["name"],
+                package_name=package_name,
             )
         else:
             print("Publication aborted.")
@@ -780,6 +843,34 @@ def _publish_project(
     test: bool,
 ):
     raise NotImplementedError("This feature is not implemented yet.")
+
+
+def _publish_doi(
+    package_name: str,
+    prompt_function: Prompt.ask,
+    config: dict,
+    ckan_instance: str,
+    verify: bool,
+    test: bool,
+):
+    section = "Production" if not test else "Test"
+
+    lds = LocalDoiStore(path=config[section]["local_doi_store_path"])
+    datacite = DataCiteAPI(**config[section]["datacite"])
+
+    confirmation = prompt_function(
+        "Should the doi be published? This is irreversible.",
+        choices=["no", "yes"],
+        default="no",
+    )
+    if confirmation == "yes":
+        publish_datacite_doi(
+            datacite_api_instance=datacite,
+            local_doi_store_instance=lds,
+            package_name=package_name,
+        )
+    else:
+        print("Publication aborted.")
 
 
 def _publish_controlled_vocabulary(

@@ -19,6 +19,7 @@ from ckool.api import (
     _patch_resource_hash,
     _prepare_package,
     _publish_controlled_vocabulary,
+    _publish_doi,
     _publish_organization,
     _publish_package,
     _publish_project,
@@ -615,6 +616,25 @@ def publish_package(
 
 
 @publish_app.command(
+    "doi",
+    help="Publish a doi, moving it from the draft state to the published state.",
+)
+def publish_doi(
+    package_name: str = typer.Argument(
+        help="Name of the organization to publish.",
+    ),
+):
+    return _publish_doi(
+        package_name,
+        Prompt.ask,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+        OPTIONS["test"],
+    )
+
+
+@publish_app.command(
     "organization",
     help="Publish an organization, copying it from one ckan instance to another.",
 )
@@ -635,7 +655,7 @@ def publish_organization(
 @publish_app.command(
     "project", help="Publish a project, copying it from one ckan instance to another."
 )
-def publish_organization(
+def publish_project(
     project_name: str = typer.Argument(
         help="Name of the organization to publish.",
     ),

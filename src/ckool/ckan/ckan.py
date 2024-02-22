@@ -117,6 +117,14 @@ class CKAN:
                 requests_kwargs={"verify": self.verify},
             )
 
+    def resource_exists(self, package_name: str, resource_name: str):
+        exists = False
+        for resource in self.get_package(package_name)["resources"]:
+            if resource["name"] == resource_name:
+                exists = True
+                break
+        return exists
+
     def get_all_packages(self, **kwargs):
         """
         https://docs.ckan.org/en/2.9/api/#ckan.logic.action.get.package_search
