@@ -75,7 +75,7 @@ class DataIntegrityError(Exception):
     pass
 
 
-# TODO: not in use
+# TODO: not in use, can be gotten rid of
 def enrich_resource_metadata(
     pkg_name: str,
     filename: pathlib.Path,
@@ -101,7 +101,7 @@ def collect_metadata(file: pathlib.Path, hash_: str, hash_type: HashTypes):
     return {
         "file": str(file),
         "hash": hash_,
-        "hash_type": hash_type,
+        "hash_type": hash_type.value,
         "size": file.stat().st_size,
         "format": file.suffix[1:],  # erasing the point from suffix
     }
