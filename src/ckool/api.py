@@ -445,19 +445,14 @@ def _patch_resource_hash(
         local_resource_path = pathlib.Path(local_resource_path)
         hash_func = get_hash_func(hash_algorithm)
         hash_loc = hash_func(local_resource_path)
-        if hash_func != hash_loc:
+        if hash_rem != hash_loc:
             raise ValueError(
                 f"The local file '{local_resource_path.as_posix()}' and the remote file do not have the same hash!\n"
                 f"local hash: '{hash_loc}'\n"
                 f"remote hash: '{hash_rem}'"
             )
 
-    data = ckan.get_package(package_name)["resources"]
-    key = get_resource_key(data, package_name, resource_name)
-    if key == "id":
-        resource_id = resource_name
-    else:
-        resource_id = [d["id"] for d in data if d[key] == resource_name][0]
+    resource_id = ckan.resolve_resource_id_or_name_to_id(package_name, resource_name)["id"]
 
     ckan.patch_resource_metadata(
         resource_id=resource_id,
