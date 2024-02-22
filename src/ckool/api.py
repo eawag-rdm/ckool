@@ -452,7 +452,9 @@ def _patch_resource_hash(
                 f"remote hash: '{hash_rem}'"
             )
 
-    resource_id = ckan.resolve_resource_id_or_name_to_id(package_name, resource_name)["id"]
+    resource_id = ckan.resolve_resource_id_or_name_to_id(package_name, resource_name)[
+        "id"
+    ]
 
     ckan.patch_resource_metadata(
         resource_id=resource_id,

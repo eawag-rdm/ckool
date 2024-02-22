@@ -24,7 +24,6 @@ def resource_name_to_id(resources: list, package_name: str, resource_name_or_id:
         raise ValueError(
             f"The resource name you provided '{resource_name_or_id}' is not unique in the package '{package_name}'. "
             f"Please use the a resource id.\n{repr(list(zip(names, ids)))}"
-
         )
     if resource_name_or_id in names:
         return [r["id"] for r in resources if r["name"] == resource_name_or_id][0]
