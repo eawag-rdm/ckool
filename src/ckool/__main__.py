@@ -76,7 +76,7 @@ def main(
         False, "--no-verify", help="Skip the certificate verification for web requests."
     ),
     ckan_instance: str = typer.Option(
-        "Eric",
+        "eric",
         "-ci",
         "--ckan-instance",
         help="Which CKAN instance run API requests against. For publishing this will be the 'source' instance.",
