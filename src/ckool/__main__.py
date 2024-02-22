@@ -486,16 +486,16 @@ def patch_resource_hash(
 
 @patch_app.command("metadata")
 def patch_metadata(
-    metadata_file: str = typer.Argument(
-        help="JSON file containing the metadata to create package with.",
-    ),
     package_name: str = typer.Argument(
         help="Name of package you want to patch.",
     ),
+    metadata_file: str = typer.Argument(
+        help="JSON file containing the metadata to create package with.",
+    ),
 ):
     return _patch_metadata(
-        metadata_file,
         package_name,
+        metadata_file,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],

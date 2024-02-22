@@ -463,8 +463,8 @@ def _patch_resource_hash(
 
 
 def _patch_metadata(
-    metadata_file: str,
     package_name: str,
+    metadata_file: str,
     config: dict,
     ckan_instance: str,
     verify: bool,
