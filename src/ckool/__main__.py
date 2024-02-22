@@ -368,7 +368,7 @@ def download_metadata(
 
 @download_app.command("all_metadata")
 def download_all_metadata(
-    include_private: str = typer.Option(
+    include_private: bool = typer.Option(
         False,
         "--include-private",
         "-ip",
