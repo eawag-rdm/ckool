@@ -1,5 +1,6 @@
 import json
 import pathlib
+import shutil
 
 from rich.prompt import Prompt
 
@@ -167,11 +168,14 @@ def _prepare_package(
     compression_type: CompressionTypes,
     hash_algorithm: HashTypes,
     parallel: bool,
-    config: dict,
+    ignore_prepared: bool,
 ):
     package_folder = pathlib.Path(package_folder)
     hash_func = get_hash_func(hash_algorithm)
     compression_func = get_compression_func(compression_type)
+
+    if ignore_prepared:
+        shutil.rmtree(package_folder / TEMPORARY_DIRECTORY_NAME)
 
     if not parallel:
         for info in iter_package(

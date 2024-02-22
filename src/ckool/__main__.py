@@ -164,6 +164,12 @@ def prepare_package(
         "-p",
         help="Use multiple threads/processes to handle job.",
     ),
+    ignore_prepared: bool = typer.Option(
+        False,
+        "--ignore-prepared",
+        "-ip",
+        help="If the resource had already been prepared, should the previous work be ignored?",
+    ),
 ):
     return _prepare_package(
         package_folder,
@@ -173,10 +179,11 @@ def prepare_package(
         compression_type,
         hash_algorithm,
         parallel,
-        OPTIONS["config"],
+        ignore_prepared,
     )
 
 
+# TODO: add check integrity after upload as an option
 @create_app.command("package")
 def upload_package(
     package_name: str = typer.Argument(
