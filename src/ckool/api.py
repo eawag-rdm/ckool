@@ -100,7 +100,7 @@ def _upload_package(
                 )
             else:
                 raise ValueError(
-                    f"This should not happen, the dictionary does not have the expected content: '{repr(info)}'"
+                    f"This should not happen, the dictionary does not have the expected content:\n{repr(info)}"
                 )
 
         handle_upload(
