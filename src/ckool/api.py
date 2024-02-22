@@ -11,7 +11,7 @@ from ckool import (
     TEMPORARY_DIRECTORY_NAME,
     UPLOAD_FUNC_FACTOR,
 )
-from ckool.ckan.ckan import CKAN, filter_resources, get_resource_key
+from ckool.ckan.ckan import CKAN, filter_resources
 from ckool.ckan.publishing import (
     any_missing_organization_projects_variables,
     collect_missing_entity,
