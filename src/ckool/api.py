@@ -784,33 +784,17 @@ def _publish_organization(
     verify: bool,
     test: bool,
 ):
-    # download package check data consistency
-
-    # upload package to eric open
-
-    # publish to datacite
-
-    # update published package
-    print(locals())
-    pass
+    raise NotImplementedError("This feature is not implemented yet.")
 
 
 def _publish_project(
-    organization_name: str,
+    project_name: str,
     config: dict,
     ckan_instance: str,
     verify: bool,
     test: bool,
 ):
-    # download package check data consistency
-
-    # upload package to eric open
-
-    # publish to datacite
-
-    # update published package
-    print(locals())
-    pass
+    raise NotImplementedError("This feature is not implemented yet.")
 
 
 def _publish_controlled_vocabulary(
@@ -820,8 +804,7 @@ def _publish_controlled_vocabulary(
     verify: bool,
     test: bool,
 ):
-    print(locals())
-    pass
+    raise NotImplementedError("This feature is not implemented yet.")
 
 
 def _delete_package(

@@ -21,7 +21,7 @@ from ckool.api import (
     _publish_organization,
     _publish_package,
     _upload_package,
-    _upload_resource,
+    _upload_resource, _publish_project,
 )
 from ckool.other.types import CompressionTypes, HashTypes
 
@@ -589,6 +589,21 @@ def publish_organization(
 ):
     return _publish_organization(
         organization_name,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance"],
+        OPTIONS["verify"],
+        OPTIONS["test"],
+    )
+
+
+@publish_app.command("project")
+def publish_organization(
+    project_name: str = typer.Argument(
+        help="Name of the organization to publish.",
+    ),
+):
+    return _publish_project(
+        project_name,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],

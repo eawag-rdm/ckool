@@ -1,5 +1,5 @@
 [![License](https://img.shields.io/badge/LICENSE-GPL3.0-blue)](https://www.gnu.org/licenses/gpl-3.0.en.html)
-[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-green)](https://www.gnu.org/licenses/gpl-3.0.en.html)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-green)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 [![Tests](https://gitlab.switch.ch/eaw-rdm/ckool/badges/main/pipeline.svg)](https://gitlab.switch.ch/eaw-rdm/ckool/-/commits/main)
 
 # Ckool
@@ -37,12 +37,29 @@ python -m pytest
 For some tests environment variables are required. Create an .env file called `.env` in the directory that contains the `conftest.py` file.
 The file should contain:
 ```env
-TEST_DATACITE_PASSWORD=YOUR-PASSWORD
+TEST_DATACITE_PASSWORD=...
 TEST_DATACITE_URL=https://api.test.datacite.org
-TEST_DATACITE_USER=YOUR-USERNAME
-TEST_DATACITE_PREFIX=YOUR-PREFIX
+TEST_DATACITE_USER=...
+
+TEST_DATACITE_PREFIX=...
 TEST_DATACITE_OFFSET=0
---- inclomplete - more will follow ---
+
+# SecureInterface
+SECURE_INTERFACE_HOST=...
+SECURE_INTERFACE_PORT=...
+SECURE_INTERFACE_USERNAME=ckan
+SECURE_INTERFACE_PASSWORD=
+SECURE_INTERFACE_SSH_KEY=...
+SECURE_INTERFACE_PASSPHRASE=
+
+CKAN_STORAGE_PATH=...
+
+CKAN_URL=https://localhost:8443
+CKAN_TOKEN=...
+CKAN_TEST_PACKAGE_NAME=test_package
+CKAN_TEST_ORGANIZATION_NAME=test_organization
+CKAN_TEST_RESOURCE_NAME = test_resource_link
+CKAN_TEST_GROUP_NAME=test_group
 ```
 
 For running **all** tests with a fully configured `.env` file.
@@ -50,9 +67,9 @@ For running **all** tests with a fully configured `.env` file.
 python -m pytest --run-slow --run-impure
 ```
 
-Or you can use tox to run tests for multiple python versions. A the moment python 3.10 - 3.12 are configured.
+Or you can use tox to run tests for multiple python versions. At the moment python 3.11 and 3.12 are configured.
 Using pyenv to manage the different py-envs once must install these versions and the make them accessible via:
-`pyenv local 3.10.x 3.11.x 3.12.x` in your project folder. Once that is done you can run tox:
+`pyenv local 3.11.x 3.12.x` in your project folder. Once that is done you can run tox:
 
 ```shell
 python -m tox
@@ -64,4 +81,9 @@ To run all tests run tests with the `--run-slow` and `--run-impure` flags (`tox 
 The variables needed to run all test must be specified in the `tool.pytest.ini_options` section under `env`.
 
 
-> More documentation will follow
+## Usage
+You can use the tool via its CLI. 
+
+```shell
+ckool --help
+```

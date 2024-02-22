@@ -65,7 +65,7 @@ env =[
 [tool.tox]
 legacy_tox_ini = """
 [tox]
-envlist = py310,py311,py312
+envlist = py311,py312
 isolated_build = True
 tox_pyenv_fallback=False
 
