@@ -101,7 +101,7 @@ def collect_metadata(file: pathlib.Path, hash_: str, hash_type: HashTypes):
     return {
         "file": file.as_posix(),
         "hash": hash_,
-        "hash_type": hash_type.value,
+        "hashtype": hash_type.value,
         "size": file.stat().st_size,
         "format": file.suffix[1:],  # erasing the point from suffix
     }
