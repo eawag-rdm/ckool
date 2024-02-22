@@ -11,35 +11,42 @@ CKOOL_TOML = dedent(
     # entries (paths) in the 'pass' password manager
     #
     #####################################################################################
-    [Production.Base]
+    [Production]
+    datacite = { user = "...", host = "...", prefix = "...", secret_password = "..."}
     
-    datacite = { user = "user_name", url = "https://api.datacite.org", prefix = "prefix_here"}
     ckan_api = [
-        { instance = "instance_name_1", url = "host_url_1"},
-        { instance = "instance_name_2", url = "host_url_2"},
+        { instance = "...", server = "...", token = "...", secret_token = "..."},
+        { instance = "...", server = "...", token = "...", secret_token = "..."},
     ]
     
     ckan_server = [
-        {instance = "instance_name_1", host = "FQDN_1", port = 22, user = "user_name_1", ssh_key = "/path/to/key_1" },
-        {instance = "instance_name_2", host = "FQDN_2", port = 22, user = "user_name_2", ssh_key = "/path/to/key_2" }
+        {instance = "...", host = "...", port = ..., user = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..." },
+        {instance = "...", host = "...", port = ..., user = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..."}
+    ]
+    other = [
+        {instance = "...", ckan_storage_path = "...", space_available_on_server_root_disk=...},
+        {instance = "...", ckan_storage_path = "...", space_available_on_server_root_disk=..., datamanager="..."}
     ]
     
-    [Production.Secrets]
-    datacite = { password = "very_secret" }
+    local_doi_store_path = "..."
+    
+    [Test]
+    datacite = { user = "...", host = "...", prefix = "..." , secret_password = "..."}
+    
     ckan_api = [
-        { instance = "instance_name_1", apikey = "ckan_api_key_1"},
-        { instance = "instance_name_2", apikey = "ckan_api_key_2"},
-    ]
-    ckan_server = [
-        {instance = "instance_name_1", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key"},
-        {instance = "instance_name_2", passphrase = "passphrase path in pass for ssh key here (if required)", password="if no ssh key"}
+        { instance = "...", server = "...", token = "..."},
     ]
     
-    [Test.Base]
-    datacite = { user = "user_name_test", url = "https://api.test.datacite.org", prefix = "prefix_here_test" }
+    ckan_server = [
+        {instance = "...", host = "...", port = 5224, user = "...", ssh_key = "...", secret_passphrase = "...", secret_password="..." },
+    ]
+    
+    other = [
+        {instance = "...", ckan_storage_path = "...", space_available_on_server_root_disk=..., datamanager="..."},
+    ]
+    
+    local_doi_store_path = "..."
 
-    [Test.Secrets]
-    datacite = {password = "very_secret_test" }
     """
 ).lstrip("\n")
 
