@@ -220,13 +220,16 @@ def _download_package(
     cfg_ckan_api.update({"verify_certificate": verify})
 
     ckan = CKAN(**cfg_ckan_api)
-    return ckan.download_package_with_resources(
-        package_name=package_name,
-        destination=destination,
-        parallel=parallel,
-        max_workers=None,
-        chunk_size=chunk_size,
-    )
+    return print(json.dumps(
+        ckan.download_package_with_resources(
+            package_name=package_name,
+            destination=destination,
+            parallel=parallel,
+            max_workers=None,
+            chunk_size=chunk_size,
+        ),
+        indent=4
+    ))
 
 
 def _download_resource(
@@ -317,10 +320,10 @@ def _download_metadata(
     filter_fields = filter_fields.split(",")
 
     ckan = CKAN(**cfg_ckan_api)
-    return json.dumps(
+    return print(json.dumps(
         ckan.get_package(package_name=package_name, filter_fields=filter_fields),
         indent=4
-    )
+    ))
 
 
 def _download_all_metadata(
@@ -341,7 +344,7 @@ def _download_all_metadata(
             "Please check the ckanapi documentation for the package_search function "
             "on how to implement retrieval of more rows."
         )
-    return json.dumps(result, indent=4)
+    return print(json.dumps(result, indent=4))
 
 
 def _patch_package(
@@ -448,10 +451,10 @@ def _patch_metadata(
     metadata = read_cache(metadata_file)
 
     ckan = CKAN(**cfg_ckan_api)
-    return json.dumps(
+    return print(json.dumps(
         ckan.patch_package_metadata(package_name, metadata),
         indent=4
-    )
+    ))
 
 
 def _patch_datacite(
@@ -807,7 +810,7 @@ def _delete_package(
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
-    return json.dumps(
+    return print(json.dumps(
         ckan.delete_package(package_id=package_name),
         indent=4
-    )
+    ))
