@@ -317,7 +317,8 @@ def _download_metadata(
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
     cfg_ckan_api.update({"verify_certificate": verify})
-    filter_fields = filter_fields.split(",")
+    if filter_fields is not None:
+        filter_fields = filter_fields.split(",")
 
     ckan = CKAN(**cfg_ckan_api)
     return print(json.dumps(
