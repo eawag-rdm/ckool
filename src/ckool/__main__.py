@@ -127,14 +127,14 @@ def prepare_package(
         help="Folder that contain the package resources.",
     ),
     include_sub_folders: bool = typer.Option(
-        None,
+        False,
         "--include-sub-folders",
         "-isf",
         help="By default, any folders in the package folder will be ignored. "
         "If you provide this flag they will be included in the uploading process.",
     ),
     compression_type: CompressionTypes = typer.Option(
-        CompressionTypes.zip,
+        CompressionTypes.zip.value,
         "--compression-type",
         "-ct",
         help="Default is zip.",
@@ -153,7 +153,7 @@ def prepare_package(
         help="Exclude files that follow a certain regex pattern. The default None will not exclude any files.",
     ),
     hash_algorithm: HashTypes = typer.Option(
-        HashTypes.sha256,
+        HashTypes.sha256.value,
         "--hash-algorithm",
         "-ha",
         help="Default is sha256.",
@@ -193,7 +193,7 @@ def upload_package(
         "If you provide this flag they will be included in the uploading process.",
     ),
     compression_type: CompressionTypes = typer.Option(
-        "zip",
+        CompressionTypes.zip.value,
         "--compression-type",
         "-ct",
         help="Default is zip.",
@@ -211,7 +211,7 @@ def upload_package(
         help="Exclude files that follow a certain regex pattern. The default None will not exclude any files.",
     ),
     hash_algorithm: HashTypes = typer.Option(
-        HashTypes.sha256,
+        HashTypes.sha256.value,
         "--hash-algorithm",
         "-ha",
         help="Default is sha256.",
@@ -248,7 +248,7 @@ def upload_resource(
         help="Filepath to the resource to upload. The resource can be a file or a folder.",
     ),
     hash_algorithm: HashTypes = typer.Option(
-        HashTypes.sha256,
+        HashTypes.sha256.value,
         "--hash-algorithm",
         "-ha",
         help="Default is sha256.",
@@ -459,7 +459,7 @@ def patch_resource_hash(
         help="If provided a resource integrity check will be run. Without the resource will only be hashed remotely",
     ),
     hash_algorithm: HashTypes = typer.Option(
-        HashTypes.sha256,
+        HashTypes.sha256.value,
         "--hash-algorithm",
         "-ha",
         help="Default is sha256.",
