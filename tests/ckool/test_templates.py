@@ -249,7 +249,7 @@ def test_hash_remote(
     assert hashed_locally == hashed_remotely
 
 
-# @pytest.mark.impure
+@pytest.mark.impure
 def test_handle_upload(
     tmp_path,
     ckan_instance,
