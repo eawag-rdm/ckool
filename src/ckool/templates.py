@@ -240,7 +240,7 @@ def handle_upload(
     parallel: bool,
     progressbar: bool,
 ):
-    metadata_map = {
+    metadata_map = {  # find all cache files
         cache_file.name: read_cache(cache_file)
         for cache_file in iter_files(
             package_folder / TEMPORARY_DIRECTORY_NAME,
@@ -266,22 +266,59 @@ def handle_upload(
         parallel_upload=parallel,
         factor=UPLOAD_FUNC_FACTOR,
     )
+
+    ckan_instance = CKAN(**cfg_ckan_api)
+
     for meta in metadata_map.values():
-        filepath = meta["file"]
+        filepath = pathlib.Path(meta["file"])
         del meta["file"]
-        # TODO check for resources already on system -> upload with "in progress" has and update when upload finished.
+
+        # Check if resource with corresponding hash is already on ckan
+        real_hash = meta["hash"]
+        meta["hash"] = "-- upload in progress --"
+
+        if ckan_instance.resource_exists(
+            package_name=package_name,
+            resource_name=filepath.name
+        ):
+            meta_on_ckan = ckan_instance.get_resource_meta(
+                package_name=package_name,
+                resource_id_or_name=filepath.name
+            )
+
+            if meta_on_ckan["hash"] == real_hash:
+                # Resource is already on ckan and was uploaded successfully, skip resource upload
+                continue
+
+            elif meta_on_ckan["hash"] == "-- upload in progress --":
+                # This resource was not uploaded properly and needs to be uploaded again, deleting faulty resource
+                ckan_instance.delete_resource(
+                    resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
+                        package_name=package_name,
+                        resource_id_or_name=filepath.name
+                    )
+                )
+
         upload_func(
             ckan_api_input=cfg_ckan_api,
             secure_interface_input=cfg_secure_interface,
             ckan_storage_path=cfg_other["ckan_storage_path"],
             package_name=package_name,
-            filepath=pathlib.Path(filepath),
+            filepath=filepath,
             metadata=meta,
             empty_file_name=EMPTY_FILE_NAME,
             progressbar=progressbar,
         )
 
-    ckan_instance = CKAN(**cfg_ckan_api)
+        r_id = ckan_instance.resolve_resource_id_or_name_to_id(
+            package_name=package_name,
+            resource_id_or_name=["name"]
+        )
+        ckan_instance.patch_resource_metadata(
+            resource_id=r_id,
+            resource_data_to_update={"hash": real_hash}
+        )
+
     ckan_instance.reorder_package_resources(package_name)
 
 

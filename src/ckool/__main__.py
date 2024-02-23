@@ -206,7 +206,7 @@ def prepare_package(
         parallel,
         ignore_prepared,
     )
-
+# TODO: Implement worker for any parallel calls
 
 # TODO: add check integrity after upload as an option
 @create_app.command(
