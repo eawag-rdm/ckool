@@ -269,13 +269,13 @@ def handle_upload(
     for meta in metadata_map.values():
         filepath = meta["file"]
         del meta["file"]
-
+        # TODO check for resources already on system -> upload with "in progress" has and update when upload finished.
         upload_func(
             ckan_api_input=cfg_ckan_api,
             secure_interface_input=cfg_secure_interface,
             ckan_storage_path=cfg_other["ckan_storage_path"],
             package_name=package_name,
-            filepath=filepath,
+            filepath=pathlib.Path(filepath),
             metadata=meta,
             empty_file_name=EMPTY_FILE_NAME,
             progressbar=progressbar,

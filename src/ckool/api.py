@@ -86,6 +86,7 @@ def _upload_package(
                     block_size=HASH_BLOCK_SIZE,
                     progressbar=True,
                 )
+
             elif folder := info["folder"]:  # folders are archived and then hashed
                 if not include_sub_folders:
                     continue

@@ -101,6 +101,74 @@ def test_reorder_package_resources(
 
 
 @pytest.mark.impure
+def test_reorder_package_resources_with_readme(
+    tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
+):
+    files = [
+        tmp_path / "z.ending",
+        tmp_path / "az.txt",
+        tmp_path / "fsq.abc",
+        tmp_path / "ba.as.as.ds",
+        tmp_path / "readme.md"
+    ]
+    for idx, f in enumerate(files):
+        f.write_text(f"file {idx}")
+        meta = {
+            "file": f,
+            "package_id": ckan_envvars["test_package"],
+            "size": f.stat().st_size,
+            "hash": hasher(f),
+            "format": f.suffix[1:],
+            "hashtype": HASH_TYPE,
+        }
+        ckan_instance.create_resource_of_type_file(**meta)
+
+    ckan_instance.reorder_package_resources(ckan_envvars["test_package"])
+    resource_names_ordered = [
+        r["name"]
+        for r in ckan_instance.get_package(ckan_envvars["test_package"], ["resources"])[
+            "resources"
+        ]
+    ]
+
+    assert ['readme.md', 'az.txt', 'ba.as.as.ds', 'fsq.abc', 'test_resource_link', 'z.ending'] == resource_names_ordered
+
+
+@pytest.mark.impure
+def test_reorder_package_resources_with_readme_raises(
+    tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
+):
+    files = [
+        tmp_path / "z.ending",
+        tmp_path / "az.txt",
+        tmp_path / "fsq.abc",
+        tmp_path / "ba.as.as.ds",
+        tmp_path / "readme.md"
+    ]
+    for idx, f in enumerate(files):
+        f.write_text(f"file {idx}")
+        meta = {
+            "file": f,
+            "package_id": ckan_envvars["test_package"],
+            "size": f.stat().st_size,
+            "hash": hasher(f),
+            "format": f.suffix[1:],
+            "hashtype": HASH_TYPE,
+        }
+        ckan_instance.create_resource_of_type_file(**meta)
+
+    ckan_instance.reorder_package_resources(ckan_envvars["test_package"])
+    resource_names_ordered = [
+        r["name"]
+        for r in ckan_instance.get_package(ckan_envvars["test_package"], ["resources"])[
+            "resources"
+        ]
+    ]
+
+    assert ['readme.md', 'az.txt', 'ba.as.as.ds', 'fsq.abc', 'test_resource_link', 'z.ending'] == resource_names_ordered
+
+
+@pytest.mark.impure
 def test_get_package_metadata_filtered(
     tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
 ):

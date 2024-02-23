@@ -298,17 +298,39 @@ class CKAN:
             "package_resource_reorder", id=package_id, order=resource_ids
         )
 
+    @staticmethod
+    def __resource_order(resources: list, reverse=False):
+        resources_without_readme = []
+        readme_id_name = None
+        for _id, _name in resources:
+            if _name.lower() in ["readme.md", "readme.txt"]:
+                if readme_id_name is not None:
+                    raise ValueError("The package contains multiple readme files.")
+                readme_id_name = (_id, _name)
+                continue
+            resources_without_readme.append((_id, _name))
+
+        resource_ids_and_names = sorted(
+            resources_without_readme,
+            reverse=reverse,
+            key=lambda x: x[1],
+        )
+
+        if readme_id_name is not None:
+            resource_ids_and_names.insert(0, readme_id_name)
+
+        return [i[0] for i in resource_ids_and_names]
+
     def reorder_package_resources(self, package_name, reverse=False):
         resources = self.get_package(
             package_name=package_name, filter_fields=["resources"]
         )["resources"]
-        resource_ids = sorted(
+        resource_ids = self.__resource_order(
             [(r["id"], r["name"]) for r in resources],
             reverse=reverse,
-            key=lambda x: x[1],
         )
         return self._update_package_resource_reorder(
-            package_name, [r[0] for r in resource_ids]
+            package_name, resource_ids
         )
 
     def update_linked_resource_url(self, resource_id, url):
