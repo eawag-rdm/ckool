@@ -589,27 +589,15 @@ def _publish_package(
                     package_name=metadata_filtered["name"],
                     resource_name=resource["name"],
                 ):
-                    upload_func = get_upload_func(
-                        file_sizes=int(resource["size"]),
-                        space_available_on_server_root_disk=cfg["cfg_other_target"][
-                            "space_available_on_server_root_disk"
-                        ],
-                        parallel_upload=False,
-                        factor=UPLOAD_FUNC_FACTOR,
-                        is_link=resource_is_link(resource),
+
+                    create_resource_raw_wrapped(
+                        cfg_ckan_target=cfg["cfg_ckan_target"],
+                        cfg_other_target=cfg["cfg_other_target"],
+                        filepath=filepath,
+                        resource=resource,
+                        package_name=package_name,
                     )
-                    # Needs fresh uploading and integrity check
-                    create_resource_raw(
-                        ckan_api_input=cfg["cfg_ckan_target"],
-                        secure_interface_input=cfg["cfg_secure_interface_target"],
-                        ckan_storage_path=cfg["cfg_other_target"]["ckan_storage_path"],
-                        package_name=metadata_filtered["name"],
-                        metadata=resource,
-                        file_path=filepath,
-                        upload_func=upload_func,
-                        progressbar=True,
-                        prepare_for_publication=True,
-                    )
+
                     if not resource_is_link(resource):
                         hash_rem = hash_remote(
                             ckan_api_input=cfg["cfg_ckan_target"],

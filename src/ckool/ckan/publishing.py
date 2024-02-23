@@ -2,7 +2,6 @@ from copy import deepcopy
 from typing import Callable
 
 import ckanapi.errors
-import pytest
 
 from ckool import EMPTY_FILE_NAME
 from ckool.ckan.ckan import CKAN
@@ -383,7 +382,6 @@ def enrich_and_store_metadata(
     return {"json": xml_filepath.with_suffix(".json"), "xml": xml_filepath}
 
 
-@pytest.mark.impure
 def update_datacite_doi(
     datacite_api_instance: DataCiteAPI,
     local_doi_store_instance: LocalDoiStore,
