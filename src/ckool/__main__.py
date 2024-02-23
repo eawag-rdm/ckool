@@ -591,10 +591,10 @@ def publish_package(
         "-np",
         help="If you want to skip prompts, or run publishing in parallel use this flag.",
     ),
-    ckan_instance_destination: str = typer.Option(
+    ckan_instance_target: str = typer.Option(
         None,
-        "--ckan-instance-destination",
-        "-cid",
+        "--ckan-instance-target",
+        "-cit",
         help="If more than 2 instances are defined in your .ckool.toml configuration file, "
         "specify the instance to publish to.",
     ),
@@ -606,7 +606,7 @@ def publish_package(
         exclude_resources,
         parallel,
         no_prompt,
-        ckan_instance_destination,
+        ckan_instance_target,
         OPTIONS["config"],
         OPTIONS["ckan-instance"],
         OPTIONS["verify"],

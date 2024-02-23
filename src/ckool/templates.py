@@ -5,16 +5,33 @@ from ckool import (
     EMPTY_FILE_NAME,
     HASH_BLOCK_SIZE,
     HASH_TYPE,
+    PACKAGE_META_DATA_FILE_ENDING,
     TEMPORARY_DIRECTORY_NAME,
     UPLOAD_FUNC_FACTOR,
 )
-from ckool.ckan.ckan import CKAN
+from ckool.ckan.ckan import CKAN, filter_resources
+from ckool.ckan.publishing import (
+    any_missing_organization_projects_variables,
+    collect_missing_entity,
+    create_missing_organization_projects_variables,
+    create_package_raw,
+    create_resource_raw,
+    get_missing_organization_projects_variables,
+    pre_publication_checks,
+)
+from ckool.datacite.doi_store import LocalDoiStore
 from ckool.interfaces.interfaces import SecureInterface
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
 from ckool.other.file_management import find_archive, iter_files, stats_file
+from ckool.other.hashing import get_hash_func
 from ckool.other.types import HashTypes
-from ckool.other.utilities import DataIntegrityError, collect_metadata, upload_via_api
+from ckool.other.utilities import (
+    DataIntegrityError,
+    collect_metadata,
+    resource_is_link,
+    upload_via_api,
+)
 
 
 def upload_resource_file_via_api(
@@ -266,3 +283,122 @@ def handle_upload(
 
     ckan_instance = CKAN(**cfg_ckan_api)
     ckan_instance.reorder_package_resources(package_name)
+
+
+def retrieve_and_filter_source_metadata(
+    ckan_source: CKAN,
+    package_name: str,
+    exclude_resources: list | None,
+    cwd: pathlib.Path,
+    package_metadata_suffix: str = PACKAGE_META_DATA_FILE_ENDING,
+):
+    if exclude_resources is None:
+        exclude_resources = []
+
+    metadata = ckan_source.get_package(package_name=package_name)
+
+    metadata_filtered = filter_resources(
+        metadata,
+        resources_to_exclude=exclude_resources,
+        always_to_exclude_restriction_levels=["only_allowed_users"],
+    )
+
+    package_metadata_file = (cwd / package_name).with_suffix(package_metadata_suffix)
+    update_cache(metadata_filtered, cache_file=package_metadata_file)
+    return metadata_filtered
+
+
+def handle_missing_entities(
+    ckan_source: CKAN,
+    ckan_target: CKAN,
+    cfg_other_target: dict,
+    create_missing_: bool,
+    metadata_filtered: dict,
+):
+
+    existing_and_missing_entities = pre_publication_checks(
+        ckan_instance_destination=ckan_target,
+        package_metadata=metadata_filtered,
+    )
+
+    if create_missing_:
+        if any_missing_organization_projects_variables(existing_and_missing_entities):
+            for to_create in collect_missing_entity(
+                ckan_source, existing_and_missing_entities
+            ):
+                create_missing_organization_projects_variables(
+                    ckan_target,
+                    **to_create,
+                    org_data_manager=cfg_other_target["datamanager"],
+                    prepare_for_publication=True,
+                )
+
+    elif any_missing_organization_projects_variables(existing_and_missing_entities):
+        missing = get_missing_organization_projects_variables(
+            existing_and_missing_entities
+        )
+        raise ValueError(
+            f"Publication can not continue. These entities are missing: {repr(missing)}"
+        )
+
+    return existing_and_missing_entities
+
+
+def handle_resource_download_with_integrity_check(
+    cfg_ckan_source: dict,
+    resource: dict,
+    check_data_integrity: bool,
+    cwd: pathlib.Path,
+):
+    ckan_source = CKAN(**cfg_ckan_source)
+
+    url = resource["url"]
+    id_ = resource["id"]
+    temporary_resource_name = f"{id_}-{pathlib.Path(url).name}"
+    downloaded_file = ckan_source.download_resource(
+        url=url, destination=(cwd / temporary_resource_name)
+    )
+    if check_data_integrity:
+        if not resource["hash"]:
+            raise ValueError(f"No hash value for resource '{url}' on CKAN!")
+
+        hash_func = get_hash_func(resource["hashtype"])
+        hash_local = hash_func(downloaded_file)
+        if hash_local != resource["hash"]:
+            raise ValueError(
+                f"Something went wrong. The hash value '{hash_local}' ('{resource['hashtype']}') of the "
+                f"downloaded resource '{temporary_resource_name}' does not match the one "
+                f"on CKAN '{resource['hash']}'."
+            )
+    return {"id": id_, "name": temporary_resource_name}
+
+
+def create_resource_raw_wrapped(
+    cfg_ckan_target: dict,
+    cfg_other_target: dict,
+    filepath: pathlib.Path,
+    resource: dict,
+    package_name: str,
+):
+
+    upload_func = get_upload_func(
+        file_sizes=int(resource["size"]),
+        space_available_on_server_root_disk=cfg_other_target[
+            "space_available_on_server_root_disk"
+        ],
+        parallel_upload=False,
+        factor=UPLOAD_FUNC_FACTOR,
+        is_link=resource_is_link(resource),
+    )
+
+    create_resource_raw(
+        ckan_api_input=cfg_ckan_target,
+        secure_interface_input=cfg_secure_interface_destination,
+        ckan_storage_path=cfg_other_target["ckan_storage_path"],
+        package_name=package_name,
+        metadata=resource,
+        file_path=filepath.as_posix(),
+        upload_func=upload_func,
+        progressbar=True,
+        prepare_for_publication=True,
+    )

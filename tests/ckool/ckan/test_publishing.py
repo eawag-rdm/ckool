@@ -246,7 +246,7 @@ def test_create_missing_package(ckan_instance, ckan_envvars, ckan_setup_data):
 
     with pytest.raises(ValueError):
         create_package_raw(
-            ckan_instance_destination=ckan_instance,
+            ckan_instance_target=ckan_instance,
             data=pkg,
             prepare_for_publication=True,
         )

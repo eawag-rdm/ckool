@@ -3,6 +3,9 @@ import tomllib
 from textwrap import dedent
 
 from ckool import DEFAULT_TOML_NAME
+from ckool.ckan.ckan import CKAN
+from ckool.datacite.datacite import DataCiteAPI
+from ckool.datacite.doi_store import LocalDoiStore
 
 CKOOL_TOML = dedent(
     """
@@ -100,3 +103,62 @@ def config_for_instance(config_subsection: list, instance_name: str):
     raise ValueError(
         f"The instance name '{instance_name}' you specified is not defined in the config file."
     )
+
+
+def find_target_ckan_instance(
+    ckan_instance_target, config, section, ckan_instance_source
+):
+    instances = [i["instance"] for i in config[section]["ckan_api"]]
+    if ckan_instance_target is None:
+        if len(instances) > 2:
+            raise ValueError(
+                f"Your configuration file '{config['config_file_location']}' "
+                f"contains more than 2 resources:\n{repr(instances)}. You must specify a ckan target instance."
+            )
+        instances.remove(ckan_instance_source)
+        return instances[0]
+
+
+def parse_config_for_use(config: dict, test: bool, verify: bool, ckan_instance_source: str, ckan_instance_target: str = None):
+    easy_access_config = {}
+
+    section = "Production" if not test else "Test"
+
+    easy_access_config["lds"] = LocalDoiStore(config[section]["local_doi_store_path"])
+    easy_access_config["cfg_datacite"] = config[section]["datacite"]
+    easy_access_config["datacite"] = DataCiteAPI(**easy_access_config["cfg_datacite"])
+
+    # SOURCE INSTANCE
+    easy_access_config["cfg_ckan_source"] = config_for_instance(
+        config[section]["ckan_api"], ckan_instance_source
+    )
+    easy_access_config["cfg_ckan_source"].update({"verify_certificate": verify})
+    easy_access_config["ckan_source"] = CKAN(**easy_access_config["cfg_ckan_source"])
+    easy_access_config["cfg_secure_interface_source"] = config_for_instance(
+        config[section]["ckan_server"], ckan_instance_source
+    )
+    easy_access_config["cfg_other_source"] = config_for_instance(
+        config[section]["other"], ckan_instance_source
+    )
+
+    ckan_instance_target = find_target_ckan_instance(
+        ckan_instance_target=ckan_instance_target,
+        config=config,
+        section=section,
+        ckan_instance_source=ckan_instance_source,
+    )
+
+    if ckan_instance_target:
+        easy_access_config["cfg_ckan_target"] = config_for_instance(
+            config[section]["ckan_api"], ckan_instance_target
+        )
+        easy_access_config["cfg_ckan_target"].update({"verify_certificate": verify})
+        easy_access_config["ckan_target"] = CKAN(**easy_access_config["cfg_ckan_target"])
+        easy_access_config["cfg_secure_interface_target"] = config_for_instance(
+            config[section]["ckan_server"], ckan_instance_target
+        )
+        easy_access_config["cfg_other_target"] = config_for_instance(
+            config[section]["other"], ckan_instance_target
+        )
+
+    return easy_access_config

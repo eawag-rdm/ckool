@@ -194,20 +194,20 @@ def format_package_metadata_raw(
 
 
 def create_package_raw(
-    ckan_instance_destination: CKAN,
+    ckan_instance_target: CKAN,
     data: dict,
     doi: str = None,
     custom_citation_publication: str = None,
     prepare_for_publication: bool = True,
 ):
     pkg = format_package_metadata_raw(
-        ckan_instance_destination=ckan_instance_destination,
+        ckan_instance_destination=ckan_instance_target,
         data=data,
         doi=doi,
         custom_citation_publication=custom_citation_publication,
         prepare_for_publication=prepare_for_publication,
     )
-    return ckan_instance_destination.create_package(**pkg)
+    return ckan_instance_target.create_package(**pkg)
 
 
 def patch_package_raw(
