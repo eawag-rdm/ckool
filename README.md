@@ -4,7 +4,14 @@
 
 # Ckool
 
-CKAN Tool, in short ckool! A tool for working with CKAN.
+CKAN Tool, in short ckool! A tool for working with CKAN. 
+
+> **Current limitations**:
+> - the machine running the publishing process needs enough free storage to hold the entire package it wants to publish 
+> - no complex parallel workflows at the moment
+> - implement better tracking for uploading and publishing, so that already uploaded/published resources will not be tried again
+> - expose more functions to CLI? Eg.: access to datastore, datacite, dora
+> - Add function documentation for API - create readthedocs
 
 ## Installation
 
@@ -14,7 +21,7 @@ CKAN Tool, in short ckool! A tool for working with CKAN.
 pip install 'ckool @ git+ssh://gitlab.switch.ch:eaw-rdm/ckool.git@main'
 ```
 
-## Installation for Development
+## Installation for Development (easy updates via git pull)
 
 Clone this repo:
 ```shell
@@ -87,3 +94,7 @@ You can use the tool via its CLI.
 ```shell
 ckool --help
 ```
+
+## Additional notes
+- For uploading resource via API a user that does have permissions to write in the ckan datastorage location must be present on the system. (ERIC Open - ckan user created on system)
+- 
