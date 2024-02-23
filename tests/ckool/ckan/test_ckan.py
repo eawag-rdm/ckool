@@ -109,7 +109,7 @@ def test_reorder_package_resources_with_readme(
         tmp_path / "az.txt",
         tmp_path / "fsq.abc",
         tmp_path / "ba.as.as.ds",
-        tmp_path / "readme.md"
+        tmp_path / "readme.md",
     ]
     for idx, f in enumerate(files):
         f.write_text(f"file {idx}")
@@ -131,7 +131,14 @@ def test_reorder_package_resources_with_readme(
         ]
     ]
 
-    assert ['readme.md', 'az.txt', 'ba.as.as.ds', 'fsq.abc', 'test_resource_link', 'z.ending'] == resource_names_ordered
+    assert [
+        "readme.md",
+        "az.txt",
+        "ba.as.as.ds",
+        "fsq.abc",
+        "test_resource_link",
+        "z.ending",
+    ] == resource_names_ordered
 
 
 @pytest.mark.impure
@@ -144,7 +151,7 @@ def test_reorder_package_resources_with_readme_raises(
         tmp_path / "fsq.abc",
         tmp_path / "ba.as.as.ds",
         tmp_path / "readme.md",
-        tmp_path / "readme.txt"
+        tmp_path / "readme.txt",
     ]
     for idx, f in enumerate(files):
         f.write_text(f"file {idx}")

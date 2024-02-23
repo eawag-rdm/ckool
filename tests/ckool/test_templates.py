@@ -1,9 +1,12 @@
 import pytest
 
-from ckool import HASH_TYPE
+from ckool import HASH_TYPE, UPLOAD_IN_PROGRESS_STRING
+from ckool.other.caching import read_cache
 from ckool.other.hashing import get_hash_func
 from ckool.templates import (
     get_upload_func,
+    handle_file,
+    handle_upload,
     hash_remote,
     resource_integrity_between_ckan_instances_intact,
     resource_integrity_remote_intact,
@@ -244,3 +247,67 @@ def test_hash_remote(
     )["hash"]
 
     assert hashed_locally == hashed_remotely
+
+
+# @pytest.mark.impure
+def test_handle_upload(
+    tmp_path,
+    ckan_instance,
+    secure_interface_input_args,
+    ckan_envvars,
+    ckan_setup_data,
+    config_section_instance,
+):
+    hash_func = get_hash_func(HASH_TYPE)
+
+    (tmp_path / ckan_envvars["test_package"]).mkdir()
+    (file_1 := (tmp_path / ckan_envvars["test_package"] / "file_1.txt")).write_text(
+        "abc"
+    )
+    (file_2 := (tmp_path / ckan_envvars["test_package"] / "file_2.txt")).write_text(
+        "def"
+    )
+    (file_3 := (tmp_path / ckan_envvars["test_package"] / "file_3.txt")).write_text(
+        "ghi"
+    )
+    cache_1 = handle_file(file=file_1, hash_func=hash_func)
+    cache_2 = handle_file(file=file_2, hash_func=hash_func)
+    cache_3 = handle_file(file=file_3, hash_func=hash_func)
+
+    ckan_instance.create_resource_of_type_file(
+        package_id=ckan_envvars["test_package"], **read_cache(cache_1)
+    )
+    meta_2 = read_cache(cache_2)
+    meta_2["hash"] = UPLOAD_IN_PROGRESS_STRING
+    ckan_instance.create_resource_of_type_file(
+        package_id=ckan_envvars["test_package"], **meta_2
+    )
+
+    uploaded = handle_upload(
+        package_name=ckan_envvars["test_package"],
+        package_folder=tmp_path / ckan_envvars["test_package"],
+        verify=False,
+        parallel=False,
+        progressbar=True,
+        **config_section_instance,
+    )
+
+    for info in uploaded:
+        del info["id"]
+        assert info in [
+            {
+                "name": "file_3.txt",
+                "status": "normal",
+            },
+            {
+                "name": "file_2.txt",
+                "status": "replaced",
+            },
+            {
+                "name": "file_1.txt",
+                "status": "skipped",
+            },
+        ]
+
+    for resource in ckan_instance.get_package(ckan_envvars["test_package"])["resources"]:
+        assert resource["hash"] != UPLOAD_IN_PROGRESS_STRING

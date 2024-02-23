@@ -14,18 +14,19 @@ from ckool import (
 )
 from ckool.ckan.ckan import CKAN
 from ckool.ckan.publishing import (
+    create_package_raw,
     create_resource_raw,
     enrich_and_store_metadata,
     patch_package_raw,
     patch_resource_metadata_raw,
     publish_datacite_doi,
-    update_datacite_doi, create_package_raw,
+    update_datacite_doi,
 )
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
 from ckool.interfaces.mixed_requests import get_citation_from_doi
 from ckool.other.caching import read_cache
-from ckool.other.config_parser import config_for_instance, find_target_ckan_instance, parse_config_for_use
+from ckool.other.config_parser import config_for_instance, parse_config_for_use
 from ckool.other.file_management import get_compression_func, iter_package
 from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
@@ -78,7 +79,7 @@ def _upload_package(
             exclude_pattern=exclude_pattern,
         ):
             if file := info["file"]:  # files are hashed
-                handle_file(
+                _ = handle_file(
                     file,
                     hash_func,
                     hash_algorithm,
@@ -105,7 +106,7 @@ def _upload_package(
                     f"This should not happen, the dictionary does not have the expected content:\n{repr(info)}"
                 )
 
-        handle_upload(
+        _ = handle_upload(
             package_name,
             package_folder,
             config,
@@ -134,7 +135,7 @@ def _upload_resource(
     hash_func = get_hash_func(hash_algorithm)
 
     if filepath.is_file():
-        handle_file(
+        _ = handle_file(
             filepath,
             hash_func,
             hash_algorithm,
@@ -148,7 +149,7 @@ def _upload_resource(
             f"The filepath your specified '{filepath.as_posix()}' is not a file."
         )
 
-    handle_upload(
+    _ = handle_upload(
         package_name,
         filepath.parent,
         config,
@@ -184,7 +185,7 @@ def _prepare_package(
             exclude_pattern=exclude_pattern,
         ):
             if file := info["file"]:  # files are hashed
-                handle_file(
+                _ = handle_file(
                     file,
                     hash_func,
                     hash_algorithm,
@@ -519,7 +520,7 @@ def _publish_package(
         test=test,
         verify=verify,
         ckan_instance_source=ckan_instance_source,
-        ckan_instance_target=ckan_instance_target
+        ckan_instance_target=ckan_instance_target,
     )
 
     doi = cfg["lds"].get_doi(package_name)
@@ -590,7 +591,6 @@ def _publish_package(
                     package_name=metadata_filtered["name"],
                     resource_name=resource["name"],
                 ):
-
                     create_resource_raw_wrapped(
                         cfg_ckan_target=cfg["cfg_ckan_target"],
                         cfg_other_target=cfg["cfg_other_target"],
@@ -603,16 +603,22 @@ def _publish_package(
                         hash_rem = hash_remote(
                             ckan_api_input=cfg["cfg_ckan_target"],
                             secure_interface_input=cfg["cfg_secure_interface_target"],
-                            ckan_storage_path=cfg["cfg_other_target"]["ckan_storage_path"],
+                            ckan_storage_path=cfg["cfg_other_target"][
+                                "ckan_storage_path"
+                            ],
                             package_name=package_name,
                             resource_id_or_name=resource["name"],
                             hash_type=resource["hashtype"],
                         )
 
                         cfg["ckan_target"].patch_resource_metadata(
-                            resource_id=cfg["ckan_target"].resolve_resource_id_or_name_to_id(
+                            resource_id=cfg[
+                                "ckan_target"
+                            ].resolve_resource_id_or_name_to_id(
                                 package_name, resource["name"]
-                            )["id"],
+                            )[
+                                "id"
+                            ],
                             resource_data_to_update={
                                 "hash": hash_rem,
                                 "hashtype": resource["hashtype"],
@@ -656,7 +662,9 @@ def _publish_package(
 
                         # Deleting the entire resource, and re-uploading it.
                         cfg["ckan_target"].delete_resource(
-                            resource_id=cfg["ckan_target"].resolve_resource_id_or_name_to_id(
+                            resource_id=cfg[
+                                "ckan_target"
+                            ].resolve_resource_id_or_name_to_id(
                                 package_name=metadata_filtered["name"],
                                 resource_id_or_name=resource["name"],
                             )
@@ -665,7 +673,9 @@ def _publish_package(
                         create_resource_raw(
                             ckan_api_input=cfg["cfg_ckan_target"],
                             secure_interface_input=cfg["cfg_secure_interface_target"],
-                            ckan_storage_path=cfg["cfg_other_target"]["ckan_storage_path"],
+                            ckan_storage_path=cfg["cfg_other_target"][
+                                "ckan_storage_path"
+                            ],
                             package_name=metadata_filtered["name"],
                             metadata=resource,
                             file_path=filepath,

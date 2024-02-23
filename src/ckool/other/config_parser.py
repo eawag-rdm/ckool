@@ -119,7 +119,13 @@ def find_target_ckan_instance(
         return instances[0]
 
 
-def parse_config_for_use(config: dict, test: bool, verify: bool, ckan_instance_source: str, ckan_instance_target: str = None):
+def parse_config_for_use(
+    config: dict,
+    test: bool,
+    verify: bool,
+    ckan_instance_source: str,
+    ckan_instance_target: str = None,
+):
     easy_access_config = {}
 
     section = "Production" if not test else "Test"
@@ -153,7 +159,9 @@ def parse_config_for_use(config: dict, test: bool, verify: bool, ckan_instance_s
             config[section]["ckan_api"], ckan_instance_target
         )
         easy_access_config["cfg_ckan_target"].update({"verify_certificate": verify})
-        easy_access_config["ckan_target"] = CKAN(**easy_access_config["cfg_ckan_target"])
+        easy_access_config["ckan_target"] = CKAN(
+            **easy_access_config["cfg_ckan_target"]
+        )
         easy_access_config["cfg_secure_interface_target"] = config_for_instance(
             config[section]["ckan_server"], ckan_instance_target
         )

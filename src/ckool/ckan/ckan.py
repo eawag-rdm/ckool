@@ -329,9 +329,7 @@ class CKAN:
             [(r["id"], r["name"]) for r in resources],
             reverse=reverse,
         )
-        return self._update_package_resource_reorder(
-            package_name, resource_ids
-        )
+        return self._update_package_resource_reorder(package_name, resource_ids)
 
     def update_linked_resource_url(self, resource_id, url):
         return self.plain_action_call("resource_patch", id=resource_id, url=url)

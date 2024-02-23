@@ -8,18 +8,17 @@ from ckool import (
     PACKAGE_META_DATA_FILE_ENDING,
     TEMPORARY_DIRECTORY_NAME,
     UPLOAD_FUNC_FACTOR,
+    UPLOAD_IN_PROGRESS_STRING,
 )
 from ckool.ckan.ckan import CKAN, filter_resources
 from ckool.ckan.publishing import (
     any_missing_organization_projects_variables,
     collect_missing_entity,
     create_missing_organization_projects_variables,
-    create_package_raw,
     create_resource_raw,
     get_missing_organization_projects_variables,
     pre_publication_checks,
 )
-from ckool.datacite.doi_store import LocalDoiStore
 from ckool.interfaces.interfaces import SecureInterface
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
@@ -200,7 +199,7 @@ def handle_file(
         block_size=block_size,
         progressbar=progressbar,
     )
-    update_cache(collect_metadata(file, hash_, hash_algorithm), cache_file)
+    return update_cache(collect_metadata(file, hash_, hash_algorithm), cache_file)
 
 
 def archive_folder(folder: dict, compression_func: Callable, progressbar):
@@ -268,36 +267,39 @@ def handle_upload(
     )
 
     ckan_instance = CKAN(**cfg_ckan_api)
-
+    _uploaded = []
     for meta in metadata_map.values():
+        status = "normal"
         filepath = pathlib.Path(meta["file"])
         del meta["file"]
 
         # Check if resource with corresponding hash is already on ckan
         real_hash = meta["hash"]
-        meta["hash"] = "-- upload in progress --"
+        meta["hash"] = UPLOAD_IN_PROGRESS_STRING
 
         if ckan_instance.resource_exists(
-            package_name=package_name,
-            resource_name=filepath.name
+            package_name=package_name, resource_name=filepath.name
         ):
             meta_on_ckan = ckan_instance.get_resource_meta(
-                package_name=package_name,
-                resource_id_or_name=filepath.name
+                package_name=package_name, resource_id_or_name=filepath.name
             )
 
             if meta_on_ckan["hash"] == real_hash:
                 # Resource is already on ckan and was uploaded successfully, skip resource upload
+                status = "skipped"
+                _uploaded.append(
+                    {"id": meta_on_ckan["id"], "name": filepath.name, "status": status}
+                )
                 continue
 
-            elif meta_on_ckan["hash"] == "-- upload in progress --":
+            elif meta_on_ckan["hash"] == UPLOAD_IN_PROGRESS_STRING:
                 # This resource was not uploaded properly and needs to be uploaded again, deleting faulty resource
                 ckan_instance.delete_resource(
                     resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
-                        package_name=package_name,
-                        resource_id_or_name=filepath.name
-                    )
+                        package_name=package_name, resource_id_or_name=filepath.name
+                    )["id"]
                 )
+                status = "replaced"
 
         upload_func(
             ckan_api_input=cfg_ckan_api,
@@ -310,16 +312,17 @@ def handle_upload(
             progressbar=progressbar,
         )
 
-        r_id = ckan_instance.resolve_resource_id_or_name_to_id(
-            package_name=package_name,
-            resource_id_or_name=["name"]
-        )
+        resource_id = ckan_instance.resolve_resource_id_or_name_to_id(
+            package_name=package_name, resource_id_or_name=filepath.name
+        )["id"]
+
         ckan_instance.patch_resource_metadata(
-            resource_id=r_id,
-            resource_data_to_update={"hash": real_hash}
+            resource_id=resource_id, resource_data_to_update={"hash": real_hash}
         )
+        _uploaded.append({"id": resource_id, "name": filepath.name, "status": status})
 
     ckan_instance.reorder_package_resources(package_name)
+    return _uploaded
 
 
 def retrieve_and_filter_source_metadata(
@@ -352,7 +355,6 @@ def handle_missing_entities(
     create_missing_: bool,
     metadata_filtered: dict,
 ):
-
     existing_and_missing_entities = pre_publication_checks(
         ckan_instance_destination=ckan_target,
         package_metadata=metadata_filtered,
@@ -417,7 +419,6 @@ def create_resource_raw_wrapped(
     resource: dict,
     package_name: str,
 ):
-
     upload_func = get_upload_func(
         file_sizes=int(resource["size"]),
         space_available_on_server_root_disk=cfg_other_target[

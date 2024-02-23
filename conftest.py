@@ -118,6 +118,41 @@ def ckan_envvars(load_env_file):
 
 
 @pytest.fixture
+def config_section_instance(ckan_instance, secure_interface_input_args):
+    config = {
+        "test": {
+            "other": [
+                {
+                    "instance": "test_instance",
+                    "space_available_on_server_root_disk": 10 * 1024**3,
+                    "ckan_storage_path": "/var/lib/ckan",
+                }
+            ],
+            "ckan_api": [
+                {
+                    "instance": "test_instance",
+                    "server": ckan_instance.server,
+                    "token": ckan_instance.token,
+                    "secret_token": "",
+                }
+            ],
+            "ckan_server": [
+                {
+                    "instance": "test_instance",
+                    "host": secure_interface_input_args["host"],
+                    "port": secure_interface_input_args["port"],
+                    "username": secure_interface_input_args["username"],
+                    "ssh_key": secure_interface_input_args["ssh_key"],
+                    "secret_passphrase": "",
+                    "secret_password": "",
+                }
+            ],
+        }
+    }
+    return {"config": config, "section": "test", "ckan_instance": "test_instance"}
+
+
+@pytest.fixture
 def ckan_instance(ckan_envvars):
     return CKAN(
         server=ckan_envvars["host"],
