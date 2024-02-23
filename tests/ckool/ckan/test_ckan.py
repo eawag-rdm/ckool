@@ -143,7 +143,8 @@ def test_reorder_package_resources_with_readme_raises(
         tmp_path / "az.txt",
         tmp_path / "fsq.abc",
         tmp_path / "ba.as.as.ds",
-        tmp_path / "readme.md"
+        tmp_path / "readme.md",
+        tmp_path / "readme.txt"
     ]
     for idx, f in enumerate(files):
         f.write_text(f"file {idx}")
@@ -156,16 +157,8 @@ def test_reorder_package_resources_with_readme_raises(
             "hashtype": HASH_TYPE,
         }
         ckan_instance.create_resource_of_type_file(**meta)
-
-    ckan_instance.reorder_package_resources(ckan_envvars["test_package"])
-    resource_names_ordered = [
-        r["name"]
-        for r in ckan_instance.get_package(ckan_envvars["test_package"], ["resources"])[
-            "resources"
-        ]
-    ]
-
-    assert ['readme.md', 'az.txt', 'ba.as.as.ds', 'fsq.abc', 'test_resource_link', 'z.ending'] == resource_names_ordered
+    with pytest.raises(ValueError):
+        ckan_instance.reorder_package_resources(ckan_envvars["test_package"])
 
 
 @pytest.mark.impure
