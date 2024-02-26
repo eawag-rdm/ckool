@@ -12,3 +12,4 @@ def test_upload_via_api():
     assert not upload_via_api([1024**2], 1024**2, False, factor=1)
     assert upload_via_api([1024**2, 1024**2], 1024**2 + 1, False, factor=1)
     assert not upload_via_api([1024**2, 1024**2], 1024**2 + 1, True, factor=1)
+    assert not upload_via_api([1024**2], 1, True, factor=1)

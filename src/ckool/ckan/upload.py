@@ -12,6 +12,11 @@ from ckool.other.types import HashTypes
 
 class TqdmProgressCallback:
     def __init__(self, total_size, filename, progressbar: int = True):
+        position = None
+        global position_queue
+        if "position_queue" in globals():
+            position = position_queue.get_nowait()
+
         self.total_size = total_size
         self.filename = filename
         self.progressbar = progressbar
@@ -19,8 +24,9 @@ class TqdmProgressCallback:
             total=total_size,
             unit="B",
             unit_scale=True,
-            desc=f"Uploading {filename}",
+            desc=f"Uploading (API) {filename}",
             disable=not progressbar,
+            position=position,
         )
 
     def __call__(self, monitor):

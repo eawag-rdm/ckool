@@ -118,9 +118,11 @@ def ckan_envvars(load_env_file):
 
 
 @pytest.fixture
-def config_section_instance(ckan_instance, secure_interface_input_args):
+def config_section_instance(
+    tmp_path, ckan_instance, datacite_instance, secure_interface_input_args
+):
     config = {
-        "test": {
+        "Test": {
             "other": [
                 {
                     "instance": "test_instance",
@@ -147,9 +149,17 @@ def config_section_instance(ckan_instance, secure_interface_input_args):
                     "secret_password": "",
                 }
             ],
+            "datacite": {
+                "user": datacite_instance.auth.username,
+                "password": datacite_instance.auth.password,
+                "prefix": datacite_instance.prefix,
+                "host": datacite_instance.host,
+                "offset": datacite_instance.offset,
+            },
+            "local_doi_store_path": tmp_path,
         }
     }
-    return {"config": config, "section": "test", "ckan_instance": "test_instance"}
+    return {"config": config, "section": "Test", "ckan_instance_name": "test_instance"}
 
 
 @pytest.fixture
@@ -327,6 +337,9 @@ def _large_package(root_folder, file_sizes, files_per_folders):
         folder.mkdir()
         for v in range(files_per_folders):
             files.append(_generate_binary_file(file_sizes[u], folder, f"large_{v}.bin"))
+
+    for idx, size in enumerate(file_sizes):
+        files.append(_generate_binary_file(size, root_folder, f"large_{idx}.bin"))
 
     yield root_folder
 

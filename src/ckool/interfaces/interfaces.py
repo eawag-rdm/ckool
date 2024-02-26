@@ -78,12 +78,19 @@ class SecureInterface:
         local_filepath = to_pathlib(local_filepath)
         remote_filepath = to_pathlib(remote_filepath)
 
+        position = None
+        global position_queue
+        if "position_queue" in globals():
+            position = position_queue.get_nowait()
+        print([i for i in globals().keys() if "q" in i])
+        print(position)
         pbar = tqdm(
             total=local_filepath.stat().st_size,
             unit="B",
             unit_scale=True,
-            desc="Uploading",
+            desc=f"Uploading (SCP) {local_filepath.name}",
             disable=not progressbar,
+            position=position,
         )
 
         def progress(filename, size, sent, peername):

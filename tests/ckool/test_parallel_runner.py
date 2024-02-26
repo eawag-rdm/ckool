@@ -11,7 +11,8 @@ from ckool import (
 from ckool.other.caching import update_cache
 from ckool.other.file_management import get_compression_func
 from ckool.other.hashing import get_hash_func
-from ckool.parallel_runner import ParallelRunner, ParallelType
+from ckool.other.types import ParallelType
+from ckool.parallel_runner import ParallelRunner
 from ckool.templates import upload_resource_file_via_api
 
 compression_func = get_compression_func(COMPRESSION_TYPE)

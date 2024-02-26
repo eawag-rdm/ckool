@@ -6,7 +6,7 @@ from ckool.other.hashing import get_hash_func
 from ckool.templates import (
     get_upload_func,
     handle_file,
-    handle_upload,
+    handle_upload_all,
     hash_remote,
     resource_integrity_between_ckan_instances_intact,
     resource_integrity_remote_intact,
@@ -283,7 +283,7 @@ def test_handle_upload(
         package_id=ckan_envvars["test_package"], **meta_2
     )
 
-    uploaded = handle_upload(
+    uploaded = handle_upload_all(
         package_name=ckan_envvars["test_package"],
         package_folder=tmp_path / ckan_envvars["test_package"],
         verify=False,
@@ -309,5 +309,7 @@ def test_handle_upload(
             },
         ]
 
-    for resource in ckan_instance.get_package(ckan_envvars["test_package"])["resources"]:
+    for resource in ckan_instance.get_package(ckan_envvars["test_package"])[
+        "resources"
+    ]:
         assert resource["hash"] != UPLOAD_IN_PROGRESS_STRING

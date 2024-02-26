@@ -32,10 +32,17 @@ def _hash(
     """
     hf = hash_func()
     iterations = filepath.stat().st_size / block_size
+
+    position = None
+    global position_queue
+    if "position_queue" in globals():
+        position = position_queue.get()
+
     bar = tqdm(
         total=int(iterations) + 1,
         desc=f"Hashing {filepath.name}",
         disable=not progressbar,
+        position=position,
     )
 
     with filepath.open("rb") as f:

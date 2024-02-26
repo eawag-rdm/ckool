@@ -22,9 +22,14 @@ from ckool.ckan.publishing import (
 from ckool.interfaces.interfaces import SecureInterface
 from ckool.other.caching import read_cache, update_cache
 from ckool.other.config_parser import config_for_instance
-from ckool.other.file_management import find_archive, iter_files, stats_file
+from ckool.other.file_management import (
+    find_archive,
+    get_compression_func,
+    iter_files,
+    stats_file,
+)
 from ckool.other.hashing import get_hash_func
-from ckool.other.types import HashTypes
+from ckool.other.types import CompressionTypes, HashTypes
 from ckool.other.utilities import (
     DataIntegrityError,
     collect_metadata,
@@ -64,7 +69,7 @@ def upload_resource_file_via_scp(
     si = SecureInterface(**secure_interface_input)
 
     # Upload empty resource (already using the correct metadata
-    empty = filepath.parent / empty_file_name
+    empty = filepath.parent / f"{filepath.name}.{empty_file_name}"
     empty.touch()
 
     ckan_instance = CKAN(**ckan_api_input)
@@ -74,7 +79,7 @@ def upload_resource_file_via_scp(
 
     empty_file_location = ckan_instance.get_local_resource_path(
         package_name=package_name,
-        resource_id_or_name=empty_file_name,
+        resource_id_or_name=empty.name,
         ckan_storage_path=ckan_storage_path,
     )
 
@@ -86,7 +91,9 @@ def upload_resource_file_via_scp(
 
     new_resource_name = name if (name := metadata.get("name")) else filepath.name
     return ckan_instance.patch_empty_resource_name(
-        package_name=package_name, new_resource_name=new_resource_name
+        package_name=package_name,
+        new_resource_name=new_resource_name,
+        emtpy_resource_name=empty.name,
     )
 
 
@@ -224,17 +231,77 @@ def handle_folder(
     progressbar: bool = True,
 ):
     archive = archive_folder(folder, compression_func, progressbar)
-    handle_file(
+    return handle_file(
         archive, hash_func, hash_algorithm, tmp_dir_name, block_size, progressbar
     )
 
 
-def handle_upload(
+def wrapped_upload(
+    meta: dict,
+    package_name: str,
+    ckan_instance: CKAN,
+    cfg_other: dict,
+    cfg_ckan_api: dict,
+    cfg_secure_interface: dict,
+    upload_func: Callable,
+    progressbar: bool,
+):
+    status = "normal"
+    filepath = pathlib.Path(meta["file"])
+    del meta["file"]
+
+    # Check if resource with corresponding hash is already on ckan
+    real_hash = meta["hash"]
+    meta["hash"] = UPLOAD_IN_PROGRESS_STRING
+
+    if ckan_instance.resource_exists(
+        package_name=package_name, resource_name=filepath.name
+    ):
+        meta_on_ckan = ckan_instance.get_resource_meta(
+            package_name=package_name, resource_id_or_name=filepath.name
+        )
+
+        if meta_on_ckan["hash"] == real_hash:
+            # Resource is already on ckan and was uploaded successfully, skip resource upload
+            status = "skipped"
+            return {"id": meta_on_ckan["id"], "name": filepath.name, "status": status}
+
+        elif meta_on_ckan["hash"] == UPLOAD_IN_PROGRESS_STRING:
+            # This resource was not uploaded properly and needs to be uploaded again, deleting faulty resource
+            ckan_instance.delete_resource(
+                resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
+                    package_name=package_name, resource_id_or_name=filepath.name
+                )["id"]
+            )
+            status = "replaced"
+
+    upload_func(
+        ckan_api_input=cfg_ckan_api,
+        secure_interface_input=cfg_secure_interface,
+        ckan_storage_path=cfg_other["ckan_storage_path"],
+        package_name=package_name,
+        filepath=filepath,
+        metadata=meta,
+        empty_file_name=EMPTY_FILE_NAME,
+        progressbar=progressbar,
+    )
+
+    resource_id = ckan_instance.resolve_resource_id_or_name_to_id(
+        package_name=package_name, resource_id_or_name=filepath.name
+    )["id"]
+
+    ckan_instance.patch_resource_metadata(
+        resource_id=resource_id, resource_data_to_update={"hash": real_hash}
+    )
+    return {"id": resource_id, "name": filepath.name, "status": status}
+
+
+def handle_upload_all(
     package_name: str,
     package_folder: pathlib.Path,
     config: dict,
     section: str,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     parallel: bool,
     progressbar: bool,
@@ -250,11 +317,11 @@ def handle_upload(
 
     sizes = [meta["size"] for meta in metadata_map.values()]
 
-    cfg_other = config_for_instance(config[section]["other"], ckan_instance)
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_other = config_for_instance(config[section]["other"], ckan_instance_name)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     cfg_secure_interface = config_for_instance(
-        config[section]["ckan_server"], ckan_instance
+        config[section]["ckan_server"], ckan_instance_name
     )
 
     upload_func = get_upload_func(
@@ -269,60 +336,105 @@ def handle_upload(
     ckan_instance = CKAN(**cfg_ckan_api)
     _uploaded = []
     for meta in metadata_map.values():
-        status = "normal"
-        filepath = pathlib.Path(meta["file"])
-        del meta["file"]
-
-        # Check if resource with corresponding hash is already on ckan
-        real_hash = meta["hash"]
-        meta["hash"] = UPLOAD_IN_PROGRESS_STRING
-
-        if ckan_instance.resource_exists(
-            package_name=package_name, resource_name=filepath.name
-        ):
-            meta_on_ckan = ckan_instance.get_resource_meta(
-                package_name=package_name, resource_id_or_name=filepath.name
+        _uploaded.append(
+            wrapped_upload(
+                meta=meta,
+                package_name=package_name,
+                ckan_instance=ckan_instance,
+                cfg_other=cfg_other,
+                cfg_ckan_api=cfg_ckan_api,
+                cfg_secure_interface=cfg_secure_interface,
+                upload_func=upload_func,
+                progressbar=progressbar,
             )
-
-            if meta_on_ckan["hash"] == real_hash:
-                # Resource is already on ckan and was uploaded successfully, skip resource upload
-                status = "skipped"
-                _uploaded.append(
-                    {"id": meta_on_ckan["id"], "name": filepath.name, "status": status}
-                )
-                continue
-
-            elif meta_on_ckan["hash"] == UPLOAD_IN_PROGRESS_STRING:
-                # This resource was not uploaded properly and needs to be uploaded again, deleting faulty resource
-                ckan_instance.delete_resource(
-                    resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
-                        package_name=package_name, resource_id_or_name=filepath.name
-                    )["id"]
-                )
-                status = "replaced"
-
-        upload_func(
-            ckan_api_input=cfg_ckan_api,
-            secure_interface_input=cfg_secure_interface,
-            ckan_storage_path=cfg_other["ckan_storage_path"],
-            package_name=package_name,
-            filepath=filepath,
-            metadata=meta,
-            empty_file_name=EMPTY_FILE_NAME,
-            progressbar=progressbar,
         )
-
-        resource_id = ckan_instance.resolve_resource_id_or_name_to_id(
-            package_name=package_name, resource_id_or_name=filepath.name
-        )["id"]
-
-        ckan_instance.patch_resource_metadata(
-            resource_id=resource_id, resource_data_to_update={"hash": real_hash}
-        )
-        _uploaded.append({"id": resource_id, "name": filepath.name, "status": status})
 
     ckan_instance.reorder_package_resources(package_name)
     return _uploaded
+
+
+# TODO: abstract handle_upload_single and _all to share a common base
+def handle_upload_single(
+    metadata_file: str,
+    package_name: str,
+    config: dict,
+    section: str,
+    ckan_instance_name: str,
+    verify: bool,
+    progressbar: bool,
+):
+    cfg_other = config_for_instance(config[section]["other"], ckan_instance_name)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
+    cfg_ckan_api.update({"verify_certificate": verify})
+    cfg_secure_interface = config_for_instance(
+        config[section]["ckan_server"], ckan_instance_name
+    )
+
+    meta = read_cache(pathlib.Path(metadata_file))
+    ckan_instance = CKAN(**cfg_ckan_api)
+
+    return wrapped_upload(
+        meta=meta,
+        package_name=package_name,
+        ckan_instance=ckan_instance,
+        cfg_other=cfg_other,
+        cfg_ckan_api=cfg_ckan_api,
+        cfg_secure_interface=cfg_secure_interface,
+        upload_func=upload_resource_file_via_scp,
+        progressbar=progressbar,
+    )
+
+
+def handle_folder_file_upload(
+    info: dict,
+    package_name: str,
+    include_sub_folders: bool,
+    compression_type: CompressionTypes,
+    hash_algorithm: HashTypes,
+    config: dict,
+    ckan_instance_name: str,
+    verify: bool,
+    section: str,
+):
+    hash_func = get_hash_func(hash_algorithm)
+    compression_func = get_compression_func(compression_type)
+
+    cache_file = None
+    if file := info["file"]:  # files are hashed
+        cache_file = handle_file(
+            file,
+            hash_func,
+            hash_algorithm,
+            tmp_dir_name=TEMPORARY_DIRECTORY_NAME,
+            block_size=HASH_BLOCK_SIZE,
+            progressbar=True,
+        )
+
+    elif folder := info["folder"]:  # folders are archived and then hashed
+        if include_sub_folders:
+            cache_file = handle_folder(
+                folder,
+                hash_func,
+                compression_func,
+                hash_algorithm,
+                tmp_dir_name="",  # should be emtpy, as the archive filepath already contains the tmp dir name
+                block_size=HASH_BLOCK_SIZE,
+                progressbar=True,
+            )
+    else:
+        raise ValueError(
+            f"This should not happen, the dictionary does not have the expected content:\n{repr(info)}"
+        )
+    if cache_file is not None:
+        return handle_upload_single(
+            metadata_file=cache_file,
+            package_name=package_name,
+            config=config,
+            section=section,
+            ckan_instance_name=ckan_instance_name,
+            verify=verify,
+            progressbar=True,
+        )
 
 
 def retrieve_and_filter_source_metadata(
@@ -415,6 +527,7 @@ def handle_resource_download_with_integrity_check(
 def create_resource_raw_wrapped(
     cfg_ckan_target: dict,
     cfg_other_target: dict,
+    cfg_secure_interface_destination: dict,
     filepath: pathlib.Path,
     resource: dict,
     package_name: str,

@@ -76,7 +76,17 @@ def zip_files(
     files: list,
     progressbar: bool = True,
 ) -> pathlib.Path:
-    bar = tqdm(files, desc=f"Zipping {archive_destination.name}")
+    position = None
+    global position_queue
+    if "position_queue" in globals():
+        position = position_queue.get()
+
+    bar = tqdm(
+        files,
+        desc=f"Zipping {archive_destination.name}",
+        disable=not progressbar,
+        position=position,
+    )
     with ZipFile(archive_destination.with_suffix(".zip"), mode="w") as _zip:
         for file in files:
             _zip.write(file, file.relative_to(root_folder))
@@ -93,8 +103,16 @@ def tar_files(
     compression: Literal["gz", "bz2", "xz"] = "gz",
     progressbar: bool = True,
 ) -> pathlib.Path:
+    position = None
+    global position_queue
+    if "position_queue" in globals():
+        position = position_queue.get()
+
     bar = tqdm(
-        files, desc=f"Taring {archive_destination.name}", disable=not progressbar
+        files,
+        desc=f"Taring {archive_destination.name}",
+        disable=not progressbar,
+        position=position,
     )
     with tarfile.open(
         archive_destination.with_suffix(f".tar.{compression}"), mode=f"w:{compression}"

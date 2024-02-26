@@ -6,7 +6,7 @@ import ckanapi
 import requests
 from tqdm.auto import tqdm
 
-from ckool import EMPTY_FILE_NAME, PACKAGE_META_DATA_FILE_ENDING
+from ckool import PACKAGE_META_DATA_FILE_ENDING
 from ckool.ckan.upload import upload_resource
 from ckool.other.types import HashTypes
 from ckool.other.utilities import get_secret
@@ -253,7 +253,7 @@ class CKAN:
         self,
         package_name: str,
         new_resource_name: str,
-        emtpy_resource_name: str = EMPTY_FILE_NAME,
+        emtpy_resource_name: str,
     ):
         resolved = self.resolve_resource_id_or_name_to_id(
             package_name, emtpy_resource_name

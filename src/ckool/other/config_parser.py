@@ -1,5 +1,6 @@
 import pathlib
 import tomllib
+from copy import deepcopy
 from textwrap import dedent
 
 from ckool import DEFAULT_TOML_NAME
@@ -96,6 +97,7 @@ def load_config(config_file: pathlib.Path = None):
 
 
 def config_for_instance(config_subsection: list, instance_name: str):
+    config_subsection = deepcopy(config_subsection)
     for section in config_subsection:
         if section.get("instance") == instance_name:
             del section["instance"]
@@ -110,7 +112,9 @@ def find_target_ckan_instance(
 ):
     instances = [i["instance"] for i in config[section]["ckan_api"]]
     if ckan_instance_target is None:
-        if len(instances) > 2:
+        if (l := len(instances)) == 1:
+            return None  # No other instance is defined
+        elif l > 2:
             raise ValueError(
                 f"Your configuration file '{config['config_file_location']}' "
                 f"contains more than 2 resources:\n{repr(instances)}. You must specify a ckan target instance."
@@ -148,10 +152,10 @@ def parse_config_for_use(
     )
 
     ckan_instance_target = find_target_ckan_instance(
-        ckan_instance_target=ckan_instance_target,
         config=config,
         section=section,
         ckan_instance_source=ckan_instance_source,
+        ckan_instance_target=ckan_instance_target,
     )
 
     if ckan_instance_target:

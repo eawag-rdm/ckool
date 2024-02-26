@@ -31,15 +31,19 @@ from ckool.other.file_management import get_compression_func, iter_package
 from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
 from ckool.other.utilities import resource_is_link
-from ckool.parallel_runner import map_function_with_threadpool
+from ckool.parallel_runner import (
+    map_function_with_processpool,
+    map_function_with_threadpool,
+)
 from ckool.templates import (
     create_resource_raw_wrapped,
     get_upload_func,
     handle_file,
     handle_folder,
+    handle_folder_file_upload,
     handle_missing_entities,
     handle_resource_download_with_integrity_check,
-    handle_upload,
+    handle_upload_all,
     hash_remote,
     resource_integrity_between_ckan_instances_intact,
     retrieve_and_filter_source_metadata,
@@ -53,12 +57,13 @@ def _upload_package(
     package_folder: str,
     include_sub_folders: bool,
     compression_type: CompressionTypes,
-    include_pattern: str,
-    exclude_pattern: str,
+    include_pattern: str | None,
+    exclude_pattern: str | None,
     hash_algorithm: HashTypes,
     parallel: bool,
+    workers: int,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -68,11 +73,21 @@ def _upload_package(
     """
 
     section = "Production" if not test else "Test"
+
+    cfg = parse_config_for_use(
+        config=config,
+        test=test,
+        verify=verify,
+        ckan_instance_source=ckan_instance_name,
+        ckan_instance_target=None,
+    )
+
     package_folder = pathlib.Path(package_folder)
     hash_func = get_hash_func(hash_algorithm)
     compression_func = get_compression_func(compression_type)
 
     if not parallel:
+        something_to_upload = False
         for info in iter_package(
             package_folder,
             include_pattern=include_pattern,
@@ -87,6 +102,7 @@ def _upload_package(
                     block_size=HASH_BLOCK_SIZE,
                     progressbar=True,
                 )
+                something_to_upload = True
 
             elif folder := info["folder"]:  # folders are archived and then hashed
                 if not include_sub_folders:
@@ -101,23 +117,49 @@ def _upload_package(
                     block_size=HASH_BLOCK_SIZE,
                     progressbar=True,
                 )
+                something_to_upload = True
             else:
                 raise ValueError(
                     f"This should not happen, the dictionary does not have the expected content:\n{repr(info)}"
                 )
-
-        _ = handle_upload(
-            package_name,
-            package_folder,
-            config,
-            section,
-            ckan_instance,
-            verify,
-            parallel,
-            progressbar=True,
-        )
+        if something_to_upload:
+            return handle_upload_all(
+                package_name,
+                package_folder,
+                config,
+                section,
+                ckan_instance_name,
+                verify,
+                parallel,
+                progressbar=True,
+            )
     else:
-        raise NotImplementedError("Parallel will be implemented soon.")
+        res = map_function_with_processpool(
+            handle_folder_file_upload,
+            args=None,
+            kwargs=[
+                dict(
+                    info=info,
+                    package_name=package_name,
+                    include_sub_folders=include_sub_folders,
+                    compression_type=compression_type,
+                    hash_algorithm=hash_algorithm,
+                    config=config,
+                    ckan_instance_name=ckan_instance_name,
+                    verify=verify,
+                    section=section,
+                )
+                for info in iter_package(
+                    package_folder,
+                    include_pattern=include_pattern,
+                    exclude_pattern=exclude_pattern,
+                )
+            ],
+            workers=workers,
+        )
+
+        cfg["ckan_source"].reorder_package_resources(package_name)
+        return res
 
 
 def _upload_resource(
@@ -125,7 +167,7 @@ def _upload_resource(
     filepath: str,
     hash_algorithm: HashTypes,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -149,12 +191,12 @@ def _upload_resource(
             f"The filepath your specified '{filepath.as_posix()}' is not a file."
         )
 
-    _ = handle_upload(
+    _ = handle_upload_all(
         package_name,
         filepath.parent,
         config,
         section,
-        ckan_instance,
+        ckan_instance_name,
         verify,
         parallel=False,
         progressbar=True,
@@ -216,14 +258,14 @@ def _get_local_resource_location(
     package_name: str,
     resource_name: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
-    storage_path = config_for_instance(config[section]["other"], ckan_instance)[
+    storage_path = config_for_instance(config[section]["other"], ckan_instance_name)[
         "ckan_storage_path"
     ]
     ckan = CKAN(**cfg_ckan_api)
@@ -241,13 +283,13 @@ def _download_package(
     destination: str,
     parallel: bool,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
     chunk_size: int = DOWNLOAD_CHUNK_SIZE,
 ):
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
 
     ckan = CKAN(**cfg_ckan_api)
@@ -266,7 +308,7 @@ def _download_resource(
     url: str,
     destination: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
     chunk_size: int = DOWNLOAD_CHUNK_SIZE,
@@ -279,7 +321,7 @@ def _download_resource(
         destination = destination / pathlib.Path(url).name
 
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
 
     ckan = CKAN(**cfg_ckan_api)
@@ -297,7 +339,7 @@ def _download_resources(
     destination_folder: str,
     parallel: bool,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
     chunk_size: int = DOWNLOAD_CHUNK_SIZE,
@@ -315,7 +357,7 @@ def _download_resources(
                     url,
                     destination.as_posix(),
                     config,
-                    ckan_instance,
+                    ckan_instance_name,
                     verify,
                     test,
                     chunk_size,
@@ -329,7 +371,7 @@ def _download_resources(
                 url,
                 destination.as_posix(),
                 config,
-                ckan_instance,
+                ckan_instance_name,
                 verify,
                 test,
                 chunk_size,
@@ -340,12 +382,12 @@ def _download_metadata(
     package_name: str,
     filter_fields: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     if filter_fields is not None:
         filter_fields = filter_fields.split(",")
@@ -362,12 +404,12 @@ def _download_metadata(
 def _download_all_metadata(
     include_private,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
     result = ckan.get_all_packages(include_private=include_private)
@@ -384,7 +426,7 @@ def _patch_package(
     metadata_file: str,
     package_name: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -394,7 +436,7 @@ def _patch_package(
     """
     raise NotImplementedError("Parallel will be implemented soon.")
     # section = "Production" if not test else "Test"
-    # cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    # cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     # cfg_ckan_api.update({"verify_certificate": verify})
     # ckan = CKAN(**cfg_ckan_api)
     # metadata_in_ckan = ckan.get_package(package_name)
@@ -404,7 +446,7 @@ def _patch_resource(
     metadata_file: str,
     file: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -418,17 +460,17 @@ def _patch_resource_hash(
     local_resource_path: str,
     hash_algorithm: HashTypes,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
     section = "Production" if not test else "Test"
 
-    cfg_other = config_for_instance(config[section]["other"], ckan_instance)
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_other = config_for_instance(config[section]["other"], ckan_instance_name)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     cfg_secure_interface = config_for_instance(
-        config[section]["ckan_server"], ckan_instance
+        config[section]["ckan_server"], ckan_instance_name
     )
 
     ckan = CKAN(**cfg_ckan_api)
@@ -467,7 +509,7 @@ def _patch_metadata(
     package_name: str,
     metadata_file: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -475,7 +517,7 @@ def _patch_metadata(
     metadata_file = pathlib.Path(metadata_file)
 
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
 
     metadata = read_cache(metadata_file)
@@ -487,7 +529,7 @@ def _patch_metadata(
 def _patch_datacite(
     metadata_file: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -501,6 +543,7 @@ def _publish_package(
     create_missing_: bool,
     exclude_resources: str,
     parallel: bool,
+    workers: int,
     no_prompt: bool,
     ckan_instance_target: str,
     config: dict,
@@ -568,6 +611,7 @@ def _publish_package(
                 create_resource_raw_wrapped(
                     cfg_ckan_target=cfg["cfg_ckan_target"],
                     cfg_other_target=cfg["cfg_other_target"],
+                    cfg_secure_interface_destination=cfg["cfg_secure_interface_target"],
                     filepath=filepath,
                     resource=resource,
                     package_name=package_name,
@@ -594,6 +638,9 @@ def _publish_package(
                     create_resource_raw_wrapped(
                         cfg_ckan_target=cfg["cfg_ckan_target"],
                         cfg_other_target=cfg["cfg_other_target"],
+                        cfg_secure_interface_destination=cfg[
+                            "cfg_secure_interface_target"
+                        ],
                         filepath=filepath,
                         resource=resource,
                         package_name=package_name,
@@ -744,7 +791,7 @@ def _publish_package(
 def _publish_organization(
     organization_name: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -754,7 +801,7 @@ def _publish_organization(
 def _publish_project(
     project_name: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -765,7 +812,7 @@ def _publish_doi(
     package_name: str,
     prompt_function: Prompt.ask,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -792,7 +839,7 @@ def _publish_doi(
 def _publish_controlled_vocabulary(
     organization_name: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
@@ -802,12 +849,12 @@ def _publish_controlled_vocabulary(
 def _delete_package(
     package_name: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
     print(json.dumps(ckan.delete_package(package_id=package_name), indent=4))
@@ -817,12 +864,12 @@ def _delete_resource(
     package_name: str,
     resource_name: str,
     config: dict,
-    ckan_instance: str,
+    ckan_instance_name: str,
     verify: bool,
     test: bool,
 ):
     section = "Production" if not test else "Test"
-    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance)
+    cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
 
