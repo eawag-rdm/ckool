@@ -1,4 +1,3 @@
-
 from ckool.other.types import CompressionTypes, HashTypes
 
 DEFAULT_TOML_NAME = ".ckool.toml"

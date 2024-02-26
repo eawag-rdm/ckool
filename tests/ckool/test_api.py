@@ -140,6 +140,8 @@ def test_upload_package_parallel(
         ]
 
 
+@pytest.mark.slow
+@pytest.mark.impure
 def test_upload_package_sequential_with_compression(
     tmp_path,
     ckan_instance,
@@ -176,6 +178,8 @@ def test_upload_package_sequential_with_compression(
         ]
 
 
+@pytest.mark.slow
+@pytest.mark.impure
 def test_upload_package_parallel_with_compression(
     tmp_path,
     ckan_instance,
