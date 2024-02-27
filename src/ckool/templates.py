@@ -535,7 +535,7 @@ def create_resource_raw_wrapped(
     package_name: str,
 ):
     upload_func = get_upload_func(
-        file_sizes=int(resource["size"]),
+        file_sizes=[int(resource["size"])],
         space_available_on_server_root_disk=cfg_other_target[
             "space_available_on_server_root_disk"
         ],
