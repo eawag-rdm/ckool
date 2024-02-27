@@ -50,6 +50,8 @@ class LocalDoiStore:
     def generate_xml_filepath(self, package_name):
         name = None
         for name in self.path.iterdir():
+            if name.is_file():
+                continue
             for package in name.iterdir():
                 if package.name == package_name:
                     break

@@ -313,7 +313,7 @@ class CKAN:
         resource_ids_and_names = sorted(
             resources_without_readme,
             reverse=reverse,
-            key=lambda x: x[1],
+            key=lambda x: x[1].lower(),
         )
 
         if readme_id_name is not None:

@@ -162,6 +162,7 @@ def hash_all_resources(
     ckan = CKAN(**ckan_api_input)
     resources = ckan.get_package(package_name)["resources"]
     for resource in resources:
+        print(f"Resource '{resource['name']}' has no hash. Hashing now...")
         if not resource["hash"] or not resource.get("hashtype", False):
             hash_ = hash_remote(
                 ckan_api_input,
