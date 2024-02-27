@@ -102,8 +102,8 @@ def main(
     ),
     ckan_instance_name: str = typer.Option(
         "eric_staging",
-        "-cin",
-        "--ckan-instance_name",
+        "-ci",
+        "--ckan-instance",
         help="Which CKAN instance run API requests against. For publishing this will be the 'source' instance.",
     ),
     test: bool = typer.Option(False, "--test", help="Run commands on test instances."),
