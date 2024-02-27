@@ -761,6 +761,7 @@ def _publish_package(
                         is_link=resource_is_link(resource),
                         prepare_for_publication=True,
                     )
+
             cfg["ckan_target"].reorder_package_resources(
                 package_name=metadata_filtered["name"]
             )

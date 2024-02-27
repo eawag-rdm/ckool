@@ -276,6 +276,8 @@ def format_resource_metadata_raw(
         "datastore_active",
         "mimetype",
         "mimetype_inner",
+        "allowed_users",
+        "revision_id"
 
     ]:
         if field in fields:
@@ -309,10 +311,6 @@ def create_resource_raw(
         is_link=is_link,
         prepare_for_publication=prepare_for_publication,
     )
-
-    for key in ["allowed_users", "revision_id"]:
-        if key in data:
-            del data[key]
 
     return upload_func(
         ckan_api_input=ckan_api_input,
