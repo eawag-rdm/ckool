@@ -23,7 +23,6 @@ def _iter_dir(path: pathlib.Path):
 
 def retrieve_doi_from_doi_file(package_name: str, file: pathlib.Path):
     content = file.read_text()
-    print("CONTENT", content)
     dois = re.findall(r"10\.[0-9]{4,5}/[0-9A-Z]{6}", content)
     if len(set(dois)) > 1:
         raise ValueError(
