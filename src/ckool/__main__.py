@@ -106,7 +106,7 @@ def main(
         "--ckan-instance_name",
         help="Which CKAN instance run API requests against. For publishing this will be the 'source' instance.",
     ),
-    test: bool = typer.Option(False, "--test", help="Run commands on Test instances."),
+    test: bool = typer.Option(False, "--test", help="Run commands on test instances."),
 ):
     config_file = pathlib.Path(config_file)
     if not config_file.exists():
@@ -169,13 +169,13 @@ def prepare_package(
         None,
         "--include-pattern",
         "-ip",
-        help="Include files that follow a certain regex pattern. The default None will include all files.",
+        help="Include files that follow a certain regex pattern. The default 'None' will include all files.",
     ),
     exclude_pattern: str = typer.Option(
         None,
         "--exclude-pattern",
         "-ep",
-        help="Exclude files that follow a certain regex pattern. The default None will not exclude any files.",
+        help="Exclude files that follow a certain regex pattern. The default 'None' will not exclude any files.",
     ),
     hash_algorithm: HashTypes = typer.Option(
         HashTypes.sha256.value,
@@ -239,13 +239,13 @@ def upload_package(
         None,
         "--include-pattern",
         "-ip",
-        help="Include files that follow a certain regex pattern. The default None will include all files.",
+        help="Include files that follow a certain regex pattern. The default 'None' will include all files.",
     ),
     exclude_pattern: str = typer.Option(
         None,
         "--exclude-pattern",
         "-ep",
-        help="Exclude files that follow a certain regex pattern. The default None will not exclude any files.",
+        help="Exclude files that follow a certain regex pattern. The default 'None' will not exclude any files.",
     ),
     hash_algorithm: HashTypes = typer.Option(
         HashTypes.sha256.value,
@@ -314,7 +314,7 @@ def upload_resource(
 )
 def get_package(
     package_name: str = typer.Argument(
-        help="Name of the package to download",
+        help="Name of the package to download.",
     ),
     destination: str = typer.Option(
         ".", "--destination", "-d", help="Where should the package be saved."
@@ -340,10 +340,10 @@ def get_package(
 @get_app.command("local-path", help="Returns the local filepath of a resource.")
 def get_local_resource_location(
     package_name: str = typer.Argument(
-        help="Name of the package to download",
+        help="Name of the package to download.",
     ),
     resource_name: str = typer.Argument(
-        help="Name of the resource",
+        help="Name of the resource.",
     ),
 ):
     return _get_local_resource_location(
@@ -504,7 +504,7 @@ def patch_resource_hash(
         None,
         "--local-resource-path",
         "-lrp",
-        help="If provided a resource integrity check will be run. Without the resource will only be hashed remotely",
+        help="If provided a resource integrity check will be run. Without the resource will only be hashed remotely.",
     ),
     hash_algorithm: HashTypes = typer.Option(
         HashTypes.sha256.value,
@@ -564,7 +564,8 @@ def patch_datacite(
 #  restricted sources can't be published by default
 @publish_app.command(
     "package",
-    help="Publish a package, retrieving the data from one ckan instance, enriching the metadata and uploading it to another ckan isntance.",
+    help="Publish a package, retrieving the data from one ckan instance, "
+    "enriching the metadata and uploading it to another ckan instance.",
 )
 def publish_package(
     package_name: str = typer.Argument(
@@ -580,7 +581,7 @@ def publish_package(
         False,
         "--create-missing",
         "-cm",
-        help="Create missing Organization and Projects required.",
+        help="Create missing organization and projects required.",
     ),
     exclude_resources: str = typer.Option(
         None,
@@ -732,7 +733,7 @@ def delete_package(
 )
 def delete_resource(
     package_name: str = typer.Argument(
-        help="Name of the package, that should be deleted",
+        help="Name of the package, that should be deleted.",
     ),
     resource_name: str = typer.Argument(
         help="Name of the resource, that should be deleted. All resources with that name will be deleted.",
