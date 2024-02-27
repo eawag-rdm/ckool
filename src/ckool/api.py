@@ -553,6 +553,8 @@ def _publish_package(
     test: bool,
     prompt_function: Prompt.ask,
 ):
+    # TODO check if hash exists locally, otherwise create.
+
     if exclude_resources:
         exclude_resources = exclude_resources.split(",")
     if projects_to_publish:
@@ -633,7 +635,7 @@ def _publish_package(
                 ckan_instance_destination=cfg["ckan_target"],
                 data=metadata_filtered,
                 doi=doi,
-                prepare_for_publication=False,
+                prepare_for_publication=True,
                 project_names_to_link=projects_to_publish,
             )
 

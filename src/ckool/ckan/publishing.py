@@ -184,7 +184,8 @@ def format_package_metadata_raw(
         "id",
         "resources",
         "organization",
-        "groups" "creator_user_id",
+        "groups",
+        "creator_user_id",
         "metadata_created",
         "metadata_modified",
         "num_resources",
@@ -250,7 +251,10 @@ def patch_package_raw(
         prepare_for_publication=prepare_for_publication,
         project_names_to_link=project_names_to_link,
     )
-    return ckan_instance_destination.patch_package_metadata(**pkg)
+
+    return ckan_instance_destination.patch_package_metadata(
+        package_id=ckan_instance_destination.get_package(data["name"])["id"], data=pkg
+    )
 
 
 def format_resource_metadata_raw(
