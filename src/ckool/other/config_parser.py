@@ -108,7 +108,7 @@ def config_for_instance(config_subsection: list, instance_name: str):
 
 
 def find_target_ckan_instance(
-    ckan_instance_target, config, section, ckan_instance_source
+    config, section, ckan_instance_source, ckan_instance_target
 ):
     instances = [i["instance"] for i in config[section]["ckan_api"]]
     if ckan_instance_target is None:
@@ -150,13 +150,13 @@ def parse_config_for_use(
     easy_access_config["cfg_other_source"] = config_for_instance(
         config[section]["other"], ckan_instance_source
     )
-
-    ckan_instance_target = find_target_ckan_instance(
-        config=config,
-        section=section,
-        ckan_instance_source=ckan_instance_source,
-        ckan_instance_target=ckan_instance_target,
-    )
+    if not ckan_instance_target:
+        ckan_instance_target = find_target_ckan_instance(
+            config=config,
+            section=section,
+            ckan_instance_source=ckan_instance_source,
+            ckan_instance_target=ckan_instance_target,
+        )
 
     if ckan_instance_target:
         easy_access_config["cfg_ckan_target"] = config_for_instance(
