@@ -505,7 +505,7 @@ def filter_resources(
     for resource in resources:
         if resource["restricted_level"] in always_to_exclude_restriction_levels:
             continue
-        if resource[identifier_provided] in resources_to_exclude:
+        if identifier_provided is not None and resource[identifier_provided] in resources_to_exclude:
             continue
         resources_filtered.append(resource)
 
