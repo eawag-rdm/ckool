@@ -95,6 +95,13 @@ You can use the tool via its CLI.
 ckool --help
 ```
 
+### Publishing example
+
+```shell
+
+```
+spot-samples-in-river-glatt
+
 ## Additional notes
 - For uploading resource via API a user that does have permissions to write in the ckan datastorage location must be present on the system. (ERIC Open - ckan user created on system)
 - 

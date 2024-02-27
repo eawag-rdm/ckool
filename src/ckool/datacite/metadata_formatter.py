@@ -4,6 +4,8 @@ import re
 import sys
 from datetime import datetime
 
+from rich.prompt import Prompt
+
 from ckool.interfaces.dora import Dora
 from ckool.other.metadata_tools import prepare_metadata_for_publication_package
 
@@ -87,7 +89,6 @@ class MetaDataFormatter:
         affiliations: dict = None,
         orcids: dict = None,
         related_publications: dict = None,
-        author_is_organization: bool = False,
         resource_type: str = "Publication Data Package",
         resource_type_general: str = "Collection",
         version: str = "1.0",
@@ -105,8 +106,6 @@ class MetaDataFormatter:
             Orcid ids of authors, if available.
         related_publications: dict | None,
             other data publications that are related to this one.
-        author_is_organization: bool,
-            The package author is an organization.
         resource_type: str,
             Free text to describe the resource type default is 'Publication Data Package'.
         resource_type_general: str,
@@ -132,7 +131,6 @@ class MetaDataFormatter:
         self.orcids = orcids
         self.related_publications = related_publications
         self.related_identifiers_from_file = self.related_publications
-        self.author_is_organization = author_is_organization
         self.resource_type = resource_type
         self.resource_type_general = resource_type_general
         self.version = version
@@ -157,12 +155,13 @@ class MetaDataFormatter:
             if "," in author:
                 return "Personal"
             else:
-                print(
-                    f"WARNING: Author '{author}' doesn't have standard "
-                    f"format (no comma). If the author is an organization "
-                    f"you can use the parameter 'author_is_organization' to indicate this."
+                confirmation = Prompt.ask(
+                    f"The Author '{author}' is not in the right format. Is it an organization?",
+                    choices=["no", "yes"],
+                    default="no",
                 )
-                if not self.author_is_organization:
+
+                if confirmation != "yes":
                     sys.exit("ABORT: illegal author name")
                 else:
                     return "Organizational"

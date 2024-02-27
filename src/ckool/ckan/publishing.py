@@ -41,8 +41,15 @@ def check_existence(
         results_["missing"][key].append(name)
 
 
-def pre_publication_checks(ckan_instance_destination: CKAN, package_metadata: dict):
+def pre_publication_checks(
+    ckan_instance_destination: CKAN,
+    package_metadata: dict,
+    projects_to_publish: list = None,
+):
     names = extract_names(package_metadata)
+
+    if projects_to_publish is None:
+        projects_to_publish = []
 
     results = {
         "missing": {k: [] for k in names.keys()},
@@ -77,9 +84,10 @@ def pre_publication_checks(ckan_instance_destination: CKAN, package_metadata: di
 
     # Check if projects exist
     for project_name in names["projects"]:
-        _ = check_existence(
-            ckan_instance_destination.get_project, project_name, "projects", results
-        )
+        if project_name in projects_to_publish:
+            _ = check_existence(
+                ckan_instance_destination.get_project, project_name, "projects", results
+            )
 
     # TODO implement variable check, for that the internal
     #  formatting of variables needs to be considered, comma separated?
@@ -145,36 +153,47 @@ def create_missing_variables():
 
 
 def format_package_metadata_raw(
-    ckan_instance_destination: CKAN,
+    ckan_instance_source: CKAN,
+    ckan_instance_target: CKAN,
     data: dict,
     doi: str = None,
     custom_citation_publication: str = None,
     prepare_for_publication: bool = True,
+    project_names_to_link: list = None,
 ):
+    proj_ids = None
     pkg = deepcopy(data)
     org_name = pkg["organization"]["name"]
-    org_id = ckan_instance_destination.get_organization(org_name)["id"]
-    proj_names = [group["name"] for group in pkg["groups"]]
-    proj_ids = [
-        {"id": ckan_instance_destination.get_project(name)["id"]} for name in proj_names
-    ]
-    maintainer_record = ckan_instance_destination.get_user(pkg["maintainer"])
-    usage_contact_record = ckan_instance_destination.get_user(pkg["usage_contact"])
+    org_id = ckan_instance_target.get_organization(org_name)["id"]
+
+    if project_names_to_link:
+        proj_names = [
+            group["name"]
+            for group in pkg["groups"]
+            if group["name"] in project_names_to_link
+        ]
+        proj_ids = [
+            {"id": ckan_instance_target.get_project(name)["id"]} for name in proj_names
+        ]
+    maintainer_record = ckan_instance_source.get_user(pkg["maintainer"])
+    usage_contact_record = ckan_instance_source.get_user(pkg["usage_contact"])
 
     pkg["owner_org"] = org_id
-    pkg["groups"] = proj_ids
     fields = pkg.keys()
     for name in [
         "id",
         "resources",
         "organization",
-        "creator_user_id",
+        "groups" "creator_user_id",
         "metadata_created",
         "metadata_modified",
         "num_resources",
     ]:
         if name in fields:
             del pkg[name]
+
+    if proj_ids:
+        pkg["groups"] = proj_ids
 
     if prepare_for_publication and not doi:
         raise ValueError(
@@ -193,35 +212,43 @@ def format_package_metadata_raw(
 
 
 def create_package_raw(
+    ckan_instance_source: CKAN,
     ckan_instance_target: CKAN,
     data: dict,
     doi: str = None,
     custom_citation_publication: str = None,
     prepare_for_publication: bool = True,
+    project_names_to_link: list = None,
 ):
     pkg = format_package_metadata_raw(
-        ckan_instance_destination=ckan_instance_target,
+        ckan_instance_source=ckan_instance_source,
+        ckan_instance_target=ckan_instance_target,
         data=data,
         doi=doi,
         custom_citation_publication=custom_citation_publication,
         prepare_for_publication=prepare_for_publication,
+        project_names_to_link=project_names_to_link,
     )
     return ckan_instance_target.create_package(**pkg)
 
 
 def patch_package_raw(
+    ckan_instance_source: CKAN,
     ckan_instance_destination: CKAN,
     data: dict,
     doi: str = None,
     custom_citation_publication: str = None,
     prepare_for_publication: bool = False,
+    project_names_to_link: list = None,
 ):
     pkg = format_package_metadata_raw(
-        ckan_instance_destination=ckan_instance_destination,
+        ckan_instance_source=ckan_instance_source,
+        ckan_instance_target=ckan_instance_destination,
         data=data,
         doi=doi,
         custom_citation_publication=custom_citation_publication,
         prepare_for_publication=prepare_for_publication,
+        project_names_to_link=project_names_to_link,
     )
     return ckan_instance_destination.patch_package_metadata(**pkg)
 
@@ -342,15 +369,13 @@ def create_missing_organization_projects_variables(
             }
         )
     elif entity.startswith("project"):
-        print("WARNING: automatic creation of projects is turned off.")
-        pass
-        # created.append(
-        #     {
-        #         "project": create_project_raw(
-        #             ckan_instance_destination, data, prepare_for_publication
-        #         )
-        #     }
-        # )
+        created.append(
+            {
+                "project": create_project_raw(
+                    ckan_instance_destination, data, prepare_for_publication
+                )
+            }
+        )
     return created
 
 

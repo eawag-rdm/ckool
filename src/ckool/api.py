@@ -539,6 +539,7 @@ def _patch_datacite(
 # TODO implement smarter resource map, so that download will not be performed again unless flag is passed
 def _publish_package(
     package_name: str,
+    projects_to_publish: str,
     check_data_integrity: bool,
     create_missing_: bool,
     exclude_resources: str,
@@ -554,6 +555,9 @@ def _publish_package(
 ):
     if exclude_resources:
         exclude_resources = exclude_resources.split(",")
+    if projects_to_publish:
+        projects_to_publish = projects_to_publish.split(",")
+
     (cwd := pathlib.Path.cwd() / TEMPORARY_DIRECTORY_NAME / package_name).mkdir(
         exist_ok=True, parents=True
     )
@@ -593,15 +597,18 @@ def _publish_package(
             cfg_other_target=cfg["cfg_other_target"],
             create_missing_=create_missing_,
             metadata_filtered=metadata_filtered,
+            projects_to_publish=projects_to_publish,
         )
 
         # NOW ALL ENTITIES EXIST (Organization, Project, TODO Variables still need to be implemented)
         if existing_and_missing_entities["missing"]["package"]:
             create_package_raw(
+                ckan_instance_source=cfg["ckan_source"],
                 ckan_instance_target=cfg["ckan_target"],
                 data=metadata_filtered,
                 doi=doi,
                 prepare_for_publication=True,
+                project_names_to_link=projects_to_publish,
             )
 
             # TODO temporary_resource_map needs_cache also.
@@ -622,10 +629,12 @@ def _publish_package(
 
         elif existing_and_missing_entities["exist"]["package"]:
             patch_package_raw(
+                ckan_instance_source=cfg["ckan_source"],
                 ckan_instance_destination=cfg["ckan_target"],
                 data=metadata_filtered,
                 doi=doi,
                 prepare_for_publication=False,
+                project_names_to_link=projects_to_publish,
             )
 
             for resource in metadata_filtered["resources"]:

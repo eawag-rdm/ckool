@@ -466,10 +466,12 @@ def handle_missing_entities(
     cfg_other_target: dict,
     create_missing_: bool,
     metadata_filtered: dict,
+    projects_to_publish: list = None,
 ):
     existing_and_missing_entities = pre_publication_checks(
         ckan_instance_destination=ckan_target,
         package_metadata=metadata_filtered,
+        projects_to_publish=projects_to_publish,
     )
 
     if create_missing_:

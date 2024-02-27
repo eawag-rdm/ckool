@@ -20,10 +20,10 @@ def get_citation_from_doi(doi, prefix=10.25678):
     r = requests.get(url, headers=headers, timeout=40)
 
     if not r.ok:
-        r.raise_for_status()
-        raise requests.exceptions.RequestException(
-            "Failed to get citation for DOI {}".format(doi)
-        )
+        # r.raise_for_status()
+        # raise requests.exceptions.RequestException(
+        print("Failed to get citation for DOI {}".format(doi))
+        return None
 
     return r.text.encode(r.encoding).decode("utf-8")
 

@@ -571,6 +571,12 @@ def publish_package(
     package_name: str = typer.Argument(
         help="Name of the data package you would like to publish.",
     ),
+    projects_to_publish: str = typer.Option(
+        None,
+        "--projects-to-publish",
+        "-ptp",
+        help="Name or names if project(s) to publish the data package under. Separate with comma, if multiple.",
+    ),
     check_data_integrity: bool = typer.Option(
         False,
         "--check-data-integrity",
@@ -618,6 +624,7 @@ def publish_package(
 ):
     return _publish_package(
         package_name,
+        projects_to_publish,
         check_data_integrity,
         create_missing,
         exclude_resources,
