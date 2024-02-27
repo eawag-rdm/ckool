@@ -10,7 +10,7 @@ from ckool import (
     HASH_BLOCK_SIZE,
     PACKAGE_META_DATA_FILE_ENDING,
     TEMPORARY_DIRECTORY_NAME,
-    UPLOAD_FUNC_FACTOR,
+    UPLOAD_FUNC_FACTOR, HASH_TYPE,
 )
 from ckool.ckan.ckan import CKAN
 from ckool.ckan.publishing import (
@@ -46,7 +46,7 @@ from ckool.templates import (
     handle_upload_all,
     hash_remote,
     resource_integrity_between_ckan_instances_intact,
-    retrieve_and_filter_source_metadata,
+    retrieve_and_filter_source_metadata, hash_all_resources,
 )
 
 
@@ -553,7 +553,6 @@ def _publish_package(
     test: bool,
     prompt_function: Prompt.ask,
 ):
-    # TODO check if hash exists locally, otherwise create.
 
     if exclude_resources:
         exclude_resources = exclude_resources.split(",")
@@ -572,6 +571,14 @@ def _publish_package(
         ckan_instance_target=ckan_instance_target,
     )
 
+    hash_all_resources(
+        package_name=package_name,
+        ckan_api_input=cfg["cfg_ckan_source"],
+        secure_interface_input=cfg["cfg_secure_interface_source"],
+        ckan_storage_path=cfg["cfg_other_source"]["ckan_storage_path"],
+        hash_type=HASH_TYPE
+    )
+
     doi = cfg["lds"].get_doi(package_name)
 
     metadata_filtered = retrieve_and_filter_source_metadata(
@@ -587,6 +594,7 @@ def _publish_package(
         for resource in metadata_filtered["resources"]:
             res = handle_resource_download_with_integrity_check(
                 cfg_ckan_source=cfg["cfg_ckan_source"],
+                package_name=package_name,
                 resource=resource,
                 check_data_integrity=check_data_integrity,
                 cwd=cwd,

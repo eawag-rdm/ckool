@@ -1,6 +1,8 @@
 import pathlib
 from typing import Callable
 
+import paramiko
+
 from ckool import (
     EMPTY_FILE_NAME,
     HASH_BLOCK_SIZE,
@@ -141,7 +143,39 @@ def hash_remote(
     out, err = si.ssh(
         f"{hash_type_map[hash_type if isinstance(hash_type, str) else hash_type.value]} {filepath}"
     )
+
+    if err:
+        raise paramiko.ssh_exception.SSHException(
+            f"An error occurred while hashing resource '{resource_id_or_name}'.\n{err}"
+        )
+
     return out.split(" ")[0]
+
+
+def hash_all_resources(
+    package_name: str,
+    ckan_api_input: dict,
+    secure_interface_input: dict,
+    ckan_storage_path: str,
+    hash_type: HashTypes | str = HASH_TYPE.sha256,
+):
+    ckan = CKAN(**ckan_api_input)
+    resources = ckan.get_package(package_name)["resources"]
+    for resource in resources:
+        if not resource["hash"] or not resource.get("hashtype", False):
+            hash_ = hash_remote(
+                ckan_api_input,
+                secure_interface_input,
+                ckan_storage_path,
+                package_name,
+                resource["id"],
+                hash_type
+            )
+
+            ckan.patch_resource_metadata(
+                resource_id=resource["id"],
+                resource_data_to_update={"hash": hash_, "hashtype": hash_type.value},
+            )
 
 
 def resource_integrity_remote_intact(
@@ -499,6 +533,7 @@ def handle_missing_entities(
 
 def handle_resource_download_with_integrity_check(
     cfg_ckan_source: dict,
+    package_name: str,
     resource: dict,
     check_data_integrity: bool,
     cwd: pathlib.Path,
@@ -513,7 +548,8 @@ def handle_resource_download_with_integrity_check(
     )
     if check_data_integrity:
         if not resource["hash"]:
-            raise ValueError(f"No hash value for resource '{url}' on CKAN!")
+            raise ValueError(f"No resource hash for '{resource['name']}' on '{cfg_ckan_source['instance']}'.")
+            # TODO could hash here or always check for any resource.
 
         hash_func = get_hash_func(resource["hashtype"])
         hash_local = hash_func(downloaded_file)
