@@ -227,7 +227,7 @@ def test_create_missing_organization_projects_variables(
 def test_create_missing_package(ckan_instance, ckan_envvars, ckan_setup_data):
     pkg = deepcopy(full_package_data)
 
-    res = create_package_raw(ckan_instance, pkg, prepare_for_publication=False)
+    res = create_package_raw(ckan_instance, ckan_instance, pkg, prepare_for_publication=False)
 
     assert res["name"] == "new_test_package"
     ckan_instance.delete_package(res["id"])

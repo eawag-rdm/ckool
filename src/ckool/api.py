@@ -703,6 +703,7 @@ def _publish_package(
                             resource_id_or_name=resource["name"],
                         )
                     )
+
                     if not resource_integrity_intact:
                         if not no_prompt:
                             confirmation = prompt_function(
