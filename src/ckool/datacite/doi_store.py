@@ -47,14 +47,15 @@ class LocalDoiStore:
             raise ValueError(f"The path your provided '{path}' does not exist.")
 
     def generate_xml_filepath(self, package_name):
-        name = None
+        found = False
         for name in self.path.iterdir():
             if name.is_file():
                 continue
             for package in name.iterdir():
                 if package.name == package_name:
+                    found = True
                     break
-        if name is None:
+        if not found:
             raise ValueError(
                 f"The package '{package_name}' you're referring to can not be found in the datastore."
             )
