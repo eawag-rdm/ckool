@@ -555,7 +555,7 @@ def _publish_package(
     if exclude_resources:
         exclude_resources = exclude_resources.split(",")
     (cwd := pathlib.Path.cwd() / TEMPORARY_DIRECTORY_NAME / package_name).mkdir(
-        exist_ok=True
+        exist_ok=True, parents=True
     )
 
     cfg = parse_config_for_use(
