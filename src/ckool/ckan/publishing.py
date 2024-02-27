@@ -342,13 +342,15 @@ def create_missing_organization_projects_variables(
             }
         )
     elif entity.startswith("project"):
-        created.append(
-            {
-                "project": create_project_raw(
-                    ckan_instance_destination, data, prepare_for_publication
-                )
-            }
-        )
+        print("WARNING: automatic creation of projects is turned off.")
+        pass
+        # created.append(
+        #     {
+        #         "project": create_project_raw(
+        #             ckan_instance_destination, data, prepare_for_publication
+        #         )
+        #     }
+        # )
     return created
 
 
