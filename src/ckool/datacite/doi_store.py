@@ -42,7 +42,7 @@ class LocalDoiStore:
         path: str | pathlib.Path,
         top_folders_to_ignore: str = LOCAL_DOI_STORE_FOLDERS_TO_IGNORE,
     ):
-        self.path = pathlib.Path(path) if isinstance(path, pathlib.Path) else path
+        self.path = pathlib.Path(path) if isinstance(path, str) else path
         self.ignore = top_folders_to_ignore
         if not self.path.exists():
             raise ValueError(f"The path your provided '{path}' does not exist.")
