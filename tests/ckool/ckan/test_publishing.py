@@ -19,7 +19,7 @@ from ckool.ckan.publishing import (
     create_resource_raw,
     enrich_and_store_metadata,
     pre_publication_checks,
-    update_datacite_doi,
+    update_datacite_doi, patch_package_raw, patch_resource_metadata_raw,
 )
 from ckool.datacite.doi_store import LocalDoiStore
 from ckool.other.utilities import resource_is_link
@@ -61,7 +61,9 @@ def test_pre_publication_checks_all_exist(ckan_instance, ckan_envvars, ckan_setu
     )
     package_metadata = ckan_instance.get_package(ckan_envvars["test_package"])
     result = pre_publication_checks(
-        ckan_instance_destination=ckan_instance, package_metadata=package_metadata
+        ckan_instance_destination=ckan_instance,
+        package_metadata=package_metadata,
+        projects_to_publish=[ckan_envvars["test_project"]]
     )
     assert result == {
         "missing": {
@@ -98,6 +100,7 @@ def test_pre_publication_checks_none_exist(
     result = pre_publication_checks(
         ckan_instance_destination=ckan_instance,
         package_metadata=package_metadata,
+        projects_to_publish=["non-existent-group"]
     )
     assert result == {
         "missing": {
@@ -105,6 +108,49 @@ def test_pre_publication_checks_none_exist(
             "organization": ["non-existent-organization"],
             "resources": ["non-existent-resource"],
             "projects": ["non-existent-group"],
+            "variables": [],
+        },
+        "exist": {
+            "package": [],
+            "organization": [],
+            "resources": [],
+            "projects": [],
+            "variables": [],
+        },
+    }
+
+    result = pre_publication_checks(
+        ckan_instance_destination=ckan_instance,
+        package_metadata=package_metadata,
+        projects_to_publish=[]
+    )
+    assert result == {
+        "missing": {
+            "package": ["non-existent-package"],
+            "organization": ["non-existent-organization"],
+            "resources": ["non-existent-resource"],
+            "projects": [],
+            "variables": [],
+        },
+        "exist": {
+            "package": [],
+            "organization": [],
+            "resources": [],
+            "projects": [],
+            "variables": [],
+        },
+    }
+
+    result = pre_publication_checks(
+        ckan_instance_destination=ckan_instance,
+        package_metadata=package_metadata
+    )
+    assert result == {
+        "missing": {
+            "package": ["non-existent-package"],
+            "organization": ["non-existent-organization"],
+            "resources": ["non-existent-resource"],
+            "projects": [],
             "variables": [],
         },
         "exist": {
@@ -226,26 +272,14 @@ def test_create_missing_organization_projects_variables(
 @pytest.mark.impure
 def test_create_missing_package(ckan_instance, ckan_envvars, ckan_setup_data):
     pkg = deepcopy(full_package_data)
-
     res = create_package_raw(ckan_instance, ckan_instance, pkg, prepare_for_publication=False)
 
     assert res["name"] == "new_test_package"
     ckan_instance.delete_package(res["id"])
 
-    # TODO this gives a validation error and will only work once eric_open is ready for testing
-    # user_record = ckan_instance.get_user("ckan_admin")
-    # user_record["fullname"] = "ckan admin"  # missing in the system
-    #
-    # res = create_package_raw(
-    #     ckan_instance_destination=ckan_instance,
-    #     data=pkg,
-    #     doi="10.25678/00039Z",
-    #     prepare_for_publication=True
-    # )
-    # assert res["name"] == "new_test_package"
-
     with pytest.raises(ValueError):
         create_package_raw(
+            ckan_instance_source=ckan_instance,
             ckan_instance_target=ckan_instance,
             data=pkg,
             prepare_for_publication=True,
@@ -282,28 +316,54 @@ def test_create_resource_raw(tmp_path, ckan_instance, ckan_envvars, ckan_setup_d
             prepare_for_publication=False,
         )
 
-        # create_resource_raw(
-        #     ckan_api_input={
-        #         "token": ckan_instance.token,
-        #         "server": ckan_instance.server,
-        #         "verify_certificate": ckan_instance.verify,
-        #     },
-        #     secure_interface_input={"key": "this does not matter for this test"},
-        #     ckan_storage_path="this does not matter for this test",
-        #     package_name="new-test-package",
-        #     metadata=resource,
-        #     file_path=file_path.as_posix(),
-        #     upload_func=upload_func,
-        #     progressbar=False,
-        #     is_link=resource_is_link(resource),
-        #     prepare_for_publication=True
-        # )
+    assert len(ckan_instance.get_package("new-test-package")["resources"]) == 2
+
+
+@pytest.mark.impure
+def test_patch_resource_raw(tmp_path, ckan_instance, ckan_envvars, ckan_setup_data):
+    (file_path := tmp_path / "file_0").write_text("fdsffsd")
+    pkg_data = deepcopy(package_data)
+    pkg_data["name"] = "new-test-package"
+    _ = ckan_instance.create_package(**pkg_data)
+    ckan_input_args = {
+        "token": ckan_instance.token,
+        "server": ckan_instance.server,
+        "verify_certificate": ckan_instance.verify,
+    }
+    for resource in test_resources:
+        if resource_is_link(resource):
+            upload_func = upload_resource_link_via_api
+        else:
+            upload_func = upload_resource_file_via_api
+
+        create_resource_raw(
+            ckan_api_input=ckan_input_args,
+            secure_interface_input={"key": "this does not matter for this test"},
+            ckan_storage_path="this does not matter for this test",
+            package_name="new-test-package",
+            metadata=resource,
+            file_path=file_path.as_posix(),
+            upload_func=upload_func,
+            progressbar=False,
+            is_link=resource_is_link(resource),
+            prepare_for_publication=False,
+        )
+
+        resource["hashtype"] = "md5"
+        patch_resource_metadata_raw(
+            ckan_input_args,
+            "new-test-package",
+            resource["name"],
+            resource,
+            is_link=resource_is_link(resource),
+            prepare_for_publication=False,
+        )
 
     assert len(ckan_instance.get_package("new-test-package")["resources"]) == 2
 
 
 @pytest.mark.impure
-def test_enrich_and_store_metadata(
+def test_enrich_and_store_metadata_1(
     tmp_path,
     ckan_instance,
     secure_interface_input_args,
@@ -337,7 +397,7 @@ def test_enrich_and_store_metadata(
 
 
 @pytest.mark.impure
-def test_enrich_and_store_metadata(
+def test_enrich_and_store_metadata_2(
     tmp_path,
     ckan_instance,
     ckan_envvars,

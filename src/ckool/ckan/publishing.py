@@ -1,3 +1,4 @@
+import json
 from copy import deepcopy
 from typing import Callable
 
@@ -341,7 +342,8 @@ def patch_resource_metadata_raw(
     ckan = CKAN(**ckan_api_input)
     rsc_id = ckan.resolve_resource_id_or_name_to_id(
         package_name=package_name, resource_id_or_name=resource_name
-    )
+    )["id"]
+
     return ckan.patch_resource_metadata(
         resource_id=rsc_id, resource_data_to_update=data
     )
@@ -401,7 +403,6 @@ def enrich_and_store_metadata(
         related_publications=local_doi_store_instance.get_related_publications(
             package_name
         ),
-        author_is_organization=False,
         resource_type="Publication Data Package",
         resource_type_general="Collection",
         version="1.0",

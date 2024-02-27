@@ -734,7 +734,7 @@ def _publish_package(
                             ].resolve_resource_id_or_name_to_id(
                                 package_name=metadata_filtered["name"],
                                 resource_id_or_name=resource["name"],
-                            )
+                            )["id"]
                         )
 
                         create_resource_raw(
