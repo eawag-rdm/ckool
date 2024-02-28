@@ -489,3 +489,20 @@ def test_create_package_with_additional_field(
     ckan_instance.create_package(**pkg)
 
     assert "geographic_name" in ckan_instance.get_package(pkg_name).keys()
+
+
+@pytest.mark.impure
+def test_package_delete_purge(
+    ckan_instance, ckan_envvars, ckan_setup_data
+):
+    pkg = deepcopy(package_data)
+
+    ckan_instance.delete_package(ckan_envvars["test_package"])
+    assert ckan_instance.get_package(ckan_envvars["test_package"])["state"] == "deleted"
+
+    ckan_instance.create_package(**pkg)
+    ckan_instance.delete_package(ckan_envvars["test_package"])
+    ckan_instance.purge_package(ckan_envvars["test_package"])
+    with pytest.raises(ckanapi.errors.NotFound):
+        ckan_instance.get_package(ckan_envvars["test_package"])
+

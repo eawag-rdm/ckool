@@ -928,10 +928,9 @@ def _delete_package(
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
-    deleted = ckan.delete_package(package_id=package_name)
+    ckan.delete_package(package_id=package_name)
     if purge:
-        deleted = ckan.purge_package(package_id=package_name)
-    print(json.dumps(deleted, indent=4))
+        ckan.purge_package(package_id=package_name)
 
 
 def _delete_resource(
