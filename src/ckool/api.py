@@ -507,6 +507,32 @@ def _patch_resource_hash(
     )
 
 
+def _patch_all_resource_hashes_in_package(
+    package_name: str,
+    hash_algorithm: HashTypes,
+    config: dict,
+    ckan_instance_name: str,
+    verify: bool,
+    test: bool,
+):
+    cfg = parse_config_for_use(
+        config=config,
+        test=test,
+        verify=verify,
+        ckan_instance_source=ckan_instance_name,
+        ckan_instance_target=None,
+    )
+
+    hash_all_resources(
+        package_name=package_name,
+        ckan_api_input=cfg["cfg_ckan_source"],
+        secure_interface_input=cfg["cfg_secure_interface_source"],
+        ckan_storage_path=cfg["cfg_other_source"]["ckan_storage_path"],
+        hash_type=hash_algorithm,
+        only_if_hash_missing=False
+    )
+
+
 def _patch_metadata(
     package_name: str,
     metadata_file: str,

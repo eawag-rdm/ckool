@@ -24,7 +24,7 @@ from ckool.api import (
     _publish_package,
     _publish_project,
     _upload_package,
-    _upload_resource,
+    _upload_resource, _patch_all_resource_hashes_in_package,
 )
 from ckool.other.types import CompressionTypes, HashTypes
 
@@ -523,6 +523,31 @@ def patch_resource_hash(
         OPTIONS["verify"],
         OPTIONS["test"],
     )
+
+
+@patch_app.command(
+    "all_resource_hashes", help="Update the 'hash' and 'hashtype' field for all resources a package."
+)
+def patch_all_resource_hashes_in_package(
+    package_name: str = typer.Argument(
+        help="Name of package.",
+    ),
+    hash_algorithm: HashTypes = typer.Option(
+        HashTypes.sha256.value,
+        "--hash-algorithm",
+        "-ha",
+        help="Default is sha256.",
+    ),
+):
+    return _patch_all_resource_hashes_in_package(
+        package_name,
+        hash_algorithm,
+        OPTIONS["config"],
+        OPTIONS["ckan-instance_name"],
+        OPTIONS["verify"],
+        OPTIONS["test"],
+    )
+
 
 
 @patch_app.command("metadata", help="Update specified metadata fields of package only.")

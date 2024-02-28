@@ -158,12 +158,16 @@ def hash_all_resources(
     secure_interface_input: dict,
     ckan_storage_path: str,
     hash_type: HashTypes | str = HASH_TYPE.sha256,
+    only_if_hash_missing: bool = True
 ):
     ckan = CKAN(**ckan_api_input)
     resources = ckan.get_package(package_name)["resources"]
     for resource in resources:
-        if not resource["hash"] or not resource.get("hashtype", False):
-            print(f"Resource '{resource['name']}' has no hash. Hashing now...")
+        if only_if_hash_missing:
+            if resource["hash"] and resource.get("hashtype", False):
+                continue
+
+            print(f"Resource '{resource['name']}' has no hash and/or hashtype specified. Hashing now...")
             hash_ = hash_remote(
                 ckan_api_input,
                 secure_interface_input,
@@ -177,6 +181,22 @@ def hash_all_resources(
                 resource_id=resource["id"],
                 resource_data_to_update={"hash": hash_, "hashtype": hash_type.value},
             )
+        elif not only_if_hash_missing:
+            hash_ = hash_remote(
+                ckan_api_input,
+                secure_interface_input,
+                ckan_storage_path,
+                package_name,
+                resource["id"],
+                hash_type,
+            )
+
+            ckan.patch_resource_metadata(
+                resource_id=resource["id"],
+                resource_data_to_update={"hash": hash_, "hashtype": hash_type.value},
+            )
+        else:
+            raise ValueError("Ooops this is unexpected, ")
 
 
 def resource_integrity_remote_intact(
