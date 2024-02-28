@@ -48,7 +48,7 @@ from ckool.templates import (
     hash_all_resources,
     hash_remote,
     resource_integrity_between_ckan_instances_intact,
-    retrieve_and_filter_source_metadata,
+    retrieve_and_filter_source_metadata, resource_integrity_remote_intact, package_integrity_remote_intact,
 )
 
 
@@ -565,7 +565,7 @@ def _patch_datacite(
     raise NotImplementedError("This feature is not implemented yet.")
 
 
-# TODO implement smarter resource map, so that download will not be performed again unless flag is passed
+# TODO should the integrity check really both times after download and after upload.
 def _publish_package(
     package_name: str,
     projects_to_publish: str,
@@ -696,31 +696,34 @@ def _publish_package(
                         package_name=package_name,
                     )
 
-                    if not resource_is_link(resource):
-                        hash_rem = hash_remote(
-                            ckan_api_input=cfg["cfg_ckan_target"],
-                            secure_interface_input=cfg["cfg_secure_interface_target"],
-                            ckan_storage_path=cfg["cfg_other_target"][
-                                "ckan_storage_path"
-                            ],
-                            package_name=package_name,
-                            resource_id_or_name=resource["name"],
-                            hash_type=resource["hashtype"],
-                        )
-
-                        cfg["ckan_target"].patch_resource_metadata(
-                            resource_id=cfg[
-                                "ckan_target"
-                            ].resolve_resource_id_or_name_to_id(
-                                package_name, resource["name"]
-                            )[
-                                "id"
-                            ],
-                            resource_data_to_update={
-                                "hash": hash_rem,
-                                "hashtype": resource["hashtype"],
-                            },
-                        )
+                    # As hashing the source is default behaviour now, this step has become unnecessary.
+                    # The fields 'hash' and 'hashtype' will simply be uploaded to the target instance.
+                    #
+                    # if not resource_is_link(resource):
+                    #     hash_rem = hash_remote(
+                    #         ckan_api_input=cfg["cfg_ckan_target"],
+                    #         secure_interface_input=cfg["cfg_secure_interface_target"],
+                    #         ckan_storage_path=cfg["cfg_other_target"][
+                    #             "ckan_storage_path"
+                    #         ],
+                    #         package_name=package_name,
+                    #         resource_id_or_name=resource["name"],
+                    #         hash_type=resource["hashtype"],
+                    #     )
+                    #
+                    #     cfg["ckan_target"].patch_resource_metadata(
+                    #         resource_id=cfg[
+                    #             "ckan_target"
+                    #         ].resolve_resource_id_or_name_to_id(
+                    #             package_name, resource["name"]
+                    #         )[
+                    #             "id"
+                    #         ],
+                    #         resource_data_to_update={
+                    #             "hash": hash_rem,
+                    #             "hashtype": resource["hashtype"],
+                    #         },
+                    #     )
 
                     continue
 
@@ -794,6 +797,17 @@ def _publish_package(
                         is_link=resource_is_link(resource),
                         prepare_for_publication=True,
                     )
+
+            if check_data_integrity:
+
+                package_integrity_remote_intact(
+                    ckan_api_input=cfg["cfg_ckan_target"],
+                    secure_interface_input=cfg["cfg_secure_interface_target"],
+                    ckan_storage_path=cfg["cfg_other_target"][
+                        "ckan_storage_path"
+                    ],
+                    package_name=package_name,
+                )
 
             cfg["ckan_target"].reorder_package_resources(
                 package_name=metadata_filtered["name"]

@@ -232,6 +232,28 @@ def resource_integrity_remote_intact(
     return hash_local == hash_remote_
 
 
+def package_integrity_remote_intact(
+    ckan_api_input: dict,
+    secure_interface_input: dict,
+    ckan_storage_path: str,
+    package_name: str,
+):
+    ckan = CKAN(**ckan_api_input)
+    for resource in ckan.get_package(package_name)["resources"]:
+        print(f"Checking resource integrity for '{resource['name']}'...")
+        intact = resource_integrity_remote_intact(
+            ckan_api_input=ckan_api_input,
+            secure_interface_input=secure_interface_input,
+            ckan_storage_path=ckan_storage_path,
+            package_name=package_name,
+            resource_id_or_name=resource["id"]
+        )
+        if not intact:
+            raise ValueError(f"Something must have gone wrong during the upload of resource '{resource['name']}'. "
+                             f"The hash on the server does not match the one in ckan.")
+
+
+
 def resource_integrity_between_ckan_instances_intact(
     ckan_api_input_1: dict,
     ckan_api_input_2: dict,
