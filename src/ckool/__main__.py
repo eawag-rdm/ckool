@@ -36,7 +36,7 @@ from .other.config_parser import (
     set_config_file_as_default,
 )
 
-OPTIONS = {"config": {}, "verify": True, "ckan-instance_name": "None"}
+OPTIONS = {"config": {}, "verify": True, "ckan-instance-name": "None"}
 
 app = typer.Typer()
 
@@ -117,7 +117,7 @@ def main(
     OPTIONS["config"] = load_config(config_file)
     OPTIONS["config"].update({"config_file_location": config_file.as_posix()})
     OPTIONS["verify"] = not no_verify
-    OPTIONS["ckan-instance_name"] = ckan_instance_name
+    OPTIONS["ckan-instance-name"] = ckan_instance_name
     OPTIONS["test"] = test
 
 
@@ -278,7 +278,7 @@ def upload_package(
         parallel,
         workers,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -304,7 +304,7 @@ def upload_resource(
         filepath,
         hash_algorithm,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -332,7 +332,7 @@ def get_package(
         destination,
         parallel,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -351,7 +351,7 @@ def get_local_resource_location(
         package_name=package_name,
         resource_name=resource_name,
         config=OPTIONS["config"],
-        ckan_instance_name=OPTIONS["ckan-instance_name"],
+        ckan_instance_name=OPTIONS["ckan-instance-name"],
         verify=OPTIONS["verify"],
         test=OPTIONS["test"],
     )
@@ -374,7 +374,7 @@ def get_resource(
         url,
         destination,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -404,7 +404,7 @@ def get_resources(
         destination,
         parallel,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -426,7 +426,7 @@ def get_metadata(
         package_name,
         filter_fields,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -444,7 +444,7 @@ def get_all_metadata(
     return _download_all_metadata(
         include_private,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -463,7 +463,7 @@ def patch_package(
         metadata_file,
         package_name,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -485,7 +485,7 @@ def patch_resource(
         metadata_file,
         file,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -520,7 +520,7 @@ def patch_resource_hash(
         local_resource_path,
         hash_algorithm,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -545,7 +545,7 @@ def patch_all_resource_hashes_in_package(
         package_name,
         hash_algorithm,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -564,7 +564,7 @@ def patch_metadata(
         package_name,
         metadata_file,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -579,7 +579,7 @@ def patch_datacite(
     return _patch_datacite(
         metadata_file,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -675,7 +675,7 @@ def publish_package(
         no_prompt,
         ckan_instance_target,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
         Prompt.ask,
@@ -695,7 +695,7 @@ def publish_doi(
         package_name,
         Prompt.ask,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -713,7 +713,7 @@ def publish_organization(
     return _publish_organization(
         organization_name,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -730,7 +730,7 @@ def publish_project(
     return _publish_project(
         project_name,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -748,7 +748,7 @@ def publish_controlled_vocabulary(
     return _publish_controlled_vocabulary(
         organization_name,
         OPTIONS["config"],
-        OPTIONS["ckan-instance_name"],
+        OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
         OPTIONS["test"],
     )
@@ -777,7 +777,7 @@ def delete_package(
             package_name,
             purge,
             OPTIONS["config"],
-            OPTIONS["ckan-instance_name"],
+            OPTIONS["ckan-instance-name"],
             OPTIONS["verify"],
             OPTIONS["test"],
         )
@@ -806,7 +806,7 @@ def delete_resource(
             package_name,
             resource_name,
             OPTIONS["config"],
-            OPTIONS["ckan-instance_name"],
+            OPTIONS["ckan-instance-name"],
             OPTIONS["verify"],
             OPTIONS["test"],
         )
