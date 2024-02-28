@@ -521,6 +521,7 @@ def _patch_all_resource_hashes_in_package(
         verify=verify,
         ckan_instance_source=ckan_instance_name,
         ckan_instance_target=None,
+        target_needed=False
     )
 
     hash_all_resources(

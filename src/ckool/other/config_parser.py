@@ -108,8 +108,11 @@ def config_for_instance(config_subsection: list, instance_name: str):
 
 
 def find_target_ckan_instance(
-    config, section, ckan_instance_source, ckan_instance_target
+    config, section, ckan_instance_source, ckan_instance_target, target_needed: bool = True
 ):
+    if not target_needed:
+        return None
+
     instances = [i["instance"] for i in config[section]["ckan_api"]]
     if ckan_instance_target is None:
         if (l := len(instances)) == 1:
@@ -129,6 +132,7 @@ def parse_config_for_use(
     verify: bool,
     ckan_instance_source: str,
     ckan_instance_target: str = None,
+    target_needed: bool = True,
 ):
     easy_access_config = {}
 
@@ -156,6 +160,7 @@ def parse_config_for_use(
             section=section,
             ckan_instance_source=ckan_instance_source,
             ckan_instance_target=ckan_instance_target,
+            target_needed=target_needed
         )
 
     if ckan_instance_target:
