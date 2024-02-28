@@ -506,3 +506,15 @@ def test_package_delete_purge(
     with pytest.raises(ckanapi.errors.NotFound):
         ckan_instance.get_package(ckan_envvars["test_package"])
 
+
+@pytest.mark.impure
+def test_package_delete_delete_purge(
+    ckan_instance, ckan_envvars, ckan_setup_data
+):
+
+    ckan_instance.delete_package(ckan_envvars["test_package"])
+    ckan_instance.delete_package(ckan_envvars["test_package"])
+    assert ckan_instance.get_package(ckan_envvars["test_package"])["state"] == "deleted"
+    ckan_instance.purge_package(ckan_envvars["test_package"])
+    with pytest.raises(ckanapi.errors.NotFound):
+        ckan_instance.get_package(ckan_envvars["test_package"])
