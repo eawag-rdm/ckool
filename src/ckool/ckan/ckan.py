@@ -352,6 +352,9 @@ class CKAN:
     def purge_project(self, group_id):
         return self.plain_action_call("group_purge", id=group_id)
 
+    def purge_package(self, package_id):
+        return self.plain_action_call("dataset_purge", id=package_id)
+
     def add_package_to_project(self, package_name, project_name):
         self.patch_package_metadata(
             package_id=package_name, data={"groups": [{"name": project_name}]}

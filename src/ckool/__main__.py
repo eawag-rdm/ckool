@@ -759,15 +759,23 @@ def delete_package(
     package_name: str = typer.Argument(
         help="Name of the package, for which to get the metadata.",
     ),
+    purge: bool = typer.Option(
+        False,
+        "--purge",
+        "-p",
+        help="Name of the package, for which to get the metadata.",
+    ),
 ):
     confirmation = Prompt.ask(
-        f"Are you sure you want to delete the package '{package_name}' on '{OPTIONS['ckan-instance']}'?",
+        f"Are you sure you want to delete {'and purge ' if purge else ''}"
+        f"the package '{package_name}' on '{OPTIONS['ckan-instance']}'?",
         choices=["no", "yes"],
         default="no",
     )
     if confirmation == "yes":
         return _delete_package(
             package_name,
+            purge,
             OPTIONS["config"],
             OPTIONS["ckan-instance_name"],
             OPTIONS["verify"],

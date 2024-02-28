@@ -918,6 +918,7 @@ def _publish_controlled_vocabulary(
 
 def _delete_package(
     package_name: str,
+    purge: bool,
     config: dict,
     ckan_instance_name: str,
     verify: bool,
@@ -927,7 +928,10 @@ def _delete_package(
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
-    print(json.dumps(ckan.delete_package(package_id=package_name), indent=4))
+    deleted = ckan.delete_package(package_id=package_name)
+    if purge:
+        deleted = ckan.purge_package(package_id=package_name)
+    print(json.dumps(deleted, indent=4))
 
 
 def _delete_resource(
