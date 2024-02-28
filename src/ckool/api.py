@@ -685,6 +685,7 @@ def _publish_package(
                     package_name=metadata_filtered["name"],
                     resource_name=resource["name"],
                 ):
+                    print(f"Uploading resource {resource['name']}...")
                     create_resource_raw_wrapped(
                         cfg_ckan_target=cfg["cfg_ckan_target"],
                         cfg_other_target=cfg["cfg_other_target"],
@@ -789,6 +790,7 @@ def _publish_package(
                         patch_metadata = False
 
                 if patch_metadata:
+                    print(f"Patching resource metadata {resource['name']}...")
                     patch_resource_metadata_raw(
                         ckan_api_input=cfg["cfg_ckan_target"],
                         package_name=metadata_filtered["name"],
