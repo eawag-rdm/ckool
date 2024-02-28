@@ -12,6 +12,7 @@ from ckool.api import (
     _download_resource,
     _download_resources,
     _get_local_resource_location,
+    _patch_all_resource_hashes_in_package,
     _patch_datacite,
     _patch_metadata,
     _patch_package,
@@ -24,7 +25,7 @@ from ckool.api import (
     _publish_package,
     _publish_project,
     _upload_package,
-    _upload_resource, _patch_all_resource_hashes_in_package,
+    _upload_resource,
 )
 from ckool.other.types import CompressionTypes, HashTypes
 
@@ -526,7 +527,8 @@ def patch_resource_hash(
 
 
 @patch_app.command(
-    "all_resource_hashes", help="Update the 'hash' and 'hashtype' field for all resources a package."
+    "all_resource_hashes",
+    help="Update the 'hash' and 'hashtype' field for all resources a package.",
 )
 def patch_all_resource_hashes_in_package(
     package_name: str = typer.Argument(
@@ -547,7 +549,6 @@ def patch_all_resource_hashes_in_package(
         OPTIONS["verify"],
         OPTIONS["test"],
     )
-
 
 
 @patch_app.command("metadata", help="Update specified metadata fields of package only.")
@@ -626,7 +627,14 @@ def publish_package(
         "--hash-source-resources",
         "-hsr",
         help="By default the hash for each resource in the ckan source instance is only calculated if the field 'hash' "
-             "or 'hashtype' are missing. If this flag is provided the all resources will be rehashed regardless.",
+        "or 'hashtype' are missing. If this flag is provided the all resources will be rehashed regardless.",
+    ),
+    re_download_resources: bool = typer.Option(
+        False,
+        "--re-download-resources",
+        "-rdr",
+        help="Resources are typically only downloaded, if they're not yet available locally. If resources have changed "
+        "on the ckan source instance, you can pass this flag to re-download all resources.",
     ),
     parallel: bool = typer.Option(
         False,
@@ -661,6 +669,7 @@ def publish_package(
         create_missing,
         exclude_resources,
         only_hash_source_if_missing,
+        re_download_resources,
         parallel,
         workers,
         no_prompt,

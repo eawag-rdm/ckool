@@ -521,7 +521,7 @@ def _patch_all_resource_hashes_in_package(
         verify=verify,
         ckan_instance_source=ckan_instance_name,
         ckan_instance_target=None,
-        target_needed=False
+        target_needed=False,
     )
 
     hash_all_resources(
@@ -530,7 +530,7 @@ def _patch_all_resource_hashes_in_package(
         secure_interface_input=cfg["cfg_secure_interface_source"],
         ckan_storage_path=cfg["cfg_other_source"]["ckan_storage_path"],
         hash_type=hash_algorithm,
-        only_if_hash_missing=False
+        only_if_hash_missing=False,
     )
 
 
@@ -573,6 +573,7 @@ def _publish_package(
     create_missing_: bool,
     exclude_resources: str,
     only_hash_source_if_missing: bool,
+    re_download_resources: bool,
     parallel: bool,
     workers: int,
     no_prompt: bool,
@@ -606,7 +607,7 @@ def _publish_package(
         secure_interface_input=cfg["cfg_secure_interface_source"],
         ckan_storage_path=cfg["cfg_other_source"]["ckan_storage_path"],
         hash_type=HASH_TYPE,
-        only_if_hash_missing=only_hash_source_if_missing
+        only_if_hash_missing=only_hash_source_if_missing,
     )
 
     doi = cfg["lds"].get_doi(package_name)
@@ -624,10 +625,10 @@ def _publish_package(
         for resource in metadata_filtered["resources"]:
             res = handle_resource_download_with_integrity_check(
                 cfg_ckan_source=cfg["cfg_ckan_source"],
-                package_name=package_name,
                 resource=resource,
                 check_data_integrity=check_data_integrity,
                 cwd=cwd,
+                re_download=re_download_resources,
             )
             temporary_resource_names[res["id"]] = res["name"]
 
@@ -805,7 +806,6 @@ def _publish_package(
             )
     else:
         raise NotImplementedError("Parallel is not implemented yet.")
-
 
     # TODO: should this be metadata found in the ckan source instance or destination instance
     enrich_and_store_metadata(

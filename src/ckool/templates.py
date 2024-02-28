@@ -158,7 +158,7 @@ def hash_all_resources(
     secure_interface_input: dict,
     ckan_storage_path: str,
     hash_type: HashTypes | str = HASH_TYPE.sha256,
-    only_if_hash_missing: bool = True
+    only_if_hash_missing: bool = True,
 ):
     ckan = CKAN(**ckan_api_input)
     resources = ckan.get_package(package_name)["resources"]
@@ -167,7 +167,9 @@ def hash_all_resources(
             if resource["hash"] and resource.get("hashtype", False):
                 continue
 
-            print(f"Resource '{resource['name']}' has no hash and/or hashtype specified. Hashing now...")
+            print(
+                f"Resource '{resource['name']}' has no hash and/or hashtype specified. Hashing now..."
+            )
             hash_ = hash_remote(
                 ckan_api_input,
                 secure_interface_input,
@@ -555,28 +557,27 @@ def handle_missing_entities(
 
 def handle_resource_download_with_integrity_check(
     cfg_ckan_source: dict,
-    package_name: str,
     resource: dict,
     check_data_integrity: bool,
     cwd: pathlib.Path,
+    re_download: bool = True,
 ):
     ckan_source = CKAN(**cfg_ckan_source)
 
     url = resource["url"]
     id_ = resource["id"]
     temporary_resource_name = f"{id_}-{pathlib.Path(url).name}"
-    downloaded_file = ckan_source.download_resource(
-        url=url, destination=(cwd / temporary_resource_name)
-    )
+    temporary_resource_path = cwd / temporary_resource_name
+    if not temporary_resource_path.exists() or re_download:
+        ckan_source.download_resource(url=url, destination=temporary_resource_path)
     if check_data_integrity:
         if not resource["hash"]:
             raise ValueError(
                 f"No resource hash for '{resource['name']}' on '{cfg_ckan_source['instance']}'."
             )
-            # TODO could hash here or always check for any resource.
 
         hash_func = get_hash_func(resource["hashtype"])
-        hash_local = hash_func(downloaded_file)
+        hash_local = hash_func(temporary_resource_path)
         if hash_local != resource["hash"]:
             raise ValueError(
                 f"Something went wrong. The hash value '{hash_local}' ('{resource['hashtype']}') of the "
