@@ -182,6 +182,7 @@ def hash_all_resources(
                 resource_data_to_update={"hash": hash_, "hashtype": hash_type.value},
             )
         elif not only_if_hash_missing:
+            print(f"Hashing '{resource['name']}' ...")
             hash_ = hash_remote(
                 ckan_api_input,
                 secure_interface_input,
