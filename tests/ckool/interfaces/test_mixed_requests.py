@@ -1,6 +1,6 @@
 import pytest
 
-from ckool.interfaces.mixed_requests import get_citation_from_doi
+from ckool.interfaces.mixed_requests import fix_publication_link, get_citation_from_doi
 
 
 @pytest.mark.impure
@@ -16,3 +16,46 @@ def test_get_citation_eawag_doi():
 @pytest.mark.parametrize("doi", ["https://doi.org/10.25678/00039Z", "10.1109/5.771073"])
 def test_get_citation_non_eawag_doi(doi):
     assert isinstance(get_citation_from_doi(doi), str)
+
+
+@pytest.mark.impure
+def test_fix_publication_link_dora_escaped_colon():
+    publication_link = "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag%3A16556"
+    res = fix_publication_link(publication_link)
+    assert res == {
+        "publicationlink": "https://doi.org/10.1002/9781119271659.ch1",
+        "publicationlink_dora": "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag%3A16556",
+        "paper_doi": "10.1002/9781119271659.ch1",
+    }
+
+
+@pytest.mark.impure
+def test_fix_publication_link_dora_colon():
+    publication_link = "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag:16556"
+    res = fix_publication_link(publication_link)
+    assert res == {
+        "publicationlink": "https://doi.org/10.1002/9781119271659.ch1",
+        "publicationlink_dora": "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag:16556",
+        "paper_doi": "10.1002/9781119271659.ch1",
+    }
+
+
+@pytest.mark.impure
+def test_fix_publication_link_doi():
+    publication_link = "https://dx.doi.org/10.1002/9781119271659.ch1"
+    res = fix_publication_link(publication_link)
+    assert res == {
+        "publicationlink": "https://dx.doi.org/10.1002/9781119271659.ch1",
+        "publicationlink_dora": "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag:16556",
+        "paper_doi": "10.1002/9781119271659.ch1",
+    }
+
+
+def test_fix_publication_link_other():
+    publication_link = "https://whatevar.url/this/is.txt"
+    res = fix_publication_link(publication_link)
+    assert res == {
+        "publicationlink_url": publication_link,
+        "publicationlink_dora": None,
+        "paper_doi": None,
+    }

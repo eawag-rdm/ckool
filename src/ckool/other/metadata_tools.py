@@ -45,7 +45,7 @@ def prepare_metadata_for_publication_package(
         "spatial": (
             pkg_spatial.strip() if (pkg_spatial := pkg.get("spatial")) else pkg_spatial
         ),
-        #"resources": [],
+        # "resources": [],
         "citation": get_citation_from_doi(doi),
         "paper_doi": paper_doi,
         "citation_publication": citation_publication,

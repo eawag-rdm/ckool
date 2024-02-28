@@ -4,11 +4,17 @@ from ckool.interfaces.dora import Dora
 
 
 @pytest.mark.impure
-def test_dora_publication_link_dora_from_doi():
-    assert Dora.publication_link_dora_from_doi("10.25678/00039Z") == (
-        "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag%3A20376/datastream/PDF/"
-        "Pomati-2020-Interacting_temperature%2C_nutrients_and_zooplankton-%28published_version%29.pdf"
+def test_dora_publication_link_dora_from_doi_eawag():
+    assert (
+        Dora.publication_link_dora_from_doi("10.25678/00039Z")
+        == "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag:20376"
     )
+
+
+@pytest.mark.impure
+def test_dora_publication_link_dora_from_doi_other():
+    res = Dora.publication_link_dora_from_doi("10.1002/9781119271659.ch1")
+    assert res == "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag:16556"
 
 
 @pytest.mark.impure

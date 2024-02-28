@@ -8,9 +8,10 @@ from rich.prompt import Prompt
 from ckool import (
     DOWNLOAD_CHUNK_SIZE,
     HASH_BLOCK_SIZE,
+    HASH_TYPE,
     PACKAGE_META_DATA_FILE_ENDING,
     TEMPORARY_DIRECTORY_NAME,
-    UPLOAD_FUNC_FACTOR, HASH_TYPE,
+    UPLOAD_FUNC_FACTOR,
 )
 from ckool.ckan.ckan import CKAN
 from ckool.ckan.publishing import (
@@ -44,9 +45,10 @@ from ckool.templates import (
     handle_missing_entities,
     handle_resource_download_with_integrity_check,
     handle_upload_all,
+    hash_all_resources,
     hash_remote,
     resource_integrity_between_ckan_instances_intact,
-    retrieve_and_filter_source_metadata, hash_all_resources,
+    retrieve_and_filter_source_metadata,
 )
 
 
@@ -553,7 +555,6 @@ def _publish_package(
     test: bool,
     prompt_function: Prompt.ask,
 ):
-
     if exclude_resources:
         exclude_resources = exclude_resources.split(",")
     if projects_to_publish:
@@ -576,7 +577,7 @@ def _publish_package(
         ckan_api_input=cfg["cfg_ckan_source"],
         secure_interface_input=cfg["cfg_secure_interface_source"],
         ckan_storage_path=cfg["cfg_other_source"]["ckan_storage_path"],
-        hash_type=HASH_TYPE
+        hash_type=HASH_TYPE,
     )
 
     doi = cfg["lds"].get_doi(package_name)
@@ -734,7 +735,9 @@ def _publish_package(
                             ].resolve_resource_id_or_name_to_id(
                                 package_name=metadata_filtered["name"],
                                 resource_id_or_name=resource["name"],
-                            )["id"]
+                            )[
+                                "id"
+                            ]
                         )
 
                         create_resource_raw(

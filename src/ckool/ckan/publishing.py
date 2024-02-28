@@ -1,4 +1,3 @@
-import json
 from copy import deepcopy
 from typing import Callable
 
@@ -278,8 +277,7 @@ def format_resource_metadata_raw(
         "mimetype",
         "mimetype_inner",
         "allowed_users",
-        "revision_id"
-
+        "revision_id",
     ]:
         if field in fields:
             del data[field]

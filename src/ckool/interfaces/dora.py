@@ -24,25 +24,30 @@ class Dora:
         dora_query = urljoin(dora_url, quote(parameters))
         response = requests.get(dora_query)
         response.raise_for_status()
-
         base_url = "https://www.dora.lib4ri.ch/eawag/islandora/object/"
 
         # Extract links from response
-        bs = BeautifulSoup(response.text, features="lxml")
-        links = [
+        bs = BeautifulSoup(response.text, features="html")
+
+        links_of_pdfs = [  # for now not in use
             urljoin(base_url, html.find("a").get("href"))
             for html in bs.find_all("div", {"class": "lib4ridora-pdf-link"})
         ]
 
-        if not links:
+        links_of_detailed_records = [  # for now not in use
+            urljoin(base_url, html.find("a").get("href").split("/")[-1])
+            for html in bs.find_all("div", {"class": "bib-detail-record"})
+        ]
+
+        if not links_of_detailed_records:
             print(f"WARNING: No DORA entry for DOI '{doi}'")
             return
-        if len(links) > 1:
+        if len(links_of_detailed_records) > 1:
             print(
                 f"WARNING: multiple DORA records for one DOI: '{doi}'. Only the first will be returned."
             )
 
-        return links[0]
+        return links_of_detailed_records[0].replace("%3A", ":")
 
     @classmethod
     def get_doi_from_dora_id(cls, dora_id):

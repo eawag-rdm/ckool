@@ -18,8 +18,9 @@ from ckool.ckan.publishing import (
     create_project_raw,
     create_resource_raw,
     enrich_and_store_metadata,
+    patch_resource_metadata_raw,
     pre_publication_checks,
-    update_datacite_doi, patch_package_raw, patch_resource_metadata_raw,
+    update_datacite_doi,
 )
 from ckool.datacite.doi_store import LocalDoiStore
 from ckool.other.utilities import resource_is_link
@@ -63,7 +64,7 @@ def test_pre_publication_checks_all_exist(ckan_instance, ckan_envvars, ckan_setu
     result = pre_publication_checks(
         ckan_instance_destination=ckan_instance,
         package_metadata=package_metadata,
-        projects_to_publish=[ckan_envvars["test_project"]]
+        projects_to_publish=[ckan_envvars["test_project"]],
     )
     assert result == {
         "missing": {
@@ -100,7 +101,7 @@ def test_pre_publication_checks_none_exist(
     result = pre_publication_checks(
         ckan_instance_destination=ckan_instance,
         package_metadata=package_metadata,
-        projects_to_publish=["non-existent-group"]
+        projects_to_publish=["non-existent-group"],
     )
     assert result == {
         "missing": {
@@ -122,7 +123,7 @@ def test_pre_publication_checks_none_exist(
     result = pre_publication_checks(
         ckan_instance_destination=ckan_instance,
         package_metadata=package_metadata,
-        projects_to_publish=[]
+        projects_to_publish=[],
     )
     assert result == {
         "missing": {
@@ -142,8 +143,7 @@ def test_pre_publication_checks_none_exist(
     }
 
     result = pre_publication_checks(
-        ckan_instance_destination=ckan_instance,
-        package_metadata=package_metadata
+        ckan_instance_destination=ckan_instance, package_metadata=package_metadata
     )
     assert result == {
         "missing": {
@@ -272,7 +272,9 @@ def test_create_missing_organization_projects_variables(
 @pytest.mark.impure
 def test_create_missing_package(ckan_instance, ckan_envvars, ckan_setup_data):
     pkg = deepcopy(full_package_data)
-    res = create_package_raw(ckan_instance, ckan_instance, pkg, prepare_for_publication=False)
+    res = create_package_raw(
+        ckan_instance, ckan_instance, pkg, prepare_for_publication=False
+    )
 
     assert res["name"] == "new_test_package"
     ckan_instance.delete_package(res["id"])

@@ -59,7 +59,12 @@ class LocalDoiStore:
             raise ValueError(
                 f"The package '{package_name}' you're referring to can not be found in the datastore."
             )
-        return self.path / found_name / package_name / LOCAL_DOI_STORE_METADATA_XML_FILE_NAME
+        return (
+            self.path
+            / found_name
+            / package_name
+            / LOCAL_DOI_STORE_METADATA_XML_FILE_NAME
+        )
 
     def parse(self):
         basic_map = {"other": []}

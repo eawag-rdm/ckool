@@ -170,7 +170,7 @@ def hash_all_resources(
                 ckan_storage_path,
                 package_name,
                 resource["id"],
-                hash_type
+                hash_type,
             )
 
             ckan.patch_resource_metadata(
@@ -549,7 +549,9 @@ def handle_resource_download_with_integrity_check(
     )
     if check_data_integrity:
         if not resource["hash"]:
-            raise ValueError(f"No resource hash for '{resource['name']}' on '{cfg_ckan_source['instance']}'.")
+            raise ValueError(
+                f"No resource hash for '{resource['name']}' on '{cfg_ckan_source['instance']}'."
+            )
             # TODO could hash here or always check for any resource.
 
         hash_func = get_hash_func(resource["hashtype"])
