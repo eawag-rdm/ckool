@@ -643,6 +643,7 @@ def _publish_package(
 
         # NOW ALL ENTITIES EXIST (Organization, Project, TODO Variables still need to be implemented)
         if existing_and_missing_entities["missing"]["package"]:
+            print(f"Creating package {existing_and_missing_entities['missing']['package']}...")
             create_package_raw(
                 ckan_instance_source=cfg["ckan_source"],
                 ckan_instance_target=cfg["ckan_target"],
@@ -652,7 +653,6 @@ def _publish_package(
                 project_names_to_link=projects_to_publish,
             )
 
-            # TODO temporary_resource_map needs_cache also.
             for resource in metadata_filtered["resources"]:
                 filepath = cwd / temporary_resource_names[resource["id"]]
 
