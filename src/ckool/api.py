@@ -643,7 +643,7 @@ def _publish_package(
 
         # NOW ALL ENTITIES EXIST (Organization, Project, TODO Variables still need to be implemented)
         if existing_and_missing_entities["missing"]["package"]:
-            print(f"Creating package {existing_and_missing_entities['missing']['package']}...")
+            print(f"Creating package {existing_and_missing_entities['missing']['package'][0]}...")
             create_package_raw(
                 ckan_instance_source=cfg["ckan_source"],
                 ckan_instance_target=cfg["ckan_target"],
