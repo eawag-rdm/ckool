@@ -746,7 +746,7 @@ def _publish_package(
 
                         # resource will need re-uploading
                         upload_func = get_upload_func(
-                            file_sizes=int(resource["size"]),
+                            file_sizes=[int(resource["size"])],
                             space_available_on_server_root_disk=cfg["cfg_other_target"][
                                 "space_available_on_server_root_disk"
                             ],
