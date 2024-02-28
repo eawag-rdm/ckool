@@ -572,6 +572,7 @@ def _publish_package(
     check_data_integrity: bool,
     create_missing_: bool,
     exclude_resources: str,
+    only_hash_source_if_missing: bool,
     parallel: bool,
     workers: int,
     no_prompt: bool,
@@ -605,6 +606,7 @@ def _publish_package(
         secure_interface_input=cfg["cfg_secure_interface_source"],
         ckan_storage_path=cfg["cfg_other_source"]["ckan_storage_path"],
         hash_type=HASH_TYPE,
+        only_if_hash_missing=only_hash_source_if_missing
     )
 
     doi = cfg["lds"].get_doi(package_name)
@@ -803,6 +805,7 @@ def _publish_package(
             )
     else:
         raise NotImplementedError("Parallel is not implemented yet.")
+
 
     # TODO: should this be metadata found in the ckan source instance or destination instance
     enrich_and_store_metadata(

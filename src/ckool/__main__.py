@@ -621,6 +621,13 @@ def publish_package(
         help="Resource names to exclude from the publication process. Separate resource_names fields by comma. "
         "If multiple resources in the package share the same name, resource_ids must be provided.",
     ),
+    only_hash_source_if_missing: bool = typer.Option(
+        True,
+        "--hash-source-resources",
+        "-hsr",
+        help="By default the hash for each resource in the ckan source instance is only calculated if the field 'hash' "
+             "or 'hashtype' are missing. If this flag is provided the all resources will be rehashed regardless.",
+    ),
     parallel: bool = typer.Option(
         False,
         "--parallel",
@@ -653,6 +660,7 @@ def publish_package(
         check_data_integrity,
         create_missing,
         exclude_resources,
+        only_hash_source_if_missing,
         parallel,
         workers,
         no_prompt,
