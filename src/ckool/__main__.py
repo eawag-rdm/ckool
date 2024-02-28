@@ -36,7 +36,7 @@ from .other.config_parser import (
     set_config_file_as_default,
 )
 
-OPTIONS = {"config": {}, "verify": True, "ckan-instance": "None"}
+OPTIONS = {"config": {}, "verify": True, "ckan-instance_name": "None"}
 
 app = typer.Typer()
 
@@ -768,7 +768,7 @@ def delete_package(
 ):
     confirmation = Prompt.ask(
         f"Are you sure you want to delete {'and purge ' if purge else ''}"
-        f"the package '{package_name}' on '{OPTIONS['ckan-instance']}'?",
+        f"the package '{package_name}' on '{OPTIONS['ckan-instance-name']}'?",
         choices=["no", "yes"],
         default="no",
     )
