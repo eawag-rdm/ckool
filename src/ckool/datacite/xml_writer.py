@@ -18,7 +18,7 @@ def read_official_datacite_schema(typ):
     # Note: xml.etree.ElementTree does not support XML schema validation.
     # This function will need to be adapted if schema validation is required.
     # For now, it just loads the schema file.
-    if typ in ["datacite4.1", "datacite4.4"]:
+    if typ in ["datacite4.1", "datacite4.4", "datacite4.5"]:
         with open(
             __THIS_FOLDER / f"schema/datacite/metadata_schema_{typ[-3:]}.xsd", "r"
         ) as file:
@@ -31,7 +31,7 @@ def read_official_datacite_schema(typ):
 
 
 def generate_attribute_map(typ):
-    if typ in ["datacite4.1", "datacite4.4"]:
+    if typ in ["datacite4.1", "datacite4.4", "datacite4.5"]:
         return {
             "lang": "{http://www.w3.org/XML/1998/namespace}lang",
         }
@@ -40,7 +40,7 @@ def generate_attribute_map(typ):
 
 
 def generate_attribute_defaults(typ):
-    if typ in ["datacite4.1", "datacite4.4"]:
+    if typ in ["datacite4.1", "datacite4.4", "datacite4.5"]:
         return {
             "resource": {
                 "{http://www.w3.org/2001/XMLSchema-instance}schemaLocation": f"http://datacite.org/schema/kernel-4 "
