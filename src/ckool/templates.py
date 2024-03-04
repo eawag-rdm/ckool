@@ -246,12 +246,13 @@ def package_integrity_remote_intact(
             secure_interface_input=secure_interface_input,
             ckan_storage_path=ckan_storage_path,
             package_name=package_name,
-            resource_id_or_name=resource["id"]
+            resource_id_or_name=resource["id"],
         )
         if not intact:
-            raise ValueError(f"Something must have gone wrong during the upload of resource '{resource['name']}'. "
-                             f"The hash on the server does not match the one in ckan.")
-
+            raise ValueError(
+                f"Something must have gone wrong during the upload of resource '{resource['name']}'. "
+                f"The hash on the server does not match the one in ckan."
+            )
 
 
 def resource_integrity_between_ckan_instances_intact(

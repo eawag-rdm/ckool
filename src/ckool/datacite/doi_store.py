@@ -43,10 +43,14 @@ class LocalDoiStore:
     ):
         self.path = pathlib.Path(path) if isinstance(path, str) else path
         self.ignore = top_folders_to_ignore
+        self.doi_store_package_location = {}
         if not self.path.exists():
             raise ValueError(f"The path your provided '{path}' does not exist.")
 
-    def generate_xml_filepath(self, package_name):
+    def _find_doi_store_package_location(self, package_name):
+        if path := self.doi_store_package_location.get(package_name):
+            return path
+
         found_name = None
         for name in self.path.iterdir():
             if name.is_file():
@@ -59,11 +63,33 @@ class LocalDoiStore:
             raise ValueError(
                 f"The package '{package_name}' you're referring to can not be found in the datastore."
             )
+        self.doi_store_package_location[package_name] = (
+            self.path / found_name / package_name
+        )
+        return self.doi_store_package_location.get(package_name)
+
+    def generate_xml_filepath(self, package_name) -> pathlib.Path:
         return (
-            self.path
-            / found_name
-            / package_name
+            self._find_doi_store_package_location(package_name)
             / LOCAL_DOI_STORE_METADATA_XML_FILE_NAME
+        )
+
+    def generate_affiliations_filepath(self, package_name) -> pathlib.Path:
+        return (
+            self._find_doi_store_package_location(package_name)
+            / LOCAL_DOI_STORE_AFFILIATION_FILE_NAME
+        )
+
+    def generate_orcids_filepath(self, package_name) -> pathlib.Path:
+        return (
+            self._find_doi_store_package_location(package_name)
+            / LOCAL_DOI_STORE_ORCIDS_FILE_NAME
+        )
+
+    def generate_related_publications_filepath(self, package_name) -> pathlib.Path:
+        return (
+            self._find_doi_store_package_location(package_name)
+            / LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME
         )
 
     def parse(self):
@@ -108,6 +134,7 @@ class LocalDoiStore:
         return None
 
     def get_doi(self, package_name: str, filename: str = LOCAL_DOI_STORE_DOI_FILE_NAME):
+        # TODO improve, dont search is doi store package dir was already detected.
         file = self._find_file(package_name, filename, raise_error=True)
         return retrieve_doi_from_doi_file(package_name, file)
 

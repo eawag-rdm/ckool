@@ -1,3 +1,4 @@
+import json
 from copy import deepcopy
 from typing import Callable
 
@@ -7,12 +8,17 @@ from ckool import EMPTY_FILE_NAME
 from ckool.ckan.ckan import CKAN
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
-from ckool.datacite.metadata_formatter import MetaDataFormatter
+from ckool.datacite.metadata_formatter import MetaDataFormatter, split_author
 from ckool.datacite.xml_writer import MetaDataToXMLConverter
 from ckool.other.metadata_tools import (
     prepare_metadata_for_publication_package,
     prepare_metadata_for_publication_project,
     prepare_metadata_for_publication_resource,
+)
+from ckool.other.prompt import (
+    ask_for_affiliations,
+    ask_for_orcids,
+    ask_for_related_publications,
 )
 
 
@@ -387,15 +393,42 @@ def create_missing_organization_projects_variables(
 
 
 def enrich_and_store_metadata(
-    metadata, local_doi_store_instance: LocalDoiStore, package_name: str
+    metadata,
+    local_doi_store_instance: LocalDoiStore,
+    package_name: str,
+    ask_orcids: bool = True,
+    ask_affiliations: bool = True,
+    ask_related_publications: bool = True,
 ):
-    xml_filepath = local_doi_store_instance.generate_xml_filepath(package_name)
+    filepath_xml = local_doi_store_instance.generate_xml_filepath(package_name)
+
+    authors = [
+        "{1}, {0}".format(*split_author(author)) for author in metadata["author"]
+    ]
+
+    if ask_orcids:
+        orcids = ask_for_orcids(authors=authors)
+        local_doi_store_instance.generate_orcids_filepath(package_name).write_text(
+            json.dumps(orcids, indent=4)
+        )
+
+    if ask_affiliations:
+        affiliations = ask_for_affiliations(authors=authors)
+        local_doi_store_instance.generate_affiliations_filepath(
+            package_name
+        ).write_text(json.dumps(affiliations, indent=4))
+
+    if ask_related_publications:
+        related_publications = ask_for_related_publications()
+        local_doi_store_instance.generate_related_publications_filepath(
+            package_name
+        ).write_text(json.dumps(related_publications, indent=4))
 
     # enrich metadata save json
     mdf = MetaDataFormatter(
         package_metadata=metadata,
         doi=local_doi_store_instance.get_doi(package_name),
-        outfile=xml_filepath.with_suffix(".json"),
+        outfile=filepath_xml.with_suffix(".json"),
         affiliations=local_doi_store_instance.get_affiliations(package_name),
         orcids=local_doi_store_instance.get_orcids(package_name),
         related_publications=local_doi_store_instance.get_related_publications(
@@ -410,9 +443,9 @@ def enrich_and_store_metadata(
     # convert to xml and save
     mdxmlc = MetaDataToXMLConverter(enriched_metadata, typ="datacite4.4")
     xml = mdxmlc.convert_json_to_xml()
-    mdxmlc.write_xml(xml, xml_filepath)
+    mdxmlc.write_xml(xml, filepath_xml)
 
-    return {"json": xml_filepath.with_suffix(".json"), "xml": xml_filepath}
+    return {"json": filepath_xml.with_suffix(".json"), "xml": filepath_xml}
 
 
 def update_datacite_doi(

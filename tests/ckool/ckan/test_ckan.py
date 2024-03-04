@@ -492,9 +492,7 @@ def test_create_package_with_additional_field(
 
 
 @pytest.mark.impure
-def test_package_delete_purge(
-    ckan_instance, ckan_envvars, ckan_setup_data
-):
+def test_package_delete_purge(ckan_instance, ckan_envvars, ckan_setup_data):
     pkg = deepcopy(package_data)
 
     ckan_instance.delete_package(ckan_envvars["test_package"])
@@ -508,10 +506,7 @@ def test_package_delete_purge(
 
 
 @pytest.mark.impure
-def test_package_delete_delete_purge(
-    ckan_instance, ckan_envvars, ckan_setup_data
-):
-
+def test_package_delete_delete_purge(ckan_instance, ckan_envvars, ckan_setup_data):
     ckan_instance.delete_package(ckan_envvars["test_package"])
     ckan_instance.delete_package(ckan_envvars["test_package"])
     assert ckan_instance.get_package(ckan_envvars["test_package"])["state"] == "deleted"

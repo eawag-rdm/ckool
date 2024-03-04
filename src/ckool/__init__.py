@@ -16,6 +16,9 @@ UPLOAD_IN_PROGRESS_STRING = "-- upload in progress --"
 LOCAL_DOI_STORE_FOLDERS_TO_IGNORE = (".git",)
 LOCAL_DOI_STORE_DOI_FILE_NAME = "doi.txt"
 LOCAL_DOI_STORE_AFFILIATION_FILE_NAME = "affiliations.json"
-LOCAL_DOI_STORE_ORCIDS_FILE_NAME = "orcids.txt"
-LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME = "related_publications.txt"
+LOCAL_DOI_STORE_ORCIDS_FILE_NAME = "orcids.json"
+LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME = "related_publications.json"
 LOCAL_DOI_STORE_METADATA_XML_FILE_NAME = "metadata.xml"
+
+DEFAULT_AFFILIATION = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"
+PUBLISHER = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"

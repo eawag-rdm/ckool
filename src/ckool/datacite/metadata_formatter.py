@@ -6,11 +6,9 @@ from datetime import datetime
 
 from rich.prompt import Prompt
 
+from ckool import PUBLISHER
 from ckool.interfaces.dora import Dora
 from ckool.other.metadata_tools import prepare_metadata_for_publication_package
-
-PUBLISHER = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"
-DEFAULT_AFFILIATION = "Eawag: Swiss Federal Institute of Aquatic Science and Technology"
 
 
 def mk_point_location(lon, lat):
@@ -25,6 +23,19 @@ def mk_point_location(lon, lat):
         ]
     }
     return point_location
+
+
+def split_author(author):
+    last, rest = author.split(",")
+    email = re.search("<(.+)>", rest)
+    if email:
+        email = email.groups()[0]
+        first = re.sub("<(.+)>", "", rest)
+    else:
+        first = rest
+    last = last.strip()
+    first = first.strip()
+    return first, last, email
 
 
 def _description_parse(desc):
@@ -178,18 +189,6 @@ class MetaDataFormatter:
                 {"givenName": first},
                 {"familyName": last},
             ]
-
-        def split_author(author):
-            last, rest = author.split(",")
-            email = re.search("<(.+)>", rest)
-            if email:
-                email = email.groups()[0]
-                first = re.sub("<(.+)>", "", rest)
-            else:
-                first = rest
-            last = last.strip()
-            first = first.strip()
-            return first, last, email
 
         def add_orcid(first, last, creator):
             orcid = self.orcids.get(f"{last}, {first}")

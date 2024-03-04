@@ -47,8 +47,9 @@ from ckool.templates import (
     handle_upload_all,
     hash_all_resources,
     hash_remote,
+    package_integrity_remote_intact,
     resource_integrity_between_ckan_instances_intact,
-    retrieve_and_filter_source_metadata, resource_integrity_remote_intact, package_integrity_remote_intact,
+    retrieve_and_filter_source_metadata,
 )
 
 
@@ -643,7 +644,9 @@ def _publish_package(
 
         # NOW ALL ENTITIES EXIST (Organization, Project, TODO Variables still need to be implemented)
         if existing_and_missing_entities["missing"]["package"]:
-            print(f"Creating package {existing_and_missing_entities['missing']['package'][0]}...")
+            print(
+                f"Creating package {existing_and_missing_entities['missing']['package'][0]}..."
+            )
             create_package_raw(
                 ckan_instance_source=cfg["ckan_source"],
                 ckan_instance_target=cfg["ckan_target"],
@@ -801,13 +804,10 @@ def _publish_package(
                     )
 
             if check_data_integrity:
-
                 package_integrity_remote_intact(
                     ckan_api_input=cfg["cfg_ckan_target"],
                     secure_interface_input=cfg["cfg_secure_interface_target"],
-                    ckan_storage_path=cfg["cfg_other_target"][
-                        "ckan_storage_path"
-                    ],
+                    ckan_storage_path=cfg["cfg_other_target"]["ckan_storage_path"],
                     package_name=package_name,
                 )
 
@@ -823,7 +823,6 @@ def _publish_package(
     else:
         raise NotImplementedError("Parallel is not implemented yet.")
 
-    # TODO: should this be metadata found in the ckan source instance or destination instance
     enrich_and_store_metadata(
         metadata=metadata_filtered,
         local_doi_store_instance=cfg["lds"],
