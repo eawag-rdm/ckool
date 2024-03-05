@@ -51,7 +51,7 @@ def set_logging_level(
         False, "--debug", "-d", help="Enable debug log messages"
     ),
 ):
-    LOGGER.reload(log_file=None, verbose_stream=verbose, debug_stream=debug)
+    LOGGER.reload(verbose_stream=verbose, debug_stream=debug)
 
 
 config_app = typer.Typer()
