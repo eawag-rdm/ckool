@@ -102,7 +102,7 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
                 self.removeHandler(self._verbose_handler)
                 self._verbose_handler = None
 
-    def reload(self, log_file, verbose_stream, debug_stream):
+    def reload(self, verbose_stream, debug_stream):
         # verbose mode
         self.verbose_on(verbose_stream)
 
