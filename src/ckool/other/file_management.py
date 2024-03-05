@@ -178,7 +178,7 @@ def iter_package(
             yield {"file": file_or_folder, "folder": {}}
         elif file_or_folder.is_dir():
             if ignore_folders:
-                return {
+                yield {
                     "file": "",
                     "folder": {
                         "location": file_or_folder,
