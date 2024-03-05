@@ -66,7 +66,6 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
 
         self._debug_handler = None
         self._verbose_handler = None
-        self._log_file_handler = None
 
         if verbose:
             self._add_verbose_stream()
@@ -84,23 +83,6 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
         formatter = MultiLineFormatter(self.__format, "%Y-%m-%d %H:%M:%S")
         self._verbose_handler.setFormatter(formatter)
         self.addHandler(self._verbose_handler)
-
-    def _add_log_file(self, file_path):
-        # add date_to_name
-        path, file = _os.path.split(file_path)
-        name, suffix = _os.path.splitext(file)
-        file_path = _os.path.join(
-            path, "{}_{:%Y-%m-%d}{}".format(name, _dt.datetime.now(), suffix)
-        )
-
-        self._log_file_handler = _handlers.TimedRotatingFileHandler(
-            file_path, when="midnight", backupCount=7
-        )
-        # self._log_file_handler.suffix = "%Y%m%d.log"
-        self._log_file_handler.setLevel(_logging.INFO)
-        formatter = MultiLineFormatter(self.__format, "%Y-%m-%d %H:%M:%S")
-        self._log_file_handler.setFormatter(formatter)
-        self.addHandler(self._log_file_handler)
 
     def debug_on(self, on=True):
         if on:
@@ -120,35 +102,12 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
                 self.removeHandler(self._verbose_handler)
                 self._verbose_handler = None
 
-    def add_log_file(self, log_file):
-        # add path to logger file if not exists
-        path, _ = _os.path.split(log_file)
-        if not _os.path.exists(path):
-            _os.makedirs(path, exist_ok=True)
-
-        if log_file is not None:
-            if self._log_file_handler is not None:
-                self._log_file_handler.close()
-                self.removeHandler(self._log_file_handler)
-                self._add_log_file(log_file)
-            else:
-                self._add_log_file(log_file)
-        else:
-            if self._log_file_handler is not None:
-                self.removeHandler(self._log_file_handler)
-                self._log_file_handler = None
-
     def reload(self, log_file, verbose_stream, debug_stream):
         # verbose mode
         self.verbose_on(verbose_stream)
 
         # debug mode
         self.debug_on(debug_stream)
-
-        # log file
-        self.add_log_file(log_file)
-
-        return
 
     def __del__(self):
         handlers = self.handlers[:]
