@@ -27,6 +27,7 @@ from ckool.api import (
     _upload_package,
     _upload_resource,
 )
+from ckool import LOGGER
 from ckool.other.types import CompressionTypes, HashTypes
 
 from .other.config_parser import (
@@ -39,6 +40,19 @@ from .other.config_parser import (
 OPTIONS = {"config": {}, "verify": True, "ckan-instance-name": "None"}
 
 app = typer.Typer()
+
+
+@app.callback()
+def set_logging_level(
+    verbose: bool = typer.Option(
+        False, "--verbose", "-v", help="Enable verbose log messages."
+    ),
+    debug: bool = typer.Option(
+        False, "--debug", "-d", help="Enable debug log messages"
+    ),
+):
+    LOGGER.reload(log_file=None, verbose_stream=verbose, debug_stream=debug)
+
 
 config_app = typer.Typer()
 app.add_typer(

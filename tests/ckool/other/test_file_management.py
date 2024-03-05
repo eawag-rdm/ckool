@@ -175,7 +175,7 @@ def test_iter_package_and_prepare_for_upload_prepare_all(tmp_path, my_package_di
     ]
     valid_results = [sorted(flatten_nested_structure(entry)) for entry in valid_results]
 
-    for result in iter_package(my_package_dir):
+    for result in iter_package(my_package_dir, ignore_folders=False):
         res = result
         assert sorted(flatten_nested_structure(res)) in valid_results
 
@@ -185,7 +185,9 @@ def test_iter_package_and_prepare_for_upload_with_filter(tmp_path, my_package_di
         "file": tmp_path / "my_data_package" / "script.py",
         "folder": {},
     }
-    for result in iter_package(my_package_dir, include_pattern=r"\.py"):
+    for result in iter_package(
+        my_package_dir, ignore_folders=False, include_pattern=r"\.py"
+    ):
         assert result == valid_results
 
     valid_results = [
@@ -199,20 +201,23 @@ def test_iter_package_and_prepare_for_upload_with_filter(tmp_path, my_package_di
         },
     ]
     for result in iter_package(
-        my_package_dir, exclude_pattern=r"test_folder1|test_folder2"
+        my_package_dir,
+        ignore_folders=False,
+        exclude_pattern=r"test_folder1|test_folder2",
     ):
         assert result in valid_results
 
     # exclude wins!
     for result in iter_package(
         my_package_dir,
+        ignore_folders=False,
         include_pattern="test_",
         exclude_pattern=r"test_folder1|test_folder2",
     ):
         assert result in valid_results
 
     for result in iter_package(
-        my_package_dir, exclude_pattern=r"test_folder2|\.py|\.md"
+        my_package_dir, ignore_folders=False, exclude_pattern=r"test_folder2|\.py|\.md"
     ):
         assert result == {
             "file": "",
@@ -226,106 +231,6 @@ def test_iter_package_and_prepare_for_upload_with_filter(tmp_path, my_package_di
                 "files": [tmp_path / "my_data_package" / "test_folder1" / "text.txt"],
             },
         }
-
-
-# def test_prepare_for_upload_sequential(tmp_path, my_package_dir):
-#     def filter_hash(x):
-#         return {"file": x["file"], "size": x["size"]}
-#
-#     correct = [
-#         {
-#             "file": (tmp_path / "my_data_package" / "readme.md").as_posix(),
-#             "size": 0,
-#         },
-#         {
-#             "file": (tmp_path / "my_data_package" / "script.py").as_posix(),
-#             "size": 0,
-#         },
-#         {
-#             "file": (
-#                 tmp_path
-#                 / "my_data_package"
-#                 / TEMPORARY_DIRECTORY
-#                 / "test_folder2.tar.gz"
-#             ).as_posix(),
-#             "size": 139,
-#         },
-#         {
-#             "file": (
-#                 tmp_path
-#                 / "my_data_package"
-#                 / TEMPORARY_DIRECTORY
-#                 / "test_folder1.tar.gz"
-#             ).as_posix(),
-#             "size": 122,
-#         },
-#     ]
-#
-#     files = prepare_for_upload_sequential(my_package_dir, compression_type=CompressionTypes.tar_gz)
-#     for entry in files:
-#         assert filter_hash(entry) in correct
-#
-#
-# def test_prepare_for_upload_parallel(tmp_path, my_package_dir):
-#     def filter_hash(x):
-#         return {"file": x["file"], "size": x["size"]}
-#
-#     files = prepare_for_upload_parallel(my_package_dir, compression_type=CompressionTypes.tar_gz)
-#     should_be = [
-#         {
-#             "file": (tmp_path / "my_data_package" / "readme.md").as_posix(),
-#             "size": 0,
-#         },
-#         {
-#             "file": (tmp_path / "my_data_package" / "script.py").as_posix(),
-#             "size": 0,
-#         },
-#         {
-#             "file": (
-#                 tmp_path
-#                 / "my_data_package"
-#                 / TEMPORARY_DIRECTORY
-#                 / "test_folder2.tar.gz"
-#             ).as_posix(),
-#             "size": 139,
-#         },
-#         {
-#             "file": (
-#                 tmp_path
-#                 / "my_data_package"
-#                 / TEMPORARY_DIRECTORY
-#                 / "test_folder1.tar.gz"
-#             ).as_posix(),
-#             "size": 122,
-#         },
-#     ]
-#     for file in files:
-#         assert filter_hash(file) in should_be
-#
-#
-# def test_prepare_for_upload_performance(tmp_path, large_package):
-#     t1 = time.time()
-#     files_1 = prepare_for_upload_sequential(large_package, compression_type=CompressionTypes.zip)
-#     t2 = time.time()
-#
-#     shutil.rmtree(
-#         large_package / TEMPORARY_DIRECTORY
-#     )  # deletes the tmp folder from the first preparation
-#
-#     t3 = time.time()
-#     files_2 = prepare_for_upload_parallel(large_package, compression_type=CompressionTypes.zip)
-#     t4 = time.time()
-#
-#     duration_sequential = t2 - t1
-#     duration_parallel = t4 - t3
-#     assert files_1 == files_2
-#     # There should be a significant difference in performance.
-#     # Especially for large files, if system resources are available.
-#     # assert duration_parallel < duration_sequential, (
-#     #    f"Performance parallel {duration_parallel:.4f}s\n"
-#     #    f"Performance sequential: {duration_sequential:.4f}s\n"
-#     #    f"Parallel is not faster "
-#     # )
 
 
 def test_find_archive(tmp_path):

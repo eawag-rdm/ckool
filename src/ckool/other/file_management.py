@@ -157,6 +157,7 @@ def get_compression_func(
 
 def iter_package(
     package: pathlib.Path,
+    ignore_folders: bool,
     include_pattern: str = None,
     exclude_pattern: str = None,
     tmp_dir_name: str = TEMPORARY_DIRECTORY_NAME,
@@ -176,6 +177,17 @@ def iter_package(
         if file_or_folder.is_file():
             yield {"file": file_or_folder, "folder": {}}
         elif file_or_folder.is_dir():
+            if ignore_folders:
+                return {
+                    "file": "",
+                    "folder": {
+                        "location": file_or_folder,
+                        "files": [],
+                        "archive_destination": None,
+                        "root_folder": file_or_folder.parent,
+                    },
+                }
+
             if ignore_tmp_dir and TEMPORARY_DIRECTORY_NAME in file_or_folder.as_posix():
                 continue
             files_to_compress = list(

@@ -9,6 +9,7 @@ from ckool import (
     DOWNLOAD_CHUNK_SIZE,
     HASH_BLOCK_SIZE,
     HASH_TYPE,
+    LOGGER,
     PACKAGE_META_DATA_FILE_ENDING,
     TEMPORARY_DIRECTORY_NAME,
     UPLOAD_FUNC_FACTOR,
@@ -75,6 +76,7 @@ def _upload_package(
 
     """
 
+    LOGGER.log("Reading config.")
     section = "Production" if not test else "Test"
 
     cfg = parse_config_for_use(
@@ -92,12 +94,15 @@ def _upload_package(
 
     if not parallel:
         something_to_upload = False
+        LOGGER.log(f"Iterating package folder '{package_folder.as_posix()}'.")
         for info in iter_package(
             package_folder,
+            ignore_folders=not include_sub_folders,
             include_pattern=include_pattern,
             exclude_pattern=exclude_pattern,
         ):
             if file := info["file"]:  # files are hashed
+                LOGGER.log(f"Handling file '{file.name}'.")
                 _ = handle_file(
                     file,
                     hash_func,
@@ -111,7 +116,7 @@ def _upload_package(
             elif folder := info["folder"]:  # folders are archived and then hashed
                 if not include_sub_folders:
                     continue
-
+                LOGGER.log(f"Handling folder '{folder.name}'.")
                 handle_folder(
                     folder,
                     hash_func,
@@ -127,6 +132,7 @@ def _upload_package(
                     f"This should not happen, the dictionary does not have the expected content:\n{repr(info)}"
                 )
         if something_to_upload:
+            LOGGER.log(f"Uploading resources.")
             return handle_upload_all(
                 package_name,
                 package_folder,
@@ -155,6 +161,7 @@ def _upload_package(
                 )
                 for info in iter_package(
                     package_folder,
+                    ignore_folders=not include_sub_folders,
                     include_pattern=include_pattern,
                     exclude_pattern=exclude_pattern,
                 )
@@ -181,6 +188,7 @@ def _upload_resource(
     hash_func = get_hash_func(hash_algorithm)
 
     if filepath.is_file():
+        LOGGER.log(f"Handling file '{filepath.name}'.")
         _ = handle_file(
             filepath,
             hash_func,
@@ -194,7 +202,7 @@ def _upload_resource(
         raise ValueError(
             f"The filepath your specified '{filepath.as_posix()}' is not a file."
         )
-
+    LOGGER.log(f"Uploading resources.")
     _ = handle_upload_all(
         package_name,
         filepath.parent,
@@ -222,15 +230,18 @@ def _prepare_package(
     compression_func = get_compression_func(compression_type)
 
     if ignore_prepared:
+        LOGGER.log("Deleting previously prepared caches.")
         shutil.rmtree(package_folder / TEMPORARY_DIRECTORY_NAME)
 
     if not parallel:
         for info in iter_package(
             package_folder,
+            ignore_folders=not include_sub_folders,
             include_pattern=include_pattern,
             exclude_pattern=exclude_pattern,
         ):
             if file := info["file"]:  # files are hashed
+                LOGGER.log(f"Handling file '{file.name}'.")
                 _ = handle_file(
                     file,
                     hash_func,
@@ -243,6 +254,7 @@ def _prepare_package(
                 if not include_sub_folders:
                     continue
 
+                LOGGER.log(f"Handling folder '{folder.name}'.")
                 handle_folder(
                     folder,
                     hash_func,
@@ -266,6 +278,8 @@ def _get_local_resource_location(
     verify: bool,
     test: bool,
 ):
+    LOGGER.log("Reading config.")
+
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
@@ -273,6 +287,7 @@ def _get_local_resource_location(
         "ckan_storage_path"
     ]
     ckan = CKAN(**cfg_ckan_api)
+    LOGGER.log("Calling CKAN API.")
     print(
         ckan.get_local_resource_path(
             package_name=package_name,
@@ -292,11 +307,14 @@ def _download_package(
     test: bool,
     chunk_size: int = DOWNLOAD_CHUNK_SIZE,
 ):
+    LOGGER.log("Reading config.")
+
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
 
     ckan = CKAN(**cfg_ckan_api)
+    LOGGER.log(f"Downloading resources from package '{package_name}' to '{destination}'.")
     return (
         ckan.download_package_with_resources(
             package_name=package_name,
@@ -320,8 +338,10 @@ def _download_resource(
     """
     Example calls here
     """
+    LOGGER.log("Reading config.")
+
     destination = pathlib.Path(destination)
-    if destination.exists():
+    if destination.exists() and destination.is_dir():
         destination = destination / pathlib.Path(url).name
 
     section = "Production" if not test else "Test"
@@ -329,13 +349,12 @@ def _download_resource(
     cfg_ckan_api.update({"verify_certificate": verify})
 
     ckan = CKAN(**cfg_ckan_api)
+    LOGGER.log(f"Downloading resource to '{destination.as_posix()}'.")
     ckan.download_resource(
         url=url,
         destination=destination,
         chunk_size=chunk_size,
     )
-
-    return
 
 
 def _download_resources(
@@ -348,7 +367,13 @@ def _download_resources(
     test: bool,
     chunk_size: int = DOWNLOAD_CHUNK_SIZE,
 ):
+
     destination = pathlib.Path(destination_folder)
+    if not destination.exists() or destination.is_file():
+        raise NotADirectoryError(
+            f"The destination folder '{destination.as_posix()}' you provided does not exist or it is not a folder."
+        )
+
     url_file = pathlib.Path(url_file)
     with url_file.open("r") as urls:
         urls_to_download = [url for url in urls]
@@ -371,6 +396,7 @@ def _download_resources(
         )
     else:
         for url in urls:
+            LOGGER.log(f"Downloading resource to '{destination.as_posix()}'.")
             _download_resource(
                 url,
                 destination.as_posix(),
@@ -390,6 +416,8 @@ def _download_metadata(
     verify: bool,
     test: bool,
 ):
+    LOGGER.log("Reading config.")
+
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
@@ -397,6 +425,7 @@ def _download_metadata(
         filter_fields = filter_fields.split(",")
 
     ckan = CKAN(**cfg_ckan_api)
+    LOGGER.log(f"Dumping metadata for '{package_name}'.")
     print(
         json.dumps(
             ckan.get_package(package_name=package_name, filter_fields=filter_fields),
@@ -412,10 +441,13 @@ def _download_all_metadata(
     verify: bool,
     test: bool,
 ):
+    LOGGER.log("Reading config.")
+
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
+    LOGGER.log(f"Dumping all metadata for instance '{ckan_instance_name}'.")
     result = ckan.get_all_packages(include_private=include_private)
     if result["count"] == 1000:
         raise Warning(
@@ -468,6 +500,8 @@ def _patch_resource_hash(
     verify: bool,
     test: bool,
 ):
+    LOGGER.log("Reading config.")
+
     section = "Production" if not test else "Test"
 
     cfg_other = config_for_instance(config[section]["other"], ckan_instance_name)
@@ -478,7 +512,7 @@ def _patch_resource_hash(
     )
 
     ckan = CKAN(**cfg_ckan_api)
-
+    LOGGER.log(f"Hashing resource '{resource_name}' in package '{package_name}' remotely.")
     hash_rem = hash_remote(
         ckan_api_input=cfg_ckan_api,
         secure_interface_input=cfg_secure_interface,
@@ -489,6 +523,7 @@ def _patch_resource_hash(
     )
 
     if local_resource_path is not None:
+        LOGGER.log(f"Hashing local resource to compare to remote hash.")
         local_resource_path = pathlib.Path(local_resource_path)
         hash_func = get_hash_func(hash_algorithm)
         hash_loc = hash_func(local_resource_path)
@@ -502,7 +537,7 @@ def _patch_resource_hash(
     resource_id = ckan.resolve_resource_id_or_name_to_id(package_name, resource_name)[
         "id"
     ]
-
+    LOGGER.log(f"Patching resource hash on CKAN.")
     ckan.patch_resource_metadata(
         resource_id=resource_id,
         resource_data_to_update={"hash": hash_rem, "hashtype": hash_algorithm.value},
@@ -517,6 +552,8 @@ def _patch_all_resource_hashes_in_package(
     verify: bool,
     test: bool,
 ):
+    LOGGER.log("Reading config.")
+
     cfg = parse_config_for_use(
         config=config,
         test=test,
@@ -526,6 +563,7 @@ def _patch_all_resource_hashes_in_package(
         target_needed=False,
     )
 
+    LOGGER.log(f"Hashing all resources in package '{package_name}' remotely.")
     hash_all_resources(
         package_name=package_name,
         ckan_api_input=cfg["cfg_ckan_source"],
@@ -545,6 +583,8 @@ def _patch_metadata(
     test: bool,
 ):
     """probably needs its own implementation independent of ckanapi"""
+    LOGGER.log("Reading config.")
+
     metadata_file = pathlib.Path(metadata_file)
 
     section = "Production" if not test else "Test"
@@ -554,6 +594,7 @@ def _patch_metadata(
     metadata = read_cache(metadata_file)
 
     ckan = CKAN(**cfg_ckan_api)
+    LOGGER.log(f"Patching metadata for '{package_name}'.")
     print(json.dumps(ckan.patch_package_metadata(package_name, metadata), indent=4))
 
 
@@ -586,6 +627,8 @@ def _publish_package(
     test: bool,
     prompt_function: Prompt.ask,
 ):
+    LOGGER.log("Reading config.")
+
     if exclude_resources:
         exclude_resources = exclude_resources.split(",")
     if projects_to_publish:
@@ -603,6 +646,7 @@ def _publish_package(
         ckan_instance_target=ckan_instance_target,
     )
 
+    LOGGER.log(f"Checking remote hash information on '{ckan_instance_source}'.")
     hash_all_resources(
         package_name=package_name,
         ckan_api_input=cfg["cfg_ckan_source"],
@@ -614,6 +658,10 @@ def _publish_package(
 
     doi = cfg["lds"].get_doi(package_name)
 
+    LOGGER.log(
+        f"""Filtering metadata to exclude 'only_allowed_users'"""
+        f"""{" and '" + "', '".join(exclude_resources) + "'" if exclude_resources else ''}."""
+    )
     metadata_filtered = retrieve_and_filter_source_metadata(
         ckan_source=cfg["ckan_source"],
         package_name=package_name,
@@ -700,35 +748,6 @@ def _publish_package(
                         resource=resource,
                         package_name=package_name,
                     )
-
-                    # As hashing the source is default behaviour now, this step has become unnecessary.
-                    # The fields 'hash' and 'hashtype' will simply be uploaded to the target instance.
-                    #
-                    # if not resource_is_link(resource):
-                    #     hash_rem = hash_remote(
-                    #         ckan_api_input=cfg["cfg_ckan_target"],
-                    #         secure_interface_input=cfg["cfg_secure_interface_target"],
-                    #         ckan_storage_path=cfg["cfg_other_target"][
-                    #             "ckan_storage_path"
-                    #         ],
-                    #         package_name=package_name,
-                    #         resource_id_or_name=resource["name"],
-                    #         hash_type=resource["hashtype"],
-                    #     )
-                    #
-                    #     cfg["ckan_target"].patch_resource_metadata(
-                    #         resource_id=cfg[
-                    #             "ckan_target"
-                    #         ].resolve_resource_id_or_name_to_id(
-                    #             package_name, resource["name"]
-                    #         )[
-                    #             "id"
-                    #         ],
-                    #         resource_data_to_update={
-                    #             "hash": hash_rem,
-                    #             "hashtype": resource["hashtype"],
-                    #         },
-                    #     )
 
                     continue
 
@@ -886,6 +905,8 @@ def _publish_doi(
     verify: bool,
     test: bool,
 ):
+    LOGGER.log("Reading config.")
+
     section = "Production" if not test else "Test"
 
     lds = LocalDoiStore(path=config[section]["local_doi_store_path"])
@@ -924,12 +945,16 @@ def _delete_package(
     verify: bool,
     test: bool,
 ):
+    LOGGER.log("Reading config.")
+
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
     ckan = CKAN(**cfg_ckan_api)
+    LOGGER.log(f"Deleting '{package_name}'.")
     ckan.delete_package(package_id=package_name)
     if purge:
+        LOGGER.log(f"Purging '{package_name}'.")
         ckan.purge_package(package_id=package_name)
 
 
@@ -941,6 +966,8 @@ def _delete_resource(
     verify: bool,
     test: bool,
 ):
+    LOGGER.log("Reading config.")
+
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
     cfg_ckan_api.update({"verify_certificate": verify})
@@ -957,4 +984,5 @@ def _delete_resource(
         )
 
     for resource_id in to_delete:
+        LOGGER.log(f"Deleting resource '{resource_id}'.")
         ckan.delete_resource(resource_id=resource_id)

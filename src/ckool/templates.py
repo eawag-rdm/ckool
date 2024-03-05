@@ -4,6 +4,7 @@ from typing import Callable
 import paramiko
 
 from ckool import (
+    LOGGER,
     EMPTY_FILE_NAME,
     HASH_BLOCK_SIZE,
     HASH_TYPE,
@@ -167,9 +168,10 @@ def hash_all_resources(
             if resource["hash"] and resource.get("hashtype", False):
                 continue
 
-            print(
+            LOGGER.log(
                 f"Resource '{resource['name']}' has no hash and/or hashtype specified. Hashing now..."
             )
+            LOGGER.log(f"... hashing '{resource['name']}'.")
             hash_ = hash_remote(
                 ckan_api_input,
                 secure_interface_input,
@@ -184,7 +186,7 @@ def hash_all_resources(
                 resource_data_to_update={"hash": hash_, "hashtype": hash_type.value},
             )
         elif not only_if_hash_missing:
-            print(f"Hashing '{resource['name']}' ...")
+            LOGGER.log(f"... hashing '{resource['name']}'.")
             hash_ = hash_remote(
                 ckan_api_input,
                 secure_interface_input,
@@ -209,12 +211,15 @@ def resource_integrity_remote_intact(
     package_name: str,
     resource_id_or_name: str,
 ):
+    LOGGER.log(f"... checking resource integrity for '{resource_id_or_name}'.")
     ckan = CKAN(**ckan_api_input)
+    LOGGER.log("... retrieving hash value from CKAN.")
     meta = ckan.get_resource_meta(
         package_name=package_name,
         resource_id_or_name=resource_id_or_name,
     )
     hash_local = meta["hash"]
+    LOGGER.log("... hashing resource file remotely.")
     hash_remote_ = hash_remote(
         ckan_api_input,
         secure_interface_input,
@@ -229,6 +234,7 @@ def resource_integrity_remote_intact(
             f"local hash: '{hash_local}'\n"
             f"remote hash: {hash_remote_}"
         )
+    LOGGER.log("... resource integrity intact.")
     return hash_local == hash_remote_
 
 
@@ -238,9 +244,9 @@ def package_integrity_remote_intact(
     ckan_storage_path: str,
     package_name: str,
 ):
+    LOGGER.log(f"... checking resource integrity for package '{package_name}'.")
     ckan = CKAN(**ckan_api_input)
     for resource in ckan.get_package(package_name)["resources"]:
-        print(f"Checking resource integrity for '{resource['name']}'...")
         intact = resource_integrity_remote_intact(
             ckan_api_input=ckan_api_input,
             secure_interface_input=secure_interface_input,
@@ -261,6 +267,7 @@ def resource_integrity_between_ckan_instances_intact(
     package_name: str,
     resource_id_or_name: str,
 ):
+    LOGGER.log(f"... checking resource integrity between ckan instances for resource '{resource_id_or_name}'.")
     meta_1 = CKAN(**ckan_api_input_1).get_resource_meta(
         package_name=package_name,
         resource_id_or_name=resource_id_or_name,
@@ -281,6 +288,7 @@ def handle_file(
     progressbar: bool = True,
 ):
     if (cache_file := stats_file(file, tmp_dir_name)).exists():
+        LOGGER.log(f"... cache file for '{file.name}' found. Skipping hashing")
         return
     hash_ = hash_func(
         filepath=file,
@@ -292,14 +300,15 @@ def handle_file(
 
 def archive_folder(folder: dict, compression_func: Callable, progressbar):
     archive = find_archive(folder["archive_destination"])
-    if not archive:
-        archive = compression_func(
-            root_folder=folder["root_folder"],
-            archive_destination=folder["archive_destination"],
-            files=folder["files"],
-            progressbar=progressbar,
-        )
-    return archive
+    if archive:
+        LOGGER.log(f"... archive for folder '{folder['root_folder']}' found. Skipping compression.")
+        return archive
+    return compression_func(
+        root_folder=folder["root_folder"],
+        archive_destination=folder["archive_destination"],
+        files=folder["files"],
+        progressbar=progressbar,
+    )
 
 
 def handle_folder(
@@ -334,21 +343,24 @@ def wrapped_upload(
     # Check if resource with corresponding hash is already on ckan
     real_hash = meta["hash"]
     meta["hash"] = UPLOAD_IN_PROGRESS_STRING
-
+    LOGGER.log(f"... uploading resource '{filepath.name}' to '{package_name}'.")
     if ckan_instance.resource_exists(
         package_name=package_name, resource_name=filepath.name
     ):
+        LOGGER.log(f"... resource already exists.")
         meta_on_ckan = ckan_instance.get_resource_meta(
             package_name=package_name, resource_id_or_name=filepath.name
         )
 
         if meta_on_ckan["hash"] == real_hash:
             # Resource is already on ckan and was uploaded successfully, skip resource upload
+            LOGGER.log(f"... resource hash on CKAN matches the local hash, upload skipped.")
             status = "skipped"
             return {"id": meta_on_ckan["id"], "name": filepath.name, "status": status}
 
         elif meta_on_ckan["hash"] == UPLOAD_IN_PROGRESS_STRING:
             # This resource was not uploaded properly and needs to be uploaded again, deleting faulty resource
+            LOGGER.log(f"... resource hash on CKAN does not match the local hash preparing to overwrite.")
             ckan_instance.delete_resource(
                 resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
                     package_name=package_name, resource_id_or_name=filepath.name
@@ -549,6 +561,7 @@ def handle_missing_entities(
     metadata_filtered: dict,
     projects_to_publish: list = None,
 ):
+    LOGGER.log("... checking all entities necessary for publication exists on CKAN target instance.")
     existing_and_missing_entities = pre_publication_checks(
         ckan_instance_destination=ckan_target,
         package_metadata=metadata_filtered,
@@ -560,6 +573,7 @@ def handle_missing_entities(
             for to_create in collect_missing_entity(
                 ckan_source, existing_and_missing_entities
             ):
+                LOGGER.log(f"... creating entity of type '{to_create['entity']}'.")
                 create_missing_organization_projects_variables(
                     ckan_target,
                     **to_create,
@@ -594,6 +608,7 @@ def handle_resource_download_with_integrity_check(
     if not temporary_resource_path.exists() or re_download:
         ckan_source.download_resource(url=url, destination=temporary_resource_path)
     if check_data_integrity:
+        LOGGER.log(f"... running integrity check for '{resource['name']}'.")
         if not resource["hash"]:
             raise ValueError(
                 f"No resource hash for '{resource['name']}' on '{cfg_ckan_source['instance']}'."
@@ -627,7 +642,7 @@ def create_resource_raw_wrapped(
         factor=UPLOAD_FUNC_FACTOR,
         is_link=resource_is_link(resource),
     )
-
+    LOGGER.log(f"... creating resource '{filepath.name}'.")
     create_resource_raw(
         ckan_api_input=cfg_ckan_target,
         secure_interface_input=cfg_secure_interface_destination,
