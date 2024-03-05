@@ -82,8 +82,7 @@ class SecureInterface:
         global position_queue
         if "position_queue" in globals():
             position = position_queue.get_nowait()
-        print([i for i in globals().keys() if "q" in i])
-        print(position)
+
         pbar = tqdm(
             total=local_filepath.stat().st_size,
             unit="B",
