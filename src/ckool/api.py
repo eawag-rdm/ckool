@@ -83,6 +83,7 @@ def _upload_package(
         verify=verify,
         ckan_instance_source=ckan_instance_name,
         ckan_instance_target=None,
+        target_needed=False,
     )
 
     package_folder = pathlib.Path(package_folder)
