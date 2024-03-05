@@ -3,6 +3,7 @@ import pathlib
 import typer
 from rich.prompt import Prompt
 
+from ckool import LOGGER
 from ckool.api import (
     _delete_package,
     _delete_resource,
@@ -27,7 +28,6 @@ from ckool.api import (
     _upload_package,
     _upload_resource,
 )
-from ckool import LOGGER
 from ckool.other.types import CompressionTypes, HashTypes
 
 from .other.config_parser import (
