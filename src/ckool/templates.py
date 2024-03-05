@@ -80,6 +80,8 @@ def upload_resource_file_via_scp(
         file=empty, package_id=package_name, progressbar=False, **metadata
     )
 
+    empty.unlink()
+
     empty_file_location = ckan_instance.get_local_resource_path(
         package_name=package_name,
         resource_id_or_name=empty.name,
@@ -348,13 +350,26 @@ def wrapped_upload(
     real_hash = meta["hash"]
     meta["hash"] = UPLOAD_IN_PROGRESS_STRING
     LOGGER.info(f"... uploading resource '{filepath.name}' to '{package_name}'.")
+    resource_name = None
     if ckan_instance.resource_exists(
         package_name=package_name, resource_name=filepath.name
     ):
+        resource_name = filepath.name
+    if ckan_instance.resource_exists(
+        package_name=package_name, resource_name=f"{filepath.name}.{EMPTY_FILE_NAME}"
+    ):
+        resource_name = f"{filepath.name}.{EMPTY_FILE_NAME}"
+
+    if resource_name is not None:
         LOGGER.info("... resource already exists.")
-        meta_on_ckan = ckan_instance.get_resource_meta(
-            package_name=package_name, resource_id_or_name=filepath.name
-        )
+        if resource_name.endswith(EMPTY_FILE_NAME):
+            meta_on_ckan = {
+                "hash": "This resource needs replacing, as it still has the empty name!"
+            }
+        else:
+            meta_on_ckan = ckan_instance.get_resource_meta(
+                package_name=package_name, resource_id_or_name=resource_name
+            )
 
         if meta_on_ckan["hash"] == real_hash:
             # Resource is already on ckan and was uploaded successfully, skip resource upload
@@ -371,7 +386,7 @@ def wrapped_upload(
             )
             ckan_instance.delete_resource(
                 resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
-                    package_name=package_name, resource_id_or_name=filepath.name
+                    package_name=package_name, resource_id_or_name=resource_name
                 )["id"]
             )
             status = "replaced"

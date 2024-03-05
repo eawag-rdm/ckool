@@ -19,8 +19,9 @@
 import logging as _logging
 import sys as _sys
 from random import randint as _randint
-from rich.logging import RichHandler
+
 from rich.console import Console
+from rich.logging import RichHandler
 
 
 class MultiLineFormatter(_logging.Formatter):
