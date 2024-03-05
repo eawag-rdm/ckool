@@ -16,12 +16,11 @@
 # ==============================================================================
 # Core: Log information in different streams and files.
 # ==============================================================================
-import datetime as _dt
 import logging as _logging
-import logging.handlers as _handlers
-import os as _os
 import sys as _sys
 from random import randint as _randint
+from rich.logging import RichHandler
+from rich.console import Console
 
 
 class MultiLineFormatter(_logging.Formatter):
@@ -61,27 +60,25 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
         self, verbose=False, _format="[%(asctime)s - %(levelname)s] - %(message)s"
     ):
         self.__format = _format
+        self.console = Console()  # Create a Rich Console instance
         self.setLevel(_logging.DEBUG)
         super().__init__(__name__)
 
         self._debug_handler = None
         self._verbose_handler = None
+        self._log_file_handler = None
 
         if verbose:
             self._add_verbose_stream()
 
     def _add_debug_stream(self, stream=None):
-        self._debug_handler = DebugStreamHandler(stream)
+        self._debug_handler = RichHandler(console=self.console, rich_tracebacks=True)
         self._debug_handler.setLevel(_logging.DEBUG)
-        formatter = MultiLineFormatter(self.__format, "%Y-%m-%d %H:%M:%S")
-        self._debug_handler.setFormatter(formatter)
         self.addHandler(self._debug_handler)
 
     def _add_verbose_stream(self, stream=None):
-        self._verbose_handler = _logging.StreamHandler(stream)
+        self._verbose_handler = RichHandler(console=self.console)
         self._verbose_handler.setLevel(_logging.INFO)
-        formatter = MultiLineFormatter(self.__format, "%Y-%m-%d %H:%M:%S")
-        self._verbose_handler.setFormatter(formatter)
         self.addHandler(self._verbose_handler)
 
     def debug_on(self, on=True):
