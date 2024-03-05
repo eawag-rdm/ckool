@@ -391,6 +391,19 @@ def wrapped_upload(
             )
             status = "replaced"
 
+        elif meta_on_ckan["hash"] == "This resource needs replacing, as it still has the empty name!":
+            # This resource was not uploaded properly and needs to be uploaded again, deleting faulty resource
+            LOGGER.info(
+                "... resource still has the empty name, the upload wasn't finished. "
+                "The resource needs replacing. Preparing to overwrite."
+            )
+            ckan_instance.delete_resource(
+                resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
+                    package_name=package_name, resource_id_or_name=resource_name
+                )["id"]
+            )
+            status = "replaced"
+
     upload_func(
         ckan_api_input=cfg_ckan_api,
         secure_interface_input=cfg_secure_interface,
