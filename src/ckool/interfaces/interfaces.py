@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from paramiko import AutoAddPolicy, SSHClient
 from scp import SCPClient
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from ckool.other.utilities import get_secret
 

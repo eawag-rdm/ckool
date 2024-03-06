@@ -4,7 +4,7 @@ import tarfile
 from typing import Literal
 from zipfile import ZipFile
 
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from ckool import TEMPORARY_DIRECTORY_NAME
 from ckool.other.types import CompressionTypes

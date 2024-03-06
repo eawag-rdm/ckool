@@ -650,17 +650,11 @@ def publish_package(
         help="Resources are typically only downloaded, if they're not yet available locally. If resources have changed "
         "on the ckan source instance, you can pass this flag to re-download all resources.",
     ),
-    parallel: bool = typer.Option(
+    no_resource_overwrite_prompt: bool = typer.Option(
         False,
-        "--parallel",
-        "-p",
-        help="Use multiple threads/processes to handle job.",
-    ),
-    no_prompt: bool = typer.Option(
-        False,
-        "--no-prompt",
-        "-np",
-        help="If you want to skip prompts, or run publishing in parallel use this flag.",
+        "--no-resource-overwrite-prompt",
+        "-nrop",
+        help="If you want to skip prompts",
     ),
     ckan_instance_target: str = typer.Option(
         None,
@@ -668,12 +662,6 @@ def publish_package(
         "-cit",
         help="If more than 2 instances are defined in your .ckool.toml configuration file, "
         "specify the instance to publish to.",
-    ),
-    workers: int = typer.Option(
-        4,
-        "--workers",
-        "-w",
-        help="How many workers to run in parallel.",
     ),
 ):
     return _publish_package(
@@ -684,9 +672,7 @@ def publish_package(
         exclude_resources,
         only_hash_source_if_missing,
         re_download_resources,
-        parallel,
-        workers,
-        no_prompt,
+        no_resource_overwrite_prompt,
         ckan_instance_target,
         OPTIONS["config"],
         OPTIONS["ckan-instance-name"],

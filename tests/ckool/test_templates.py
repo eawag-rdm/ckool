@@ -1,3 +1,5 @@
+import pathlib
+
 import pytest
 
 from ckool import HASH_TYPE, UPLOAD_IN_PROGRESS_STRING
@@ -12,6 +14,7 @@ from ckool.templates import (
     resource_integrity_remote_intact,
     upload_resource_file_via_api,
     upload_resource_file_via_scp,
+    wrapped_upload,
 )
 
 hasher = get_hash_func(HASH_TYPE)
@@ -313,3 +316,53 @@ def test_handle_upload(
         "resources"
     ]:
         assert resource["hash"] != UPLOAD_IN_PROGRESS_STRING
+
+
+@pytest.mark.impure
+@pytest.mark.parametrize(
+    "upload_func", [upload_resource_file_via_api, upload_resource_file_via_scp]
+)
+def test_wrapped_upload_for_both_upload_types(
+    tmp_path,
+    ckan_instance,
+    secure_interface_input_args,
+    ckan_envvars,
+    ckan_setup_data,
+    config_section_instance,
+    upload_func,
+):
+    (f := tmp_path / "file.txt").write_text("test")
+    meta = {
+        "file": f,
+        "size": f.stat().st_size,
+        "hash": hasher(f),
+        "format": f.suffix[1:],
+        "hashtype": HASH_TYPE.value,
+    }
+    wrapped_upload(
+        meta=meta,
+        package_name=ckan_envvars["test_package"],
+        ckan_instance=ckan_instance,
+        cfg_other={"ckan_storage_path": ckan_envvars["storage_path"]},
+        cfg_ckan_api={
+            "token": ckan_instance.token,
+            "server": ckan_instance.server,
+            "verify_certificate": ckan_instance.verify,
+        },
+        cfg_secure_interface=secure_interface_input_args,
+        upload_func=upload_func,
+        progressbar=True,
+    )
+
+    resources = ckan_instance.get_package(package_name=ckan_envvars["test_package"])[
+        "resources"
+    ]
+
+    resource = None
+    for resource in resources:
+        if resource["url_type"] == "upload":
+            break
+    assert resource["name"] == f.name
+    assert pathlib.Path(resource["url"]).name == f.name
+    assert resource["hash"] == meta["hash"]
+    assert resource["hashtype"] == meta["hashtype"]

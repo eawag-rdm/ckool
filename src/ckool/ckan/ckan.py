@@ -4,7 +4,7 @@ import pathlib
 
 import ckanapi
 import requests
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from ckool import PACKAGE_META_DATA_FILE_ENDING
 from ckool.ckan.upload import upload_resource
@@ -249,12 +249,13 @@ class CKAN:
         resource_data_to_update.update({"id": resource_id})
         return self.plain_action_call("resource_patch", **resource_data_to_update)
 
-    def patch_empty_resource_name(
+    def _patch_empty_resource_name(
         self,
         package_name: str,
         new_resource_name: str,
         emtpy_resource_name: str,
     ):
+        """This is no longer in use"""
         resolved = self.resolve_resource_id_or_name_to_id(
             package_name, emtpy_resource_name
         )

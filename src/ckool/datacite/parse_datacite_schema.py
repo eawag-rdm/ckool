@@ -3,12 +3,13 @@ import pathlib
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-schemas = Path(__file__).parent / "schema" / "datacite"
-schema_files = sorted(list(schemas.iterdir()))
+SCHEMAS = Path(__file__).parent / "schema" / "datacite"
+SCHEMA_FILES = sorted(list(SCHEMAS.iterdir()))
+SCHEMA_LATEST = SCHEMA_FILES[-1]
 
 
 class SchemaParser:
-    def __init__(self, path: pathlib.Path = schemas / schema_files[-1]):
+    def __init__(self, path: pathlib.Path = SCHEMAS / SCHEMA_LATEST):
         self.path = path
         self.namespaces = {"xs": "http://www.w3.org/2001/XMLSchema"}
         self.data = self._parse_xsd_with_included(path, self.namespaces)

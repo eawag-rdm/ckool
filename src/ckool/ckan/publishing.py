@@ -1,15 +1,14 @@
-import json
 from copy import deepcopy
 from typing import Callable
 
 import ckanapi.errors
 
-from ckool import EMPTY_FILE_NAME
 from ckool.ckan.ckan import CKAN
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
 from ckool.datacite.metadata_formatter import MetaDataFormatter, split_author
 from ckool.datacite.xml_writer import MetaDataToXMLConverter
+from ckool.other.caching import update_cache
 from ckool.other.metadata_tools import (
     prepare_metadata_for_publication_package,
     prepare_metadata_for_publication_project,
@@ -18,7 +17,7 @@ from ckool.other.metadata_tools import (
 from ckool.other.prompt import (
     ask_for_affiliations,
     ask_for_orcids,
-    ask_for_related_publications,
+    ask_for_related_identifiers,
 )
 
 
@@ -306,7 +305,6 @@ def create_resource_raw(
     metadata: dict,
     file_path: str,
     upload_func: Callable,
-    empty_file_name: str = EMPTY_FILE_NAME,
     progressbar: bool = True,
     is_link: bool = False,
     prepare_for_publication: bool = True,
@@ -324,7 +322,6 @@ def create_resource_raw(
         package_name=package_name,
         filepath=file_path,
         metadata=data,
-        empty_file_name=empty_file_name,
         progressbar=progressbar,
     )
 
@@ -398,7 +395,7 @@ def enrich_and_store_metadata(
     package_name: str,
     ask_orcids: bool = True,
     ask_affiliations: bool = True,
-    ask_related_publications: bool = True,
+    ask_related_identifiers: bool = True,
 ):
     filepath_xml = local_doi_store_instance.generate_xml_filepath(package_name)
 
@@ -408,21 +405,25 @@ def enrich_and_store_metadata(
 
     if ask_orcids:
         orcids = ask_for_orcids(authors=authors)
-        local_doi_store_instance.generate_orcids_filepath(package_name).write_text(
-            json.dumps(orcids, indent=4)
+        update_cache(
+            orcids, local_doi_store_instance.generate_orcids_filepath(package_name)
         )
 
     if ask_affiliations:
         affiliations = ask_for_affiliations(authors=authors)
-        local_doi_store_instance.generate_affiliations_filepath(
-            package_name
-        ).write_text(json.dumps(affiliations, indent=4))
+        update_cache(
+            affiliations,
+            local_doi_store_instance.generate_affiliations_filepath(package_name),
+        )
 
-    if ask_related_publications:
-        related_publications = ask_for_related_publications()
-        local_doi_store_instance.generate_related_publications_filepath(
-            package_name
-        ).write_text(json.dumps(related_publications, indent=4))
+    if ask_related_identifiers:
+        related_identifiers = ask_for_related_identifiers()
+        update_cache(
+            related_identifiers,
+            local_doi_store_instance.generate_related_publications_filepath(
+                package_name
+            ),
+        )
 
     # enrich metadata save json
     mdf = MetaDataFormatter(

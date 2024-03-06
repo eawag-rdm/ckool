@@ -2,7 +2,7 @@ import hashlib
 import pathlib
 from typing import Callable
 
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from ckool.other.types import HashTypes
 from ckool.other.utilities import partial

@@ -1,9 +1,11 @@
 from typing import Callable
 
-import requests
+from rich import print as rprint
 from rich.prompt import Prompt
 
 from ckool import DEFAULT_AFFILIATION
+from ckool.datacite.parse_datacite_schema import SchemaParser
+from ckool.interfaces.mixed_requests import doi_exists, url_exists, search_orcid_by_author, orcid_exists
 
 
 def is_yes(question: str, default: str = "no", prompt_func: Callable = Prompt.ask):
@@ -18,118 +20,111 @@ def ask_for_affiliations(
     prompt_func: Callable = Prompt.ask,
     default_affiliation: str = DEFAULT_AFFILIATION,
 ):
-    if not is_yes(
-        "Do you want to provide affiliations?",
-    ):
+    if not is_yes("Do you want to provide affiliations?", prompt_func=prompt_func):
         return
 
-    if is_yes("Provide only one affiliation for all authors?", default="yes"):
+    if is_yes(
+        "Provide only one affiliation for all authors?",
+        default="yes",
+        prompt_func=prompt_func,
+    ):
         affils = prompt_func("Affiliation", default=default_affiliation)
         return {author: affils for author in authors}
 
     answers = {}
     for author in authors:
-        answers[author] = (
+        affiliation = (
             prompt_func(
-                f"Affiliation for '{author}' (keep empty to cancel)",
+                f"Affiliation for '{author}' (enter 'skip' to skip)",
                 default=default_affiliation,
                 show_default=False,
             )
             .lstrip()
             .rstrip()
         )
+        if not affiliation == "skip":
+            answers[author] = affiliation
     return answers
 
 
-def find_publication(doi: str):
-    ...
+def identifier_exists(identifier_info: dict):
+    rel_id_typ = identifier_info["relatedIdentifier"]["att"]["relatedIdentifierType"]
+    val = identifier_info["relatedIdentifier"]["val"]
+    if rel_id_typ == "DOI":
+        rprint(f"... checking the if the 'DOI: {val}' exists.")
+        return doi_exists(val)
+    elif rel_id_typ == "URL":
+        rprint(f"... checking the if the 'URL: {val}' exists.")
+        return url_exists(val)
+    else:
+        return True  # if no check implemented assuming the identifier exists
 
 
-def prompt_related_publication(prompt_func: Callable = Prompt.ask):
+def prompt_related_identifiers(prompt_func: Callable = Prompt.ask):
     exists = False
-    publication_info = None
+    identifier_info = {}
 
-    choices = {
-        "relationType": [
-            "Cites",
-            "HasPart",
-            "IsCitedBy",
-            "IsNewVersionOf",
-            "IsPartOf",
-            "IsPreviousVersionOf",
-            "IsReferencedBy",
-            "IsSupplementedBy",
-            "IsSupplementTo",
-            "Obsoletes",
-            "References",
-        ],
-        "resourceTypeGeneral": ["Collection", "Dataset", "Text"],
-        "relatedIdentifierType": ["DOI", "ISBN", "URL"],
-    }
-
+    schema_latest = SchemaParser()
     while not exists:
-        doi = prompt_func(
-            "Please provide the DOI of a related publication (keep empty to cancel)",
-            default="",
-            show_default=False,
+        related_identifier_type = prompt_func(
+            "What's the 'relatedIdentifierType'? (enter 'cancel' to cancel)",
+            default="DOI",
+            choices=schema_latest.get_schema_choices("relatedIdentifierType")
+            + ["cancel"],
         )
-        if not doi:
+        if related_identifier_type == "cancel":
+            return
+        resource_type = prompt_func(
+            "What's the 'resourceType'? (enter 'cancel' to cancel)",
+            default="Collection",
+            choices=schema_latest.get_schema_choices("resourceType") + ["cancel"],
+        )
+        if resource_type == "cancel":
+            return
+        relation_type = prompt_func(
+            "What's the 'relationType' to this package? (enter 'cancel' to cancel)",
+            default="IsSupplementTo",
+            choices=schema_latest.get_schema_choices("relationType") + ["cancel"],
+        )
+        if relation_type == "cancel":
+            return
+        value = prompt_func(
+            "Please provide the value of the identifier. (keep empty to cancel)",
+        )
+        if not value:
             return
 
-        publication_info = find_publication(doi)
+        identifier_info = {
+            "relatedIdentifier": {
+                "val": value,
+                "att": {
+                    "resourceTypeGeneral": resource_type,
+                    "relatedIdentifierType": related_identifier_type,
+                    "relationType": relation_type,
+                },
+            }
+        }
 
-        if publication_info:
-            exists = True
+        exists = identifier_exists(identifier_info)
+        if not exists:
+            rprint(
+                f"The '{related_identifier_type}' you provided '{value}' could not be found. Please try again."
+            )
 
-        print("The DOI you provided could not be found. Please try again.")
-    return publication_info
+    return identifier_info
 
 
-def ask_for_related_publications(prompt_func: Callable = Prompt.ask):
+def ask_for_related_identifiers(prompt_func: Callable = Prompt.ask):
     if not is_yes(
-        "Do you want to provide related publication(s)?",
+        "Do you want to provide (a) related identifier(s)?", prompt_func=prompt_func
     ):
         return
 
-    pubs = []
-    while publication_info := prompt_related_publication(prompt_func):
-        pubs.append(publication_info)
+    identifiers = []
+    while identifier_info := prompt_related_identifiers(prompt_func):
+        identifiers.append(identifier_info)
 
-    return pubs
-
-
-def search_orcid_by_author(author):
-    last_name, first_name = author.split(", ")
-    base_url = "https://pub.orcid.org/v3.0/search/"
-    headers = {"Accept": "application/json"}
-
-    query = f"family-name:{last_name} AND given-names:{first_name}"
-    params = {"q": query}
-
-    response = requests.get(base_url, headers=headers, params=params)
-
-    if response.status_code == 200:
-        data = response.json()
-        return [
-            {
-                "id": item["orcid-identifier"]["path"],
-                "url": item["orcid-identifier"]["uri"],
-            }
-            for item in data["result"]
-        ]
-    return []
-
-
-def orcid_exists(orcid: str):
-    base_url = f"https://pub.orcid.org/v3.0/{orcid}"
-    headers = {"Accept": "application/json"}
-
-    response = requests.get(base_url, headers=headers)
-
-    if response.ok:
-        name = response.json()["person"]["name"]
-        return f'{name["given-names"]["value"]} {name["family-name"]["value"]}'
-    return False
+    return identifiers
 
 
 def prompt_orcid(author: str, prompt_func: Callable = Prompt.ask):
@@ -152,27 +147,25 @@ def prompt_orcid(author: str, prompt_func: Callable = Prompt.ask):
             orcid = (
                 prompt_func(
                     f"ORCiD for '{author}' (keep empty to cancel)",
-                    default="",
+                    default="cancel",
                     show_default=False,
                 )
                 .lstrip()
                 .rstrip()
             )
-        if not orcid:  # empty input
+        if orcid == "cancel":  # empty input
             return
 
         exists = orcid_exists(orcid)
         if exists:
-            print(f"... DOI registered under {exists}.")
+            rprint(f"... DOI registered under {exists}.")
             continue
-        print("The ORCiD could not be found. Please try again.")
+        rprint("The ORCiD could not be found. Please try again.")
     return orcid
 
 
 def ask_for_orcids(authors: list, prompt_func: Callable = Prompt.ask):
-    if not is_yes(
-        "Do you want to provide ORCiDs?",
-    ):
+    if not is_yes("Do you want to provide ORCiDs?", prompt_func=prompt_func):
         return
 
     answers = {}
@@ -182,3 +175,7 @@ def ask_for_orcids(authors: list, prompt_func: Callable = Prompt.ask):
             answers[author] = id_
 
     return answers
+
+
+if __name__ == "__main__":
+    print(search_orcid_by_author("Dennis, Stuart"))

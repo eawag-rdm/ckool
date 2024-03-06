@@ -5,7 +5,7 @@ from requests_toolbelt.multipart.encoder import (
     MultipartEncoder,
     MultipartEncoderMonitor,
 )
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from ckool.other.types import HashTypes
 

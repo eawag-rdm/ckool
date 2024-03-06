@@ -3,6 +3,7 @@ import pytest
 from ckool.interfaces.dora import Dora
 
 
+@pytest.mark.dora
 @pytest.mark.impure
 def test_dora_publication_link_dora_from_doi_eawag():
     assert (
@@ -11,12 +12,14 @@ def test_dora_publication_link_dora_from_doi_eawag():
     )
 
 
+@pytest.mark.dora
 @pytest.mark.impure
 def test_dora_publication_link_dora_from_doi_other():
     res = Dora.publication_link_dora_from_doi("10.1002/9781119271659.ch1")
     assert res == "https://www.dora.lib4ri.ch/eawag/islandora/object/eawag:16556"
 
 
+@pytest.mark.dora
 @pytest.mark.impure
 def test_dora_get_doi_from_dora_id():
     assert Dora.get_doi_from_dora_id("eawag:20376") == "10.3389/fmicb.2019.03155"
@@ -35,6 +38,7 @@ def test_dora_doi_from_publication_link_doi_org_link():
     )
 
 
+@pytest.mark.dora
 @pytest.mark.impure
 def test_dora_doi_from_publication_link_dora_link():
     assert (

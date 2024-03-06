@@ -1,6 +1,9 @@
 import json
+import multiprocessing
 import os
 import pathlib
+import queue
+import threading
 
 import ckanapi
 import pytest
@@ -35,6 +38,12 @@ def pytest_addoption(parser):
     parser.addoption(
         "--run-impure", action="store_true", default=False, help="run impure tests"
     )
+    parser.addoption(
+        "--run-dora",
+        action="store_true",
+        default=False,
+        help="run tests, that require dora",
+    )
 
 
 def pytest_configure(config):
@@ -42,13 +51,22 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "impure: marks test as impure (depending on other systems)"
     )
+    config.addinivalue_line(
+        "markers",
+        "dora: marks test as dependant on dora, which require to be in the Eawag network",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
     skip_slow = pytest.mark.skip(reason="need --run-slow option to run")
     skip_impure = pytest.mark.skip(reason="need --run-impure option to run")
+    skip_dora = pytest.mark.skip(reason="need --run-dora option to run")
 
-    if config.getoption("--run-slow") and config.getoption("--run-impure"):
+    if (
+        config.getoption("--run-slow")
+        and config.getoption("--run-impure")
+        and config.getoption("--run-dora")
+    ):
         return
 
     for item in items:
@@ -56,6 +74,8 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_slow)
         elif "impure" in item.keywords and not config.getoption("--run-impure"):
             item.add_marker(skip_impure)
+        elif "dora" in item.keywords and not config.getoption("--run-dora"):
+            item.add_marker(skip_dora)
 
 
 @pytest.fixture
@@ -303,6 +323,12 @@ def large_file(tmp_path):
 
 
 @pytest.fixture
+def pretty_large_file(tmp_path):
+    """1GB"""
+    yield from generate_binary_file(1 * 1024**3, tmp_path, "pretty_large.bin")
+
+
+@pytest.fixture
 def very_large_file(tmp_path):
     """4GB"""
     yield from generate_binary_file(4 * 1024**3, tmp_path, "very_large.bin")
@@ -390,3 +416,35 @@ def local_structure_doi(tmp_path):
         fo.mkdir(parents=True)
         for fi in files:
             (fo / fi).touch()
+
+
+def function_wrapper(func, return_queue, args, kwargs):
+    """Run the function and put its result in a queue."""
+    result = func(*args, **kwargs)
+    return_queue.put(result)
+
+
+@pytest.fixture
+def run_with_timeout():
+    def _run_with_timeout(func, timeout, *args, **kwargs):
+        # Create a Queue to share results between processes
+        return_queue = multiprocessing.Queue()
+
+        # Wrap the function call in a Process
+        process = multiprocessing.Process(target=function_wrapper, args=(func, return_queue, args, kwargs))
+        process.start()
+        process.join(timeout)
+
+        if process.is_alive():
+            # If the process is still alive after the timeout, terminate it
+            process.terminate()
+            process.join()
+            print("Aborting function execution.")
+        else:
+            # Otherwise, get the result from the queue
+            try:
+                return return_queue.get_nowait()
+            except queue.Empty:
+                return
+
+    return _run_with_timeout

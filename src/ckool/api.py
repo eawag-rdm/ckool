@@ -3,6 +3,7 @@ import pathlib
 import shutil
 import sys
 
+from rich import print as rprint
 from rich.prompt import Prompt
 
 from ckool import (
@@ -46,6 +47,7 @@ from ckool.templates import (
     handle_missing_entities,
     handle_resource_download_with_integrity_check,
     handle_upload_all,
+    handle_upload_single,
     hash_all_resources,
     hash_remote,
     package_integrity_remote_intact,
@@ -70,6 +72,7 @@ def _upload_package(
     ckan_instance_name: str,
     verify: bool,
     test: bool,
+    progressbar: bool = True,
 ):
     """
     Example calls here:
@@ -109,7 +112,7 @@ def _upload_package(
                     hash_algorithm,
                     tmp_dir_name=TEMPORARY_DIRECTORY_NAME,
                     block_size=HASH_BLOCK_SIZE,
-                    progressbar=True,
+                    progressbar=progressbar,
                 )
                 something_to_upload = True
 
@@ -124,7 +127,7 @@ def _upload_package(
                     hash_algorithm,
                     tmp_dir_name="",  # should be emtpy, as the archive filepath already contains the tmp dir name
                     block_size=HASH_BLOCK_SIZE,
-                    progressbar=True,
+                    progressbar=progressbar,
                 )
                 something_to_upload = True
             else:
@@ -141,7 +144,7 @@ def _upload_package(
                 ckan_instance_name,
                 verify,
                 parallel,
-                progressbar=True,
+                progressbar=progressbar,
             )
     else:
         res = map_function_with_processpool(
@@ -189,7 +192,7 @@ def _upload_resource(
 
     if filepath.is_file():
         LOGGER.info(f"Handling file '{filepath.name}'.")
-        _ = handle_file(
+        cache_file = handle_file(
             filepath,
             hash_func,
             hash_algorithm,
@@ -203,14 +206,13 @@ def _upload_resource(
             f"The filepath your specified '{filepath.as_posix()}' is not a file."
         )
     LOGGER.info("Uploading resources.")
-    _ = handle_upload_all(
-        package_name,
-        filepath.parent,
-        config,
-        section,
-        ckan_instance_name,
-        verify,
-        parallel=False,
+    _ = handle_upload_single(
+        metadata_file=cache_file,
+        package_name=package_name,
+        config=config,
+        section=section,
+        ckan_instance_name=ckan_instance_name,
+        verify=verify,
         progressbar=True,
     )
 
@@ -288,7 +290,7 @@ def _get_local_resource_location(
     ]
     ckan = CKAN(**cfg_ckan_api)
     LOGGER.info("Calling CKAN API.")
-    print(
+    rprint(
         ckan.get_local_resource_path(
             package_name=package_name,
             resource_id_or_name=resource_name,
@@ -427,7 +429,7 @@ def _download_metadata(
 
     ckan = CKAN(**cfg_ckan_api)
     LOGGER.info(f"Dumping metadata for '{package_name}'.")
-    print(
+    rprint(
         json.dumps(
             ckan.get_package(package_name=package_name, filter_fields=filter_fields),
             indent=4,
@@ -456,7 +458,7 @@ def _download_all_metadata(
             "Please check the ckanapi documentation for the package_search function "
             "on how to implement retrieval of more rows."
         )
-    print(json.dumps(result, indent=4))
+    rprint(json.dumps(result, indent=4))
 
 
 def _patch_package(
@@ -598,7 +600,7 @@ def _patch_metadata(
 
     ckan = CKAN(**cfg_ckan_api)
     LOGGER.info(f"Patching metadata for '{package_name}'.")
-    print(json.dumps(ckan.patch_package_metadata(package_name, metadata), indent=4))
+    rprint(json.dumps(ckan.patch_package_metadata(package_name, metadata), indent=4))
 
 
 def _patch_datacite(
@@ -620,9 +622,7 @@ def _publish_package(
     exclude_resources: str,
     only_hash_source_if_missing: bool,
     re_download_resources: bool,
-    parallel: bool,
-    workers: int,
-    no_prompt: bool,
+    no_resource_overwrite_prompt: bool,
     ckan_instance_target: str,
     config: dict,
     ckan_instance_source: str,
@@ -674,43 +674,72 @@ def _publish_package(
     )
 
     temporary_resource_names = {}
-    if not parallel:
-        for resource in metadata_filtered["resources"]:
-            res = handle_resource_download_with_integrity_check(
-                cfg_ckan_source=cfg["cfg_ckan_source"],
-                resource=resource,
-                check_data_integrity=check_data_integrity,
-                cwd=cwd,
-                re_download=re_download_resources,
-            )
-            temporary_resource_names[res["id"]] = res["name"]
+    for resource in metadata_filtered["resources"]:
+        res = handle_resource_download_with_integrity_check(
+            cfg_ckan_source=cfg["cfg_ckan_source"],
+            resource=resource,
+            check_data_integrity=check_data_integrity,
+            cwd=cwd,
+            re_download=re_download_resources,
+        )
+        temporary_resource_names[res["id"]] = res["name"]
 
-        existing_and_missing_entities = handle_missing_entities(
-            ckan_source=cfg["ckan_source"],
-            ckan_target=cfg["ckan_target"],
-            cfg_other_target=cfg["cfg_other_target"],
-            create_missing_=create_missing_,
-            metadata_filtered=metadata_filtered,
-            projects_to_publish=projects_to_publish,
+    existing_and_missing_entities = handle_missing_entities(
+        ckan_source=cfg["ckan_source"],
+        ckan_target=cfg["ckan_target"],
+        cfg_other_target=cfg["cfg_other_target"],
+        create_missing_=create_missing_,
+        metadata_filtered=metadata_filtered,
+        projects_to_publish=projects_to_publish,
+    )
+
+    # NOW ALL ENTITIES EXIST (Organization, Project, TODO Variables still need to be implemented)
+    if existing_and_missing_entities["missing"]["package"]:
+        LOGGER.info(
+            f"Creating package {existing_and_missing_entities['missing']['package'][0]}..."
+        )
+        create_package_raw(
+            ckan_instance_source=cfg["ckan_source"],
+            ckan_instance_target=cfg["ckan_target"],
+            data=metadata_filtered,
+            doi=doi,
+            prepare_for_publication=True,
+            project_names_to_link=projects_to_publish,
         )
 
-        # NOW ALL ENTITIES EXIST (Organization, Project, TODO Variables still need to be implemented)
-        if existing_and_missing_entities["missing"]["package"]:
-            print(
-                f"Creating package {existing_and_missing_entities['missing']['package'][0]}..."
-            )
-            create_package_raw(
-                ckan_instance_source=cfg["ckan_source"],
-                ckan_instance_target=cfg["ckan_target"],
-                data=metadata_filtered,
-                doi=doi,
-                prepare_for_publication=True,
-                project_names_to_link=projects_to_publish,
-            )
+        for resource in metadata_filtered["resources"]:
+            filepath = cwd / temporary_resource_names[resource["id"]]
 
-            for resource in metadata_filtered["resources"]:
-                filepath = cwd / temporary_resource_names[resource["id"]]
+            create_resource_raw_wrapped(
+                cfg_ckan_target=cfg["cfg_ckan_target"],
+                cfg_other_target=cfg["cfg_other_target"],
+                cfg_secure_interface_destination=cfg["cfg_secure_interface_target"],
+                filepath=filepath,
+                resource=resource,
+                package_name=package_name,
+            )
+        cfg["ckan_target"].reorder_package_resources(
+            package_name=metadata_filtered["name"]
+        )
 
+    elif existing_and_missing_entities["exist"]["package"]:
+        patch_package_raw(
+            ckan_instance_source=cfg["ckan_source"],
+            ckan_instance_destination=cfg["ckan_target"],
+            data=metadata_filtered,
+            doi=doi,
+            prepare_for_publication=True,
+            project_names_to_link=projects_to_publish,
+        )
+
+        for resource in metadata_filtered["resources"]:
+            filepath = cwd / temporary_resource_names[resource["id"]]
+
+            if not cfg["ckan_target"].resource_exists(  # Create resource fresh.
+                package_name=metadata_filtered["name"],
+                resource_name=resource["name"],
+            ):
+                LOGGER.info(f"Uploading resource {resource['name']}...")
                 create_resource_raw_wrapped(
                     cfg_ckan_target=cfg["cfg_ckan_target"],
                     cfg_other_target=cfg["cfg_other_target"],
@@ -719,137 +748,104 @@ def _publish_package(
                     resource=resource,
                     package_name=package_name,
                 )
-            cfg["ckan_target"].reorder_package_resources(
-                package_name=metadata_filtered["name"]
-            )
 
-        elif existing_and_missing_entities["exist"]["package"]:
-            patch_package_raw(
-                ckan_instance_source=cfg["ckan_source"],
-                ckan_instance_destination=cfg["ckan_target"],
-                data=metadata_filtered,
-                doi=doi,
-                prepare_for_publication=True,
-                project_names_to_link=projects_to_publish,
-            )
+                continue
 
-            for resource in metadata_filtered["resources"]:
-                filepath = cwd / temporary_resource_names[resource["id"]]
-
-                if not cfg["ckan_target"].resource_exists(  # Create resource fresh.
-                    package_name=metadata_filtered["name"],
-                    resource_name=resource["name"],
-                ):
-                    print(f"Uploading resource {resource['name']}...")
-                    create_resource_raw_wrapped(
-                        cfg_ckan_target=cfg["cfg_ckan_target"],
-                        cfg_other_target=cfg["cfg_other_target"],
-                        cfg_secure_interface_destination=cfg[
-                            "cfg_secure_interface_target"
-                        ],
-                        filepath=filepath,
-                        resource=resource,
-                        package_name=package_name,
-                    )
-
-                    continue
-
-                patch_metadata = True
-                if not resource_is_link(resource):
-                    resource_integrity_intact = (
-                        resource_integrity_between_ckan_instances_intact(
-                            ckan_api_input_1=cfg["cfg_ckan_source"],
-                            ckan_api_input_2=cfg["cfg_ckan_target"],
-                            package_name=metadata_filtered["name"],
-                            resource_id_or_name=resource["name"],
-                        )
-                    )
-
-                    if not resource_integrity_intact:
-                        if not no_prompt:
-                            confirmation = prompt_function(
-                                f"The resource '{resource['name']}' has a different hash between "
-                                f"'{ckan_instance_source}' and '{ckan_instance_target}'. "
-                                f"Should it be uploaded again?",
-                                choices=["no", "yes"],
-                                default="no",
-                            )
-                            if confirmation != "yes":
-                                continue
-
-                        # resource will need re-uploading
-                        upload_func = get_upload_func(
-                            file_sizes=[int(resource["size"])],
-                            space_available_on_server_root_disk=cfg["cfg_other_target"][
-                                "space_available_on_server_root_disk"
-                            ],
-                            parallel_upload=False,
-                            factor=UPLOAD_FUNC_FACTOR,
-                            is_link=resource_is_link(resource),
-                        )
-
-                        # Deleting the entire resource, and re-uploading it.
-                        cfg["ckan_target"].delete_resource(
-                            resource_id=cfg[
-                                "ckan_target"
-                            ].resolve_resource_id_or_name_to_id(
-                                package_name=metadata_filtered["name"],
-                                resource_id_or_name=resource["name"],
-                            )[
-                                "id"
-                            ]
-                        )
-
-                        create_resource_raw(
-                            ckan_api_input=cfg["cfg_ckan_target"],
-                            secure_interface_input=cfg["cfg_secure_interface_target"],
-                            ckan_storage_path=cfg["cfg_other_target"][
-                                "ckan_storage_path"
-                            ],
-                            package_name=metadata_filtered["name"],
-                            metadata=resource,
-                            file_path=filepath,
-                            upload_func=upload_func,
-                            progressbar=True,
-                            prepare_for_publication=True,
-                        )
-                        patch_metadata = False
-
-                if patch_metadata:
-                    print(f"Patching resource metadata {resource['name']}...")
-                    patch_resource_metadata_raw(
-                        ckan_api_input=cfg["cfg_ckan_target"],
+            patch_metadata = True
+            if not resource_is_link(resource):
+                resource_integrity_intact = (
+                    resource_integrity_between_ckan_instances_intact(
+                        ckan_api_input_1=cfg["cfg_ckan_source"],
+                        ckan_api_input_2=cfg["cfg_ckan_target"],
                         package_name=metadata_filtered["name"],
-                        resource_name=resource["name"],
-                        metadata=resource,
-                        is_link=resource_is_link(resource),
-                        prepare_for_publication=True,
+                        resource_id_or_name=resource["name"],
                     )
-
-            if check_data_integrity:
-                package_integrity_remote_intact(
-                    ckan_api_input=cfg["cfg_ckan_target"],
-                    secure_interface_input=cfg["cfg_secure_interface_target"],
-                    ckan_storage_path=cfg["cfg_other_target"]["ckan_storage_path"],
-                    package_name=package_name,
                 )
 
-            cfg["ckan_target"].reorder_package_resources(
-                package_name=metadata_filtered["name"]
+                if not resource_integrity_intact:
+                    if not no_resource_overwrite_prompt:
+                        confirmation = prompt_function(
+                            f"The resource '{resource['name']}' has a different hash between "
+                            f"'{ckan_instance_source}' and '{ckan_instance_target}'. "
+                            f"Should it be uploaded again?",
+                            choices=["no", "yes"],
+                            default="no",
+                        )
+                        if confirmation != "yes":
+                            continue
+
+                    # resource will need re-uploading
+                    upload_func = get_upload_func(
+                        file_sizes=[int(resource["size"])],
+                        space_available_on_server_root_disk=cfg["cfg_other_target"][
+                            "space_available_on_server_root_disk"
+                        ],
+                        parallel_upload=False,
+                        factor=UPLOAD_FUNC_FACTOR,
+                        is_link=resource_is_link(resource),
+                    )
+
+                    # Deleting the entire resource, and re-uploading it.
+                    cfg["ckan_target"].delete_resource(
+                        resource_id=cfg[
+                            "ckan_target"
+                        ].resolve_resource_id_or_name_to_id(
+                            package_name=metadata_filtered["name"],
+                            resource_id_or_name=resource["name"],
+                        )[
+                            "id"
+                        ]
+                    )
+
+                    create_resource_raw(
+                        ckan_api_input=cfg["cfg_ckan_target"],
+                        secure_interface_input=cfg["cfg_secure_interface_target"],
+                        ckan_storage_path=cfg["cfg_other_target"]["ckan_storage_path"],
+                        package_name=metadata_filtered["name"],
+                        metadata=resource,
+                        file_path=filepath,
+                        upload_func=upload_func,
+                        progressbar=True,
+                        prepare_for_publication=True,
+                    )
+                    patch_metadata = False
+
+            if patch_metadata:
+                LOGGER.info(f"Patching resource metadata {resource['name']}...")
+                patch_resource_metadata_raw(
+                    ckan_api_input=cfg["cfg_ckan_target"],
+                    package_name=metadata_filtered["name"],
+                    resource_name=resource["name"],
+                    metadata=resource,
+                    is_link=resource_is_link(resource),
+                    prepare_for_publication=True,
+                )
+
+        if check_data_integrity:
+            package_integrity_remote_intact(
+                ckan_api_input=cfg["cfg_ckan_target"],
+                secure_interface_input=cfg["cfg_secure_interface_target"],
+                ckan_storage_path=cfg["cfg_other_target"]["ckan_storage_path"],
+                package_name=package_name,
             )
 
-        else:
-            raise ValueError(
-                "Oops, this should not happen, seems like the package your trying to publish "
-                "is not flagged as 'missing' neither as 'existing'."
-            )
+        cfg["ckan_target"].reorder_package_resources(
+            package_name=metadata_filtered["name"]
+        )
+
     else:
-        raise NotImplementedError("Parallel is not implemented yet.")
+        raise ValueError(
+            "Oops, this should not happen, seems like the package your trying to publish "
+            "is not flagged as 'missing' neither as 'existing'."
+        )
 
     enrich_and_store_metadata(
         metadata=metadata_filtered,
         local_doi_store_instance=cfg["lds"],
         package_name=metadata_filtered["name"],
+        ask_orcids=True,
+        ask_affiliations=True,
+        ask_related_identifiers=True,
     )
 
     update_datacite_doi(
@@ -858,20 +854,19 @@ def _publish_package(
         package_name=package_name,
     )
 
-    if not no_prompt:
-        confirmation = prompt_function(
-            "Should the doi be published? This is irreversible.",
-            choices=["no", "yes"],
-            default="no",
+    confirmation = prompt_function(
+        "Should the doi be published? This is irreversible.",
+        choices=["no", "yes"],
+        default="no",
+    )
+    if confirmation == "yes":
+        publish_datacite_doi(
+            datacite_api_instance=cfg["datacite"],
+            local_doi_store_instance=cfg["lds"],
+            package_name=package_name,
         )
-        if confirmation == "yes":
-            publish_datacite_doi(
-                datacite_api_instance=cfg["datacite"],
-                local_doi_store_instance=cfg["lds"],
-                package_name=package_name,
-            )
-        else:
-            print("Publication aborted.")
+    else:
+        LOGGER.info("Publication aborted.")
 
     cfg["ckan_target"].update_doi(
         package_name=metadata_filtered["name"],
@@ -927,7 +922,7 @@ def _publish_doi(
             package_name=package_name,
         )
     else:
-        print("Publication aborted.")
+        LOGGER.info("Publication aborted.")
 
 
 def _publish_controlled_vocabulary(

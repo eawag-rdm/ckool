@@ -1,10 +1,11 @@
 import pathlib
+import tempfile
+from copy import deepcopy
 from typing import Callable
 
 import paramiko
 
 from ckool import (
-    EMPTY_FILE_NAME,
     HASH_BLOCK_SIZE,
     HASH_TYPE,
     LOGGER,
@@ -66,25 +67,25 @@ def upload_resource_file_via_scp(
     package_name,
     filepath,
     metadata,
-    empty_file_name: str = EMPTY_FILE_NAME,
     progressbar: bool = True,
 ):
     si = SecureInterface(**secure_interface_input)
-
     # Upload empty resource (already using the correct metadata
-    empty = filepath.parent / f"{filepath.name}.{empty_file_name}"
-    empty.touch()
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = pathlib.Path(tmp)
+        empty = tmp / filepath.name
+        empty.touch()
 
-    ckan_instance = CKAN(**ckan_api_input)
-    ckan_instance.create_resource_of_type_file(
-        file=empty, package_id=package_name, progressbar=False, **metadata
-    )
+        ckan_instance = CKAN(**ckan_api_input)
+        ckan_instance.create_resource_of_type_file(
+            file=empty, package_id=package_name, progressbar=False, **metadata
+        )
 
-    empty.unlink()
+        empty.unlink()
 
     empty_file_location = ckan_instance.get_local_resource_path(
         package_name=package_name,
-        resource_id_or_name=empty.name,
+        resource_id_or_name=filepath.name,
         ckan_storage_path=ckan_storage_path,
     )
 
@@ -92,13 +93,6 @@ def upload_resource_file_via_scp(
         local_filepath=filepath,
         remote_filepath=empty_file_location,
         progressbar=progressbar,
-    )
-
-    new_resource_name = name if (name := metadata.get("name")) else filepath.name
-    return ckan_instance.patch_empty_resource_name(
-        package_name=package_name,
-        new_resource_name=new_resource_name,
-        emtpy_resource_name=empty.name,
     )
 
 
@@ -293,7 +287,8 @@ def handle_file(
 ):
     if (cache_file := stats_file(file, tmp_dir_name)).exists():
         LOGGER.info(f"... cache file for '{file.name}' found. Skipping hashing")
-        return
+        return cache_file
+
     hash_ = hash_func(
         filepath=file,
         block_size=block_size,
@@ -342,34 +337,22 @@ def wrapped_upload(
     upload_func: Callable,
     progressbar: bool,
 ):
+    meta_copy = deepcopy(meta)
     status = "normal"
     filepath = pathlib.Path(meta["file"])
-    del meta["file"]
+    del meta_copy["file"]
 
     # Check if resource with corresponding hash is already on ckan
-    real_hash = meta["hash"]
-    meta["hash"] = UPLOAD_IN_PROGRESS_STRING
+    real_hash = meta_copy["hash"]
+    meta_copy["hash"] = UPLOAD_IN_PROGRESS_STRING
     LOGGER.info(f"... uploading resource '{filepath.name}' to '{package_name}'.")
-    resource_name = None
     if ckan_instance.resource_exists(
         package_name=package_name, resource_name=filepath.name
     ):
-        resource_name = filepath.name
-    if ckan_instance.resource_exists(
-        package_name=package_name, resource_name=f"{filepath.name}.{EMPTY_FILE_NAME}"
-    ):
-        resource_name = f"{filepath.name}.{EMPTY_FILE_NAME}"
-
-    if resource_name is not None:
         LOGGER.info("... resource already exists.")
-        if resource_name.endswith(EMPTY_FILE_NAME):
-            meta_on_ckan = {
-                "hash": "This resource needs replacing, as it still has the empty name!"
-            }
-        else:
-            meta_on_ckan = ckan_instance.get_resource_meta(
-                package_name=package_name, resource_id_or_name=resource_name
-            )
+        meta_on_ckan = ckan_instance.get_resource_meta(
+            package_name=package_name, resource_id_or_name=filepath.name
+        )
 
         if meta_on_ckan["hash"] == real_hash:
             # Resource is already on ckan and was uploaded successfully, skip resource upload
@@ -386,32 +369,17 @@ def wrapped_upload(
             )
             ckan_instance.delete_resource(
                 resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
-                    package_name=package_name, resource_id_or_name=resource_name
+                    package_name=package_name, resource_id_or_name=filepath.name
                 )["id"]
             )
             status = "replaced"
-
-        elif meta_on_ckan["hash"] == "This resource needs replacing, as it still has the empty name!":
-            # This resource was not uploaded properly and needs to be uploaded again, deleting faulty resource
-            LOGGER.info(
-                "... resource still has the empty name, the upload wasn't finished. "
-                "The resource needs replacing. Preparing to overwrite."
-            )
-            ckan_instance.delete_resource(
-                resource_id=ckan_instance.resolve_resource_id_or_name_to_id(
-                    package_name=package_name, resource_id_or_name=resource_name
-                )["id"]
-            )
-            status = "replaced"
-
     upload_func(
         ckan_api_input=cfg_ckan_api,
         secure_interface_input=cfg_secure_interface,
         ckan_storage_path=cfg_other["ckan_storage_path"],
         package_name=package_name,
         filepath=filepath,
-        metadata=meta,
-        empty_file_name=EMPTY_FILE_NAME,
+        metadata=meta_copy,
         progressbar=progressbar,
     )
 
@@ -461,6 +429,10 @@ def handle_upload_all(
         parallel_upload=parallel,
         factor=UPLOAD_FUNC_FACTOR,
     )
+    if "via_scp" in upload_func.__name__:
+        LOGGER.info("... upload via SCP selected.")
+    else:
+        LOGGER.info("... upload via API selected.")
 
     ckan_instance = CKAN(**cfg_ckan_api)
     _uploaded = []

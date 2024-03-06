@@ -395,7 +395,7 @@ def test_enrich_and_store_metadata_1(
         package_name=ckan_envvars["test_package"],
         ask_orcids=False,
         ask_affiliations=False,
-        ask_related_publications=False,
+        ask_related_identifiers=False,
     )
     assert files["json"].exists()
     assert files["xml"].exists()
@@ -431,7 +431,7 @@ def test_enrich_and_store_metadata_2(
         package_name=ckan_envvars["test_package"],
         ask_orcids=False,
         ask_affiliations=False,
-        ask_related_publications=False,
+        ask_related_identifiers=False,
     )
     assert files["json"].exists()
     assert files["xml"].exists()
@@ -482,7 +482,7 @@ def test_update_datacite_doi(
         package_name=ckan_envvars["test_package"],
         ask_orcids=False,
         ask_affiliations=False,
-        ask_related_publications=False,
+        ask_related_identifiers=False,
     )
 
     datacite_instance.doi_reserve(_doi)

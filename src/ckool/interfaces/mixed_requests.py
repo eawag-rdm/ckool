@@ -66,3 +66,50 @@ def fix_publication_link(publication_link):
             "publicationlink_dora": None,
             "paper_doi": None,
         }
+
+
+def doi_exists(doi):
+    response = requests.get(f"https://doi.org/{doi}")
+    return response.status_code == 200
+
+
+def url_exists(url):
+    """Rather url accessible"""
+    try:
+        response = requests.get(url)
+        return response.status_code == 200
+    except requests.exceptions.RequestException:
+        return False
+
+
+def search_orcid_by_author(author):
+    last_name, first_name = author.split(", ")
+    base_url = "https://pub.orcid.org/v3.0/search/"
+    headers = {"Accept": "application/json"}
+
+    query = f"family-name:{last_name} AND given-names:{first_name}"
+    params = {"q": query}
+
+    response = requests.get(base_url, headers=headers, params=params)
+
+    if response.status_code == 200 and (data := response.json())["num-found"] > 0:
+        return [
+            {
+                "id": item["orcid-identifier"]["path"],
+                "url": item["orcid-identifier"]["uri"],
+            }
+            for item in data["result"]
+        ]
+    return []
+
+
+def orcid_exists(orcid: str):
+    base_url = f"https://pub.orcid.org/v3.0/{orcid}"
+    headers = {"Accept": "application/json"}
+
+    response = requests.get(base_url, headers=headers)
+
+    if response.ok:
+        name = response.json()["person"]["name"]
+        return f'{name["given-names"]["value"]} {name["family-name"]["value"]}'
+    return False
