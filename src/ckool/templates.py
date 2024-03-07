@@ -373,6 +373,7 @@ def wrapped_upload(
                 )["id"]
             )
             status = "replaced"
+    LOGGER.debug("...starting upload.")
     upload_func(
         ckan_api_input=cfg_ckan_api,
         secure_interface_input=cfg_secure_interface,
@@ -412,7 +413,14 @@ def handle_upload_all(
         )
     }
 
-    sizes = [meta["size"] for meta in metadata_map.values()]
+    # Check if file specified in cache file exists
+    metadata_map_filtered = {
+        filename: content
+        for filename, content in metadata_map.items()
+        if pathlib.Path(content["file"]).exists()
+    }
+
+    sizes = [meta["size"] for meta in metadata_map_filtered.values()]
 
     cfg_other = config_for_instance(config[section]["other"], ckan_instance_name)
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
@@ -436,7 +444,7 @@ def handle_upload_all(
 
     ckan_instance = CKAN(**cfg_ckan_api)
     _uploaded = []
-    for meta in metadata_map.values():
+    for meta in metadata_map_filtered.values():
         _uploaded.append(
             wrapped_upload(
                 meta=meta,
@@ -486,46 +494,63 @@ def handle_upload_single(
     )
 
 
-def handle_folder_file_upload(
+def handle_folder_file(
     info: dict,
-    package_name: str,
     include_sub_folders: bool,
     compression_type: CompressionTypes,
     hash_algorithm: HashTypes,
-    config: dict,
-    ckan_instance_name: str,
-    verify: bool,
-    section: str,
+    progressbar: bool,
 ):
     hash_func = get_hash_func(hash_algorithm)
     compression_func = get_compression_func(compression_type)
 
-    cache_file = None
     if file := info["file"]:  # files are hashed
-        cache_file = handle_file(
+        return handle_file(
             file,
             hash_func,
             hash_algorithm,
             tmp_dir_name=TEMPORARY_DIRECTORY_NAME,
             block_size=HASH_BLOCK_SIZE,
-            progressbar=True,
+            progressbar=progressbar,
         )
 
-    elif folder := info["folder"]:  # folders are archived and then hashed
+    elif folder := info["folder"]:  # folders are compressed and then hashed
         if include_sub_folders:
-            cache_file = handle_folder(
+            return handle_folder(
                 folder,
                 hash_func,
                 compression_func,
                 hash_algorithm,
                 tmp_dir_name="",  # should be emtpy, as the archive filepath already contains the tmp dir name
                 block_size=HASH_BLOCK_SIZE,
-                progressbar=True,
+                progressbar=progressbar,
             )
     else:
         raise ValueError(
             f"This should not happen, the dictionary does not have the expected content:\n{repr(info)}"
         )
+
+
+def handle_folder_file_upload(
+    info: dict,
+    package_name: str,
+    include_sub_folders: bool,
+    compression_type: CompressionTypes,
+    hash_algorithm: HashTypes,
+    progressbar: bool,
+    config: dict,
+    ckan_instance_name: str,
+    verify: bool,
+    section: str,
+):
+    cache_file = handle_folder_file(
+        info,
+        include_sub_folders,
+        compression_type,
+        hash_algorithm,
+        progressbar,
+    )
+
     if cache_file is not None:
         return handle_upload_single(
             metadata_file=cache_file,
@@ -534,7 +559,7 @@ def handle_folder_file_upload(
             section=section,
             ckan_instance_name=ckan_instance_name,
             verify=verify,
-            progressbar=True,
+            progressbar=progressbar,
         )
 
 

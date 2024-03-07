@@ -1,6 +1,10 @@
 import pytest
 
-from ckool.interfaces.mixed_requests import fix_publication_link, get_citation_from_doi, search_orcid_by_author
+from ckool.interfaces.mixed_requests import (
+    fix_publication_link,
+    get_citation_from_doi,
+    search_orcid_by_author,
+)
 
 
 @pytest.mark.impure

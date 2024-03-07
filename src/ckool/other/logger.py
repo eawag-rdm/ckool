@@ -16,35 +16,12 @@
 # ==============================================================================
 # Core: Log information in different streams and files.
 # ==============================================================================
+import logging
 import logging as _logging
-import sys as _sys
-from random import randint as _randint
+from random import randint
 
 from rich.console import Console
 from rich.logging import RichHandler
-
-
-class MultiLineFormatter(_logging.Formatter):
-    def format(self, record):
-        record_string = _logging.Formatter.format(self, record)
-        if record.exc_text is None:
-            header, _ = record_string.split(record.message)
-        else:
-            header, _ = record_string.split(record.message + "\n" + record.exc_text)
-        record_string = record_string.replace("\n", "\n" + " " * len(header))
-        return record_string
-
-
-class DebugStreamHandler(_logging.StreamHandler):
-    def __init__(self, stream):
-        if stream is None:
-            stream = _sys.stdout
-        super().__init__(stream)
-
-    def emit(self, record):
-        if not record.levelno == _logging.DEBUG:
-            return
-        _logging.StreamHandler.emit(self, record)
 
 
 class SingletonType(type):
@@ -72,12 +49,12 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
         if verbose:
             self._add_verbose_stream()
 
-    def _add_debug_stream(self, stream=None):
+    def _add_debug_stream(self):
         self._debug_handler = RichHandler(console=self.console, rich_tracebacks=True)
         self._debug_handler.setLevel(_logging.DEBUG)
         self.addHandler(self._debug_handler)
 
-    def _add_verbose_stream(self, stream=None):
+    def _add_verbose_stream(self):
         self._verbose_handler = RichHandler(console=self.console)
         self._verbose_handler.setLevel(_logging.INFO)
         self.addHandler(self._verbose_handler)
@@ -85,7 +62,7 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
     def debug_on(self, on=True):
         if on:
             if self._debug_handler is None:
-                self._add_debug_stream(_sys.stdout)
+                self._add_debug_stream()
         else:
             if self._debug_handler is not None:
                 self.removeHandler(self._debug_handler)
@@ -94,7 +71,7 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
     def verbose_on(self, on=True):
         if on:
             if self._verbose_handler is None:
-                self._add_verbose_stream(_sys.stdout)
+                self._add_verbose_stream()
         else:
             if self._verbose_handler is not None:
                 self.removeHandler(self._verbose_handler)
@@ -115,16 +92,23 @@ class MainLogger(_logging.Logger, metaclass=SingletonType):
 
 
 def get_logger(
-    stream=_sys.stdout,
-    logger_level=_logging.DEBUG,
-    fmt="[%(asctime)s - %(levelname)s] - %(message)s",
-    logger_id="".join([chr(_randint(65, 120)) for i in range(10)]),
+    logger_level=logging.DEBUG,
+    fmt="%(message)s",
+    logger_id="".join([chr(randint(65, 120)) for i in range(10)]),
 ):
-    logger = _logging.getLogger(logger_id)
+    logger = logging.getLogger(logger_id)
     logger.setLevel(logger_level)
-    handler = _logging.StreamHandler(stream)
-    handler.setLevel(logger_level)
-    formatter = MultiLineFormatter(fmt, "%Y-%m-%d %H:%M:%S")
+    handler = RichHandler(
+        console=Console(),  # None uses the default console
+        level=logger_level,
+        show_time=True,
+        show_path=True,
+        rich_tracebacks=True,
+        markup=True,
+        show_level=True,
+        log_time_format="%Y-%m-%d %H:%M:%S",
+    )
+    formatter = logging.Formatter(fmt)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger

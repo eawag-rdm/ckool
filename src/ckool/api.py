@@ -43,6 +43,7 @@ from ckool.templates import (
     get_upload_func,
     handle_file,
     handle_folder,
+    handle_folder_file,
     handle_folder_file_upload,
     handle_missing_entities,
     handle_resource_download_with_integrity_check,
@@ -161,6 +162,7 @@ def _upload_package(
                     ckan_instance_name=ckan_instance_name,
                     verify=verify,
                     section=section,
+                    progressbar=progressbar,
                 )
                 for info in iter_package(
                     package_folder,
@@ -220,22 +222,23 @@ def _upload_resource(
 def _prepare_package(
     package_folder: str,
     include_sub_folders: bool,
-    include_pattern: str,
-    exclude_pattern: str,
+    include_pattern: str | None,
+    exclude_pattern: str | None,
     compression_type: CompressionTypes,
     hash_algorithm: HashTypes,
     parallel: bool,
     ignore_prepared: bool,
+    progressbar: bool = True,
 ):
     package_folder = pathlib.Path(package_folder)
     hash_func = get_hash_func(hash_algorithm)
     compression_func = get_compression_func(compression_type)
-
-    if ignore_prepared:
+    if ignore_prepared and (package_folder / TEMPORARY_DIRECTORY_NAME).exists():
         LOGGER.info("Deleting previously prepared caches.")
         shutil.rmtree(package_folder / TEMPORARY_DIRECTORY_NAME)
 
     if not parallel:
+        done = []
         for info in iter_package(
             package_folder,
             ignore_folders=not include_sub_folders,
@@ -244,32 +247,57 @@ def _prepare_package(
         ):
             if file := info["file"]:  # files are hashed
                 LOGGER.info(f"Handling file '{file.name}'.")
-                _ = handle_file(
-                    file,
-                    hash_func,
-                    hash_algorithm,
-                    tmp_dir_name=TEMPORARY_DIRECTORY_NAME,
-                    block_size=HASH_BLOCK_SIZE,
-                    progressbar=True,
+                done.append(
+                    handle_file(
+                        file,
+                        hash_func,
+                        hash_algorithm,
+                        tmp_dir_name=TEMPORARY_DIRECTORY_NAME,
+                        block_size=HASH_BLOCK_SIZE,
+                        progressbar=progressbar,
+                    )
                 )
             elif folder := info["folder"]:  # folders are archived and then hashed
                 if not include_sub_folders:
                     continue
 
-                LOGGER.info(f"Handling folder '{folder.name}'.")
-                handle_folder(
-                    folder,
-                    hash_func,
-                    compression_func,
-                    hash_algorithm,
-                    tmp_dir_name="",  # should be emtpy, as the archive filepath already contains the tmp dir name
-                    block_size=HASH_BLOCK_SIZE,
-                    progressbar=True,
+                LOGGER.info(f"Handling folder '{folder['root_folder'].name}'.")
+                done.append(
+                    handle_folder(
+                        folder,
+                        hash_func,
+                        compression_func,
+                        hash_algorithm,
+                        tmp_dir_name="",  # should be emtpy, as the archive filepath already contains the tmp dir name
+                        block_size=HASH_BLOCK_SIZE,
+                        progressbar=progressbar,
+                    )
                 )
             else:
                 raise ValueError(
                     f"This should not happen, the dictionary does not have the expected content: '{repr(info)}'"
                 )
+        return done
+    else:
+        return map_function_with_processpool(
+            handle_folder_file,
+            args=None,
+            kwargs=[
+                dict(
+                    info=info,
+                    include_sub_folders=include_sub_folders,
+                    compression_type=compression_type,
+                    hash_algorithm=hash_algorithm,
+                    progressbar=progressbar,
+                )
+                for info in iter_package(
+                    package_folder,
+                    ignore_folders=not include_sub_folders,
+                    include_pattern=include_pattern,
+                    exclude_pattern=exclude_pattern,
+                )
+            ],
+        )
 
 
 def _get_local_resource_location(

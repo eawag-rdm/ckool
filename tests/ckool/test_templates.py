@@ -319,6 +319,44 @@ def test_handle_upload(
 
 
 @pytest.mark.impure
+def test_handle_upload_all_too_many_cache_files(
+    tmp_path,
+    ckan_instance,
+    secure_interface_input_args,
+    ckan_envvars,
+    ckan_setup_data,
+    config_section_instance,
+):
+    hash_func = get_hash_func(HASH_TYPE)
+
+    (tmp_path / ckan_envvars["test_package"]).mkdir()
+    (file_1 := (tmp_path / ckan_envvars["test_package"] / "file_1.txt")).write_text(
+        "abc"
+    )
+    (file_2 := (tmp_path / ckan_envvars["test_package"] / "file_2.txt")).write_text(
+        "def"
+    )
+    (file_3 := (tmp_path / ckan_envvars["test_package"] / "file_3.txt")).write_text(
+        "ghi"
+    )
+    cache_1 = handle_file(file=file_1, hash_func=hash_func)
+    cache_2 = handle_file(file=file_2, hash_func=hash_func)
+    cache_3 = handle_file(file=file_3, hash_func=hash_func)
+
+    file_3.unlink()
+
+    uploaded = handle_upload_all(
+        package_name=ckan_envvars["test_package"],
+        package_folder=tmp_path / ckan_envvars["test_package"],
+        verify=False,
+        parallel=False,
+        progressbar=True,
+        **config_section_instance,
+    )
+    assert len(uploaded) == 2
+
+
+@pytest.mark.impure
 @pytest.mark.parametrize(
     "upload_func", [upload_resource_file_via_api, upload_resource_file_via_scp]
 )

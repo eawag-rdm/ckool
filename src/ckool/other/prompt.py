@@ -5,7 +5,12 @@ from rich.prompt import Prompt
 
 from ckool import DEFAULT_AFFILIATION
 from ckool.datacite.parse_datacite_schema import SchemaParser
-from ckool.interfaces.mixed_requests import doi_exists, url_exists, search_orcid_by_author, orcid_exists
+from ckool.interfaces.mixed_requests import (
+    doi_exists,
+    orcid_exists,
+    search_orcid_by_author,
+    url_exists,
+)
 
 
 def is_yes(question: str, default: str = "no", prompt_func: Callable = Prompt.ask):

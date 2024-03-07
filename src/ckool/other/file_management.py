@@ -12,7 +12,7 @@ from ckool.other.utilities import partial
 
 
 def match_via_include_exclude_patters(
-    string, include_pattern: str = None, exclude_pattern: str = None
+    string, include_pattern: str | None = None, exclude_pattern: str | None = None
 ):
     return any(
         [
@@ -158,8 +158,8 @@ def get_compression_func(
 def iter_package(
     package: pathlib.Path,
     ignore_folders: bool,
-    include_pattern: str = None,
-    exclude_pattern: str = None,
+    include_pattern: str | None = None,
+    exclude_pattern: str | None = None,
     tmp_dir_name: str = TEMPORARY_DIRECTORY_NAME,
     ignore_tmp_dir: bool = True,
 ) -> dict:
@@ -167,7 +167,6 @@ def iter_package(
     This function gets everything ready for the package upload.
     - it creates a tmp directory and saves compressed folders in there and collects all folders.
     """
-
     for file_or_folder in package.iterdir():
         if not match_via_include_exclude_patters(
             file_or_folder.as_posix(), include_pattern, exclude_pattern
@@ -219,163 +218,7 @@ def iter_package(
             )
 
 
-# TODO: this needs rewriting! The returned value must be more consistent. both should return
-#  func, args, kwargs An the function is somewhat of a task scheduler
-# def iter_package_and_prepare_for_upload(
-#     package: pathlib.Path,
-#     include_pattern: str = None,
-#     exclude_pattern: str = None,
-#     compression_func: Callable = zip_files,
-#     tmp_dir_name: str = TEMPORARY_DIRECTORY,
-# ) -> dict:
-#     """
-#     This function gets everything ready for the package upload.
-#     - it creates a tmp directory and saves compressed folders in there and collects all folders.
-#     """
-#
-#     for file_or_folder in package.iterdir():
-#         if not match_via_include_exclude_patters(
-#             file_or_folder.as_posix(), include_pattern, exclude_pattern
-#         ):
-#             continue
-#
-#         if file_or_folder.is_file():
-#             yield {"static": file_or_folder, "dynamic": {}}
-#         elif file_or_folder.is_dir():
-#             archive_destination = generate_archive_destination(
-#                 file_or_folder, file_or_folder.parent, tmp_dir_name
-#             )
-#             files_to_compress = list(
-#                 iter_files(file_or_folder, include_pattern, exclude_pattern)
-#             )
-#
-#             if not files_to_compress:
-#                 continue
-#             elif archive_destination.with_suffix(".json").exists():
-#                 archive_destination.iterdir()
-#                 yield {"static": find_archive(archive_destination), "dynamic": {}}
-#
-#             yield {
-#                 "static": "",
-#                 "dynamic": {
-#                     "func": compression_func,
-#                     "args": [],
-#                     "kwargs": {
-#                         "root_folder": package,
-#                         "archive_destination": archive_destination,
-#                         "files": files_to_compress,
-#                     },
-#                 },
-#             }
-#         else:
-#             raise ValueError(
-#                 f"Ooops this shouldn't happen. This is not a file and not a folder '{file_or_folder.as_posix()}'."
-#             )
-
-
 def stats_file(file: pathlib.Path, tmp_dir: str = TEMPORARY_DIRECTORY_NAME):
     if file.parent.name == tmp_dir:
         tmp_dir = ""
     return file.parent / tmp_dir / (file.name + ".json")
-
-
-# class LocalProcessor:
-#     def __init__(
-#         self,
-#         hash_type: HashTypes,
-#         cache_file_name: str = "file_meta.json",
-#     ):
-#         self.hash_type = hash_type
-#
-#     def get_hash(self, file_path):
-#         hash_func = get_hash_func(self.hash_type)
-#         return hash_func(file_path)
-#
-#     def get_size(self, file_path):
-#         return file_path.stat().st_size
-#
-#     def process(self, static_or_dynamic):
-#         if file := static_or_dynamic.get("static"):
-#             _meta = {
-#                 "file": str(file),
-#                 "hash": self.get_hash(file),
-#                 "hash_type": self.hash_type.value,
-#                 "size": self.get_size(file),
-#             }
-#             update_cache(_meta, stats_file(file, TEMPORARY_DIRECTORY))
-#             return _meta
-#
-#         elif instruction := static_or_dynamic.get("dynamic"):
-#             file = instruction["func"](
-#                 *instruction["args"], **instruction["kwargs"]
-#             )  # compressing
-#
-#             _meta = {
-#                 "file": str(file),
-#                 "hash": self.get_hash(file),
-#                 "hash_type": self.hash_type.value,
-#                 "size": self.get_size(file),
-#             }
-#             update_cache(_meta, stats_file(file, TEMPORARY_DIRECTORY))
-#             return _meta
-#
-#         else:
-#             raise ValueError(
-#                 f"Ooops, this is not a valid Processor instruction '{static_or_dynamic}'."
-#             )
-#
-#
-# def prepare_for_upload_sequential(
-#     package: pathlib.Path,
-#     include_pattern: str = None,
-#     exclude_pattern: str = None,
-#     compression_type: CompressionTypes = CompressionTypes.zip,
-#     tmp_dir_name: str = TEMPORARY_DIRECTORY,
-#     hash_type: HashTypes = HashTypes.sha256,
-# ):
-#     compression_func = get_compression_func(compression_type)
-#     files_to_upload = []
-#     for static_or_dynamic in iter_package_and_prepare_for_upload(
-#         package, include_pattern, exclude_pattern, compression_func, tmp_dir_name
-#     ):
-#         lp = LocalProcessor(hash_type)
-#         file_info = lp.process(static_or_dynamic)
-#         files_to_upload.append(file_info)
-#
-#     return files_to_upload
-#
-#
-# def prepare_for_upload_parallel(
-#     package: pathlib.Path,
-#     include_pattern: str = None,
-#     exclude_pattern: str = None,
-#     compression_type: CompressionTypes = CompressionTypes.zip,
-#     tmp_dir_name: str = TEMPORARY_DIRECTORY,
-#     hash_type: HashTypes = HashTypes.sha256,
-#     max_workers: int = None,
-# ):
-#     compression_func = get_compression_func(compression_type)
-#     max_workers = max_workers if max_workers is not None else os.cpu_count()
-#     if not isinstance(max_workers, int):
-#         raise ValueError(
-#             f"The value for 'max_worker' must be an integer. "
-#             f"Your device allow up to '{os.cpu_count()}' parallel workers."
-#         )
-#
-#     lp = LocalProcessor(hash_type)
-#
-#     files_to_upload = []
-#     with ProcessPoolExecutor(max_workers=max_workers) as executor:
-#         for result in executor.map(
-#             lp.process,
-#             iter_package_and_prepare_for_upload(
-#                 package,
-#                 include_pattern,
-#                 exclude_pattern,
-#                 compression_func,
-#                 tmp_dir_name,
-#             ),
-#         ):
-#             files_to_upload.append(result)
-#
-#     return files_to_upload

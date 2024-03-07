@@ -3,7 +3,6 @@ import multiprocessing
 import os
 import pathlib
 import queue
-import threading
 
 import ckanapi
 import pytest
@@ -431,7 +430,9 @@ def run_with_timeout():
         return_queue = multiprocessing.Queue()
 
         # Wrap the function call in a Process
-        process = multiprocessing.Process(target=function_wrapper, args=(func, return_queue, args, kwargs))
+        process = multiprocessing.Process(
+            target=function_wrapper, args=(func, return_queue, args, kwargs)
+        )
         process.start()
         process.join(timeout)
 
