@@ -297,6 +297,7 @@ def _prepare_package(
                     exclude_pattern=exclude_pattern,
                 )
             ],
+            workers=None  # max amount of workers will be used
         )
 
 

@@ -39,7 +39,7 @@ def map_function_with_processpool(
     func: Callable,
     args: list | None = None,
     kwargs: list[dict] | None = None,
-    workers: int = 4,
+    workers: int | None = 4,
 ) -> list:
     """
     Maps a function over arguments and keyword arguments using a ThreadPoolExecutor.
