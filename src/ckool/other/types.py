@@ -21,8 +21,3 @@ class HashTypes(Enum):
     # sha224 = "sha224"
     sha256 = "sha256"
     # sha512 = "sha512"
-
-
-class ParallelType(str, Enum):
-    thread = "thread"
-    process = "process"
