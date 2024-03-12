@@ -4,7 +4,7 @@ import time
 import pytest
 
 from ckool import TEMPORARY_DIRECTORY_NAME, UPLOAD_IN_PROGRESS_STRING
-from ckool.api import _prepare_package, _upload_package
+from ckool.api import _prepare_package, _upload_package, _download_resource
 from ckool.other.caching import read_cache
 from ckool.other.types import CompressionTypes, HashTypes
 
@@ -324,3 +324,35 @@ def test_prepare_package(tmp_path, run_type, hash_type, compression_type, prepar
     )
     assert len(cache_files) == 5
     [read_cache(f) for f in cache_files]
+
+
+@pytest.mark.impure
+def test_download_resource(
+    tmp_path,
+    ckan_instance,
+    ckan_envvars,
+    ckan_setup_data,
+    small_file,
+    config_section_instance
+):
+    meta = {
+        "file": small_file,
+        "package_id": ckan_envvars["test_package"],
+        "size": small_file.stat().st_size,
+        "hash": "hasashasasdsadasdsadsadas",
+        "format": small_file.suffix[1:],
+        "hashtype": "md5",
+    }
+    ckan_instance.create_resource_of_type_file(**meta)
+    del config_section_instance["section"]
+    (dest := tmp_path / "downloads").mkdir()
+    _download_resource(
+        package_name=ckan_envvars["test_package"],
+        resource_name=small_file.name,
+        destination=dest.as_posix(),
+        verify=False,
+        test=True,
+        **config_section_instance
+    )
+    assert (dest / small_file.name).exists()
+

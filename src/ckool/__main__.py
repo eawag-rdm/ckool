@@ -374,8 +374,11 @@ def get_local_resource_location(
 # TODO: is this useful?
 @get_app.command("resource", help="Download a single resource.")
 def get_resource(
-    url: str = typer.Argument(
-        help="URL of resource.",
+    package_name: str = typer.Argument(
+        help="Name of the package containing resource.",
+    ),
+    resource_name: str = typer.Argument(
+        help="Name of resource to download.",
     ),
     destination: str = typer.Option(
         pathlib.Path.cwd().as_posix(),
@@ -385,7 +388,8 @@ def get_resource(
     ),
 ):
     return _download_resource(
-        url,
+        package_name,
+        resource_name,
         destination,
         OPTIONS["config"],
         OPTIONS["ckan-instance-name"],

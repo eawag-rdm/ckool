@@ -368,11 +368,16 @@ class CKAN:
 
     def download_resource(
         self,
-        url: str,
+        package_name: str,
+        resource_name: str,
         destination: str | pathlib.Path,
         chunk_size=8192,
     ):
-        return _download_resource(url, self.token, destination, chunk_size, self.verify)
+        resources = self.get_package(package_name)["resources"]
+        for resource in resources:
+            if resource["name"] == resource_name:
+                return _download_resource(resource["url"], self.token, destination, chunk_size, self.verify)
+        raise ValueError(f"There is no resource named '{resource_name}' in the package '{package_name}'.")
 
     def _download_link_sequentially(
         self,
@@ -383,7 +388,9 @@ class CKAN:
         done = []
         for link in links:
             name = pathlib.Path(link).name
-            done.append(self.download_resource(link, destination / name, chunk_size))
+            done.append(
+                _download_resource(link, self.token, destination / name, chunk_size, self.verify)
+            )
         return done
 
     @staticmethod

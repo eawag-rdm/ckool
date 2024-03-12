@@ -360,7 +360,8 @@ def _download_package(
 
 
 def _download_resource(
-    url: str,
+    package_name: str,
+    resource_name: str,
     destination: str,
     config: dict,
     ckan_instance_name: str,
@@ -375,7 +376,7 @@ def _download_resource(
 
     destination = pathlib.Path(destination)
     if destination.exists() and destination.is_dir():
-        destination = destination / pathlib.Path(url).name
+        destination = destination / resource_name
 
     section = "Production" if not test else "Test"
     cfg_ckan_api = config_for_instance(config[section]["ckan_api"], ckan_instance_name)
@@ -384,7 +385,8 @@ def _download_resource(
     ckan = CKAN(**cfg_ckan_api)
     LOGGER.info(f"Downloading resource to '{destination.as_posix()}'.")
     ckan.download_resource(
-        url=url,
+        package_name=package_name,
+        resource_name=resource_name,
         destination=destination,
         chunk_size=chunk_size,
     )
