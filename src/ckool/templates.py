@@ -482,6 +482,15 @@ def handle_upload_single(
     meta = read_cache(pathlib.Path(metadata_file))
     ckan_instance = CKAN(**cfg_ckan_api)
 
+    upload_func = get_upload_func(
+        file_sizes=[int(meta["size"])],
+        space_available_on_server_root_disk=cfg_other[
+            "space_available_on_server_root_disk"
+        ],
+        parallel_upload=False,
+        factor=UPLOAD_FUNC_FACTOR,
+    )
+
     return wrapped_upload(
         meta=meta,
         package_name=package_name,
@@ -489,7 +498,7 @@ def handle_upload_single(
         cfg_other=cfg_other,
         cfg_ckan_api=cfg_ckan_api,
         cfg_secure_interface=cfg_secure_interface,
-        upload_func=upload_resource_file_via_scp,
+        upload_func=upload_func,
         progressbar=progressbar,
     )
 
