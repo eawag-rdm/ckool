@@ -13,6 +13,10 @@ CKAN Tool, in short ckool! A tool for working with CKAN.
 > - expose more functions to CLI? Eg.: access to datastore, datacite, dora
 > - Add function documentation for API - create readthedocs
 
+TODO's
+- cleanup `conftest.py`
+
+
 ## Installation
 
 ### With Git

@@ -116,29 +116,55 @@ def load_env_file():
 @pytest.fixture
 def secure_interface_input_args(load_env_file):
     return {
-        "host": os.environ.get("SECURE_INTERFACE_HOST"),
-        "port": os.environ.get("SECURE_INTERFACE_PORT"),
-        "username": os.environ.get("SECURE_INTERFACE_USERNAME"),
-        "ssh_key": os.environ.get("SECURE_INTERFACE_SSH_KEY"),
+        "host": os.environ.get("INTERNAL_SECURE_INTERFACE_HOST"),
+        "port": os.environ.get("INTERNAL_SECURE_INTERFACE_PORT"),
+        "username": os.environ.get("INTERNAL_SECURE_INTERFACE_USERNAME"),
+        "ssh_key": os.environ.get("INTERNAL_SECURE_INTERFACE_SSH_KEY"),
+    }
+
+
+@pytest.fixture
+def ckan_entities(load_env_file):
+    return {
+        "test_package": os.environ.get("CKAN_PACKAGE_NAME"),
+        "test_organization": os.environ.get("CKAN_ORGANIZATION_NAME"),
+        "test_project": os.environ.get("CKAN_GROUP_NAME"),
+        "test_resource": os.environ.get("CKAN_RESOURCE_NAME"),
     }
 
 
 @pytest.fixture()
 def ckan_envvars(load_env_file):
     return {
-        "host": os.environ.get("CKAN_URL"),
-        "token": os.environ.get("CKAN_TOKEN"),
-        "test_package": os.environ.get("CKAN_TEST_PACKAGE_NAME"),
-        "test_organization": os.environ.get("CKAN_TEST_ORGANIZATION_NAME"),
-        "test_project": os.environ.get("CKAN_TEST_GROUP_NAME"),
-        "test_resource": os.environ.get("CKAN_TEST_RESOURCE_NAME"),
-        "storage_path": os.environ.get("CKAN_STORAGE_PATH"),
+        "host": os.environ.get("INTERNAL_CKAN_URL"),
+        "token": os.environ.get("INTERNAL_CKAN_TOKEN"),
+        "storage_path": os.environ.get("INTERNAL_CKAN_STORAGE_PATH"),
+
+    }
+
+
+@pytest.fixture
+def secure_interface_open_input_args(load_env_file):
+    return {
+        "host": os.environ.get("OPEN_SECURE_INTERFACE_HOST"),
+        "port": os.environ.get("OPEN_SECURE_INTERFACE_PORT"),
+        "username": os.environ.get("OPEN_SECURE_INTERFACE_USERNAME"),
+        "ssh_key": os.environ.get("OPEN_SECURE_INTERFACE_SSH_KEY"),
+    }
+
+
+@pytest.fixture()
+def ckan_open_envvars(load_env_file):
+    return {
+        "host": os.environ.get("OPEN_CKAN_URL"),
+        "token": os.environ.get("OPEN_CKAN_TOKEN"),
+        "storage_path": os.environ.get("OPEN_CKAN_STORAGE_PATH"),
     }
 
 
 @pytest.fixture
 def config_section_instance(
-    tmp_path, ckan_instance, datacite_instance, secure_interface_input_args
+    tmp_path, ckan_envvars, datacite_instance, secure_interface_input_args
 ):
     config = {
         "Test": {
@@ -146,14 +172,14 @@ def config_section_instance(
                 {
                     "instance": "test_instance",
                     "space_available_on_server_root_disk": 10 * 1024**3,
-                    "ckan_storage_path": "/var/lib/ckan",
+                    "ckan_storage_path": ckan_envvars["storage_path"],
                 }
             ],
             "ckan_api": [
                 {
                     "instance": "test_instance",
-                    "server": ckan_instance.server,
-                    "token": ckan_instance.token,
+                    "server": ckan_envvars["host"],
+                    "token": ckan_envvars["token"],
                     "secret_token": "",
                 }
             ],
@@ -182,10 +208,64 @@ def config_section_instance(
 
 
 @pytest.fixture
+def config_section_instance_open(
+    tmp_path, ckan_open_envvars, datacite_instance, secure_interface_open_input_args
+):
+    config = {
+        "Test": {
+            "other": [
+                {
+                    "instance": "test_instance_open",
+                    "space_available_on_server_root_disk": 10 * 1024**3,
+                    "ckan_storage_path": ckan_open_envvars["storage_path"],
+                }
+            ],
+            "ckan_api": [
+                {
+                    "instance": "test_instance",
+                    "server": ckan_open_envvars["host"],
+                    "token": ckan_open_envvars["token"],
+                    "secret_token": "",
+                }
+            ],
+            "ckan_server": [
+                {
+                    "instance": "test_instance",
+                    "host": secure_interface_open_input_args["host"],
+                    "port": secure_interface_open_input_args["port"],
+                    "username": secure_interface_open_input_args["username"],
+                    "ssh_key": secure_interface_open_input_args["ssh_key"],
+                    "secret_passphrase": "",
+                    "secret_password": "",
+                }
+            ],
+            "datacite": {
+                "user": datacite_instance.auth.username,
+                "password": datacite_instance.auth.password,
+                "prefix": datacite_instance.prefix,
+                "host": datacite_instance.host,
+                "offset": datacite_instance.offset,
+            },
+            "local_doi_store_path": tmp_path,
+        }
+    }
+    return {"config": config, "section": "Test", "ckan_instance_name": "test_instance_open"}
+
+
+@pytest.fixture
 def ckan_instance(ckan_envvars):
     return CKAN(
         server=ckan_envvars["host"],
         token=ckan_envvars["token"],
+        verify_certificate=False,
+    )
+
+
+@pytest.fixture
+def ckan_open_instance(ckan_open_envvars):
+    return CKAN(
+        server=ckan_open_envvars["host_open"],
+        token=ckan_open_envvars["token_open"],
         verify_certificate=False,
     )
 
@@ -198,18 +278,18 @@ def patch_user(ckan_instance):
         )
 
 
-def setup(ckan_instance, ckan_envvars):
+def setup(ckan_instance, ckan_entities):
     patch_user(ckan_instance)
 
-    organization_data.update({"name": ckan_envvars["test_organization"]})
-    package_data.update({"name": ckan_envvars["test_package"]})
+    organization_data.update({"name": ckan_entities["test_organization"]})
+    package_data.update({"name": ckan_entities["test_package"]})
     resource_data.update(
         {
-            "package_id": ckan_envvars["test_package"],
-            "name": ckan_envvars["test_resource"],
+            "package_id": ckan_entities["test_package"],
+            "name": ckan_entities["test_resource"],
         }
     )
-    project_data.update({"name": ckan_envvars["test_project"]})
+    project_data.update({"name": ckan_entities["test_project"]})
     try:
         ckan_instance.create_organization(**organization_data)
     except ckanapi.ValidationError:
@@ -228,18 +308,18 @@ def setup(ckan_instance, ckan_envvars):
         pass
 
 
-def teardown(ckan_instance, ckan_envvars):
+def teardown(ckan_instance, ckan_entities):
     packages = ckan_instance.get_all_packages()["results"]
     for package in packages:
         ckan_instance.delete_package(package["id"])
-    ckan_instance.delete_project(ckan_envvars["test_project"])
-    ckan_instance.purge_project(ckan_envvars["test_project"])
-    ckan_instance.delete_organization(ckan_envvars["test_organization"])
-    ckan_instance.purge_organization(ckan_envvars["test_organization"])
+    ckan_instance.delete_project(ckan_entities["test_project"])
+    ckan_instance.purge_project(ckan_entities["test_project"])
+    ckan_instance.delete_organization(ckan_entities["test_organization"])
+    ckan_instance.purge_organization(ckan_entities["test_organization"])
 
 
 @pytest.fixture()
-def add_file_resources(tmp_path, ckan_instance, ckan_envvars):
+def add_file_resources(tmp_path, ckan_instance, ckan_envvars, ckan_entities):
     def _add_file_resources(package_sizes: list):
         files = []
         for i in range(len(package_sizes)):
@@ -251,7 +331,7 @@ def add_file_resources(tmp_path, ckan_instance, ckan_envvars):
             ) as _file:
                 upload_resource(
                     file_path=file,
-                    package_id=ckan_envvars["test_package"],
+                    package_id=ckan_entities["test_package"],
                     ckan_url=ckan_envvars["host"],
                     api_key=ckan_envvars["token"],
                     size=file.stat().st_size,
@@ -269,20 +349,20 @@ def add_file_resources(tmp_path, ckan_instance, ckan_envvars):
 
 
 @pytest.fixture
-def ckan_setup_data(ckan_instance, ckan_envvars):
-    setup(ckan_instance, ckan_envvars)
+def ckan_setup_data(ckan_instance, ckan_entities):
+    setup(ckan_instance, ckan_entities)
     yield
-    teardown(ckan_instance, ckan_envvars)
+    teardown(ckan_instance, ckan_entities)
 
 
 @pytest.fixture
 def datacite_instance(load_env_file):
     return DataCiteAPI(
-        user=os.environ["TEST_DATACITE_USER"],
-        password=os.environ["TEST_DATACITE_PASSWORD"],
-        prefix=os.environ["TEST_DATACITE_PREFIX"],
-        host=os.environ["TEST_DATACITE_URL"],
-        offset=os.environ["TEST_DATACITE_OFFSET"],
+        user=os.environ["DATACITE_USER"],
+        password=os.environ["DATACITE_PASSWORD"],
+        prefix=os.environ["DATACITE_PREFIX"],
+        host=os.environ["DATACITE_URL"],
+        offset=os.environ["DATACITE_OFFSET"],
     )
 
 

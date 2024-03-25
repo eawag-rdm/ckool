@@ -10,8 +10,8 @@ def test_base_get(ckan_envvars):
     assert response["success"]
 
 
-@pytest.mark.impure
-def test_base_post(ckan_setup_data, ckan_envvars, tmp_path):
+#@pytest.mark.impure
+def test_base_post(ckan_setup_data, ckan_envvars, ckan_entities, tmp_path):
     test_file = tmp_path / "test_file.txt"
     with test_file.open("w+") as f:
         f.write("test")
@@ -20,7 +20,7 @@ def test_base_post(ckan_setup_data, ckan_envvars, tmp_path):
     response = post(
         "/api/3/action/resource_create",
         {
-            "package_id": ckan_envvars["test_package"],
+            "package_id": ckan_entities["test_package"],
             "name": "pytest_resource",
             "resource_type": "Dataset",
             "restricted_level": "public",

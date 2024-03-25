@@ -22,12 +22,12 @@ hasher = get_hash_func(HASH_TYPE)
 
 @pytest.mark.impure
 def test_resource_integrity_between_ckan_instances_intact(
-    tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
+    tmp_path, ckan_instance, ckan_entities, ckan_setup_data
 ):
     (f := tmp_path / "file_abc.txt").write_text("test")
     kwargs = {
         "file": f,
-        "package_id": ckan_envvars["test_package"],
+        "package_id": ckan_entities["test_package"],
         "size": f.stat().st_size,
         "hash": hasher(f),
         "format": f.suffix[1:],
@@ -46,14 +46,14 @@ def test_resource_integrity_between_ckan_instances_intact(
             "server": ckan_instance.server,
             "verify_certificate": ckan_instance.verify,
         },
-        ckan_envvars["test_package"],
+        ckan_entities["test_package"],
         f.name,
     )
 
 
 @pytest.mark.impure
 def test_upload_resource_file_via_api(
-    tmp_path, ckan_instance, ckan_envvars, ckan_setup_data
+    tmp_path, ckan_instance, ckan_entities, ckan_setup_data
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -70,13 +70,13 @@ def test_upload_resource_file_via_api(
             "verify_certificate": ckan_instance.verify,
         },
         filepath=f,
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         metadata=meta,
         progressbar=False,
     )
 
     resources = ckan_instance.get_package(
-        package_name=ckan_envvars["test_package"], filter_fields=["resources"]
+        package_name=ckan_entities["test_package"], filter_fields=["resources"]
     )["resources"]
 
     assert any([r["name"] == f.name for r in resources])
@@ -84,7 +84,7 @@ def test_upload_resource_file_via_api(
 
 @pytest.mark.impure
 def test_upload_resource_file_via_scp(
-    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_setup_data
+    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_entities, ckan_setup_data
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -103,13 +103,13 @@ def test_upload_resource_file_via_scp(
         ckan_api_input=ckan_input_args,
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         filepath=f,
         metadata=meta,
     )
 
     resources = ckan_instance.get_package(
-        package_name=ckan_envvars["test_package"], filter_fields=["resources"]
+        package_name=ckan_entities["test_package"], filter_fields=["resources"]
     )["resources"]
 
     assert any([r["name"] == f.name for r in resources])
@@ -117,14 +117,14 @@ def test_upload_resource_file_via_scp(
         ckan_api_input=ckan_input_args,
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )
 
 
 @pytest.mark.impure
 def test_upload_func_chosen_api_file(
-    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_setup_data
+    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_entities, ckan_setup_data
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -150,14 +150,14 @@ def test_upload_func_chosen_api_file(
         ckan_api_input=ckan_input_args,
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         filepath=f,
         metadata=meta,
         progressbar=True,
     )
 
     resources = ckan_instance.get_package(
-        package_name=ckan_envvars["test_package"], filter_fields=["resources"]
+        package_name=ckan_entities["test_package"], filter_fields=["resources"]
     )["resources"]
 
     assert any([r["name"] == f.name for r in resources])
@@ -165,14 +165,14 @@ def test_upload_func_chosen_api_file(
         ckan_api_input=ckan_input_args,
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )
 
 
 @pytest.mark.impure
 def test_upload_func_chosen_scp(
-    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_setup_data
+    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_entities, ckan_setup_data
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -198,14 +198,14 @@ def test_upload_func_chosen_scp(
         ckan_api_input=ckan_input_args,
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         filepath=f,
         metadata=meta,
         progressbar=True,
     )
 
     resources = ckan_instance.get_package(
-        package_name=ckan_envvars["test_package"], filter_fields=["resources"]
+        package_name=ckan_entities["test_package"], filter_fields=["resources"]
     )["resources"]
 
     assert any([r["name"] == f.name for r in resources])
@@ -213,19 +213,19 @@ def test_upload_func_chosen_scp(
         ckan_api_input=ckan_input_args,
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )
 
 
 @pytest.mark.impure
 def test_hash_remote(
-    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_setup_data
+    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_entities, ckan_setup_data
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
         "file": f,
-        "package_id": ckan_envvars["test_package"],
+        "package_id": ckan_entities["test_package"],
         "size": f.stat().st_size,
         "hash": hasher(f),
         "format": f.suffix[1:],
@@ -241,11 +241,11 @@ def test_hash_remote(
         ckan_api_input=ckan_input_args,
         secure_interface_input=secure_interface_input_args,
         ckan_storage_path=ckan_envvars["storage_path"],
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )
     hashed_locally = ckan_instance.get_resource_meta(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )["hash"]
 
@@ -257,20 +257,20 @@ def test_handle_upload(
     tmp_path,
     ckan_instance,
     secure_interface_input_args,
-    ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     config_section_instance,
 ):
     hash_func = get_hash_func(HASH_TYPE)
 
-    (tmp_path / ckan_envvars["test_package"]).mkdir()
-    (file_1 := (tmp_path / ckan_envvars["test_package"] / "file_1.txt")).write_text(
+    (tmp_path / ckan_entities["test_package"]).mkdir()
+    (file_1 := (tmp_path / ckan_entities["test_package"] / "file_1.txt")).write_text(
         "abc"
     )
-    (file_2 := (tmp_path / ckan_envvars["test_package"] / "file_2.txt")).write_text(
+    (file_2 := (tmp_path / ckan_entities["test_package"] / "file_2.txt")).write_text(
         "def"
     )
-    (file_3 := (tmp_path / ckan_envvars["test_package"] / "file_3.txt")).write_text(
+    (file_3 := (tmp_path / ckan_entities["test_package"] / "file_3.txt")).write_text(
         "ghi"
     )
     cache_1 = handle_file(file=file_1, hash_func=hash_func)
@@ -278,17 +278,17 @@ def test_handle_upload(
     cache_3 = handle_file(file=file_3, hash_func=hash_func)
 
     ckan_instance.create_resource_of_type_file(
-        package_id=ckan_envvars["test_package"], **read_cache(cache_1)
+        package_id=ckan_entities["test_package"], **read_cache(cache_1)
     )
     meta_2 = read_cache(cache_2)
     meta_2["hash"] = UPLOAD_IN_PROGRESS_STRING
     ckan_instance.create_resource_of_type_file(
-        package_id=ckan_envvars["test_package"], **meta_2
+        package_id=ckan_entities["test_package"], **meta_2
     )
 
     uploaded = handle_upload_all(
-        package_name=ckan_envvars["test_package"],
-        package_folder=tmp_path / ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
+        package_folder=tmp_path / ckan_entities["test_package"],
         verify=False,
         parallel=False,
         progressbar=True,
@@ -312,7 +312,7 @@ def test_handle_upload(
             },
         ]
 
-    for resource in ckan_instance.get_package(ckan_envvars["test_package"])[
+    for resource in ckan_instance.get_package(ckan_entities["test_package"])[
         "resources"
     ]:
         assert resource["hash"] != UPLOAD_IN_PROGRESS_STRING
@@ -323,20 +323,20 @@ def test_handle_upload_all_too_many_cache_files(
     tmp_path,
     ckan_instance,
     secure_interface_input_args,
-    ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     config_section_instance,
 ):
     hash_func = get_hash_func(HASH_TYPE)
 
-    (tmp_path / ckan_envvars["test_package"]).mkdir()
-    (file_1 := (tmp_path / ckan_envvars["test_package"] / "file_1.txt")).write_text(
+    (tmp_path / ckan_entities["test_package"]).mkdir()
+    (file_1 := (tmp_path / ckan_entities["test_package"] / "file_1.txt")).write_text(
         "abc"
     )
-    (file_2 := (tmp_path / ckan_envvars["test_package"] / "file_2.txt")).write_text(
+    (file_2 := (tmp_path / ckan_entities["test_package"] / "file_2.txt")).write_text(
         "def"
     )
-    (file_3 := (tmp_path / ckan_envvars["test_package"] / "file_3.txt")).write_text(
+    (file_3 := (tmp_path / ckan_entities["test_package"] / "file_3.txt")).write_text(
         "ghi"
     )
     cache_1 = handle_file(file=file_1, hash_func=hash_func)
@@ -346,8 +346,8 @@ def test_handle_upload_all_too_many_cache_files(
     file_3.unlink()
 
     uploaded = handle_upload_all(
-        package_name=ckan_envvars["test_package"],
-        package_folder=tmp_path / ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
+        package_folder=tmp_path / ckan_entities["test_package"],
         verify=False,
         parallel=False,
         progressbar=True,
@@ -365,6 +365,7 @@ def test_wrapped_upload_for_both_upload_types(
     ckan_instance,
     secure_interface_input_args,
     ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     config_section_instance,
     upload_func,
@@ -379,7 +380,7 @@ def test_wrapped_upload_for_both_upload_types(
     }
     wrapped_upload(
         meta=meta,
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         ckan_instance=ckan_instance,
         cfg_other={"ckan_storage_path": ckan_envvars["storage_path"]},
         cfg_ckan_api={
@@ -392,7 +393,7 @@ def test_wrapped_upload_for_both_upload_types(
         progressbar=True,
     )
 
-    resources = ckan_instance.get_package(package_name=ckan_envvars["test_package"])[
+    resources = ckan_instance.get_package(package_name=ckan_entities["test_package"])[
         "resources"
     ]
 

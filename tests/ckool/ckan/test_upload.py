@@ -8,10 +8,10 @@ hasher = get_hash_func(HASH_TYPE)
 
 
 @pytest.mark.impure
-def test_upload_small(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
+def test_upload_small(ckan_instance, ckan_envvars, ckan_entities, ckan_setup_data, small_file):
     response = upload_resource(
         small_file,
-        ckan_envvars["test_package"],
+        ckan_entities["test_package"],
         ckan_envvars["host"],
         ckan_envvars["token"],
         hash=hasher(small_file),
@@ -23,11 +23,11 @@ def test_upload_small(ckan_instance, ckan_envvars, ckan_setup_data, small_file):
 
 @pytest.mark.impure
 def test_upload_small_all_args(
-    ckan_instance, ckan_envvars, ckan_setup_data, small_file
+    ckan_instance, ckan_envvars, ckan_entities, ckan_setup_data, small_file
 ):
     response = upload_resource(
         small_file,
-        ckan_envvars["test_package"],
+        ckan_entities["test_package"],
         ckan_envvars["host"],
         ckan_envvars["token"],
         hash=hasher(small_file),
@@ -45,10 +45,10 @@ def test_upload_small_all_args(
 
 
 @pytest.mark.impure
-def test_upload_large(ckan_instance, ckan_envvars, ckan_setup_data, large_file):
+def test_upload_large(ckan_instance, ckan_envvars, ckan_entities, ckan_setup_data, large_file):
     response = upload_resource(
         large_file,
-        ckan_envvars["test_package"],
+        ckan_entities["test_package"],
         ckan_envvars["host"],
         ckan_envvars["token"],
         hash=hasher(large_file),
@@ -61,11 +61,11 @@ def test_upload_large(ckan_instance, ckan_envvars, ckan_setup_data, large_file):
 @pytest.mark.slow
 @pytest.mark.impure
 def test_upload_very_large(
-    ckan_instance, ckan_envvars, ckan_setup_data, very_large_file
+    ckan_instance, ckan_envvars, ckan_entities, ckan_setup_data, very_large_file
 ):
     response = upload_resource(
         very_large_file,
-        ckan_envvars["test_package"],
+        ckan_entities["test_package"],
         ckan_envvars["host"],
         ckan_envvars["token"],
         hash=hasher(very_large_file),

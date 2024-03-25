@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from pytest_unordered import unordered
 
 from ckool.datacite.doi_store import LocalDoiStore
 
@@ -11,8 +12,8 @@ def test_parse(tmp_path, local_structure_doi):
         "other": ["strange-file"],
         "name-2": {"package-url-2": ["file-2.pdf", "file-1.txt"]},
         "name-1": {
-            "package-url-2": ["file-2.pdf", "file-1.txt"],
-            "package-url-1": ["file-2.pdf", "file-1.txt"],
+            "package-url-2": unordered(["file-2.pdf", "file-1.txt"]),
+            "package-url-1": unordered(["file-2.pdf", "file-1.txt"]),
         },
     }
 
@@ -57,7 +58,7 @@ def test_write_invalid(tmp_path, local_structure_doi):
 
 def test_write_valid(tmp_path, local_structure_doi):
     lds = LocalDoiStore(tmp_path)
-    a = lds.write(
+    lds.write(
         name="name-23",
         package="package-url-232",
         filename_content_map={

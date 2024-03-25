@@ -17,7 +17,7 @@ def test_upload_package_nothing_to_upload_sequential(
     tmp_path,
     ckan_instance,
     secure_interface_input_args,
-    ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     config_section_instance,
     run_type,
@@ -28,7 +28,7 @@ def test_upload_package_nothing_to_upload_sequential(
     (tmp_path / "f1" / "absas.txt").write_text("asada")
 
     _ = _upload_package(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         package_folder=tmp_path.as_posix(),
         include_sub_folders=False,
         include_pattern=None,
@@ -50,7 +50,7 @@ def test_upload_package(
     tmp_path,
     ckan_instance,
     secure_interface_input_args,
-    ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     very_large_package,
     config_section_instance,
@@ -59,7 +59,7 @@ def test_upload_package(
     del config_section_instance["section"]
 
     uploaded = _upload_package(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         package_folder=very_large_package,
         include_sub_folders=False,
         include_pattern=None,
@@ -90,7 +90,7 @@ def test_upload_package_with_compression(
     tmp_path,
     ckan_instance,
     secure_interface_input_args,
-    ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     very_large_package,
     config_section_instance,
@@ -99,7 +99,7 @@ def test_upload_package_with_compression(
     del config_section_instance["section"]
 
     uploaded = _upload_package(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         package_folder=very_large_package,
         include_sub_folders=False,
         include_pattern=None,
@@ -126,14 +126,14 @@ def test_upload_package_with_compression(
     assert all(
         [
             r.get("hash") != UPLOAD_IN_PROGRESS_STRING
-            for r in ckan_instance.get_package(ckan_envvars["test_package"])[
+            for r in ckan_instance.get_package(ckan_entities["test_package"])[
                 "resources"
             ]
         ]
     )
 
     uploaded = _upload_package(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         package_folder=very_large_package,
         include_sub_folders=False,
         include_pattern=None,
@@ -168,7 +168,7 @@ def test_upload_package_interrupted(
     tmp_path,
     ckan_instance,
     secure_interface_input_args,
-    ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     pretty_large_file,
     config_section_instance,
@@ -192,12 +192,12 @@ def test_upload_package_interrupted(
         "space_available_on_server_root_disk"
     ] = ckan_root_disk_size
     len_before = len(
-        ckan_instance.get_package(ckan_envvars["test_package"])["resources"]
+        ckan_instance.get_package(ckan_entities["test_package"])["resources"]
     )
     _ = run_with_timeout(
         _upload_package,
         timeout=1.5,
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         package_folder=tmp_path.as_posix(),
         include_sub_folders=False,
         include_pattern=None,
@@ -212,13 +212,13 @@ def test_upload_package_interrupted(
         **config_section_instance,
     )
 
-    resources = ckan_instance.get_package(ckan_envvars["test_package"])["resources"]
+    resources = ckan_instance.get_package(ckan_entities["test_package"])["resources"]
     if scp_upload:
         assert len(resources) == len_before + 1
         assert any([r["hash"] == UPLOAD_IN_PROGRESS_STRING for r in resources])
 
     uploaded = _upload_package(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         package_folder=tmp_path.as_posix(),
         include_sub_folders=False,
         include_pattern=None,
@@ -233,12 +233,12 @@ def test_upload_package_interrupted(
         **config_section_instance,
     )
     assert uploaded[0]["status"] == status
-    resources = ckan_instance.get_package(ckan_envvars["test_package"])["resources"]
+    resources = ckan_instance.get_package(ckan_entities["test_package"])["resources"]
     assert len(resources) == 2
     assert any([r["hash"] == saved_meta["hash"] for r in resources])
 
     uploaded = _upload_package(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         package_folder=tmp_path.as_posix(),
         include_sub_folders=False,
         include_pattern=None,
@@ -330,14 +330,14 @@ def test_prepare_package(tmp_path, run_type, hash_type, compression_type, prepar
 def test_download_resource(
     tmp_path,
     ckan_instance,
-    ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     small_file,
     config_section_instance
 ):
     meta = {
         "file": small_file,
-        "package_id": ckan_envvars["test_package"],
+        "package_id": ckan_entities["test_package"],
         "size": small_file.stat().st_size,
         "hash": "hasashasasdsadasdsadsadas",
         "format": small_file.suffix[1:],
@@ -347,7 +347,7 @@ def test_download_resource(
     del config_section_instance["section"]
     (dest := tmp_path / "downloads").mkdir()
     _download_resource(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         resource_name=small_file.name,
         destination=dest.as_posix(),
         verify=False,
@@ -361,7 +361,7 @@ def test_download_resource(
 def test_upload_resource(
     tmp_path,
     ckan_instance,
-    ckan_envvars,
+    ckan_entities,
     ckan_setup_data,
     small_file,
     config_section_instance
@@ -369,7 +369,7 @@ def test_upload_resource(
     del config_section_instance["section"]
 
     _upload_resource(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         filepath=small_file,
         hash_algorithm=HashTypes.md5,
         verify=False,
@@ -377,7 +377,7 @@ def test_upload_resource(
         **config_section_instance
     )
     meta = ckan_instance.get_resource_meta(
-        package_name=ckan_envvars["test_package"],
+        package_name=ckan_entities["test_package"],
         resource_id_or_name=small_file.name
     )
     assert meta
