@@ -35,7 +35,9 @@ from tests.ckool.data.inputs.ckan_entity_data import (
 
 
 @pytest.mark.impure
-def test_pre_publication_checks_all_exist(ckan_instance, ckan_entities, ckan_setup_data):
+def test_pre_publication_checks_all_exist(
+    ckan_instance, ckan_entities, ckan_setup_data
+):
     package_metadata = ckan_instance.get_package(ckan_entities["test_package"])
     result = pre_publication_checks(
         ckan_instance_destination=ckan_instance,
@@ -368,7 +370,6 @@ def test_patch_resource_raw(tmp_path, ckan_instance, ckan_setup_data):
 def test_enrich_and_store_metadata_1(
     tmp_path,
     ckan_instance,
-    secure_interface_input_args,
     ckan_entities,
     json_test_data,
     ckan_setup_data,
@@ -456,16 +457,13 @@ def test_update_datacite_doi(
         package=ckan_entities["test_package"],
         filename_content_map={
             _dir / LOCAL_DOI_STORE_DOI_FILE_NAME: _doi,
-            _dir
-            / LOCAL_DOI_STORE_ORCIDS_FILE_NAME: json.dumps(
+            _dir / LOCAL_DOI_STORE_ORCIDS_FILE_NAME: json.dumps(
                 json_test_data["orcids"], indent=2
             ),
-            _dir
-            / LOCAL_DOI_STORE_AFFILIATION_FILE_NAME: json.dumps(
+            _dir / LOCAL_DOI_STORE_AFFILIATION_FILE_NAME: json.dumps(
                 json_test_data["affiliations"], indent=2
             ),
-            _dir
-            / LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME: json.dumps(
+            _dir / LOCAL_DOI_STORE_RELATED_PUBLICATIONS_FILE_NAME: json.dumps(
                 json_test_data["related_publications"], indent=2
             ),
         },

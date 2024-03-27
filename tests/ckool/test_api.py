@@ -4,26 +4,31 @@ import time
 import pytest
 
 from ckool import TEMPORARY_DIRECTORY_NAME, UPLOAD_IN_PROGRESS_STRING
-from ckool.api import _prepare_package, _upload_package, _download_resource, _upload_resource
+from ckool.api import (
+    _download_resource,
+    _prepare_package,
+    _upload_package,
+    _upload_resource,
+)
 from ckool.other.caching import read_cache
 from ckool.other.types import CompressionTypes, HashTypes
+from conftest import ckan_instances
 
 SWITCH = {"parallel": True, "sequential": False, "ignore": False, "overwrite": True}
 
 
 @pytest.mark.impure
 @pytest.mark.parametrize("run_type", ["parallel", "sequential"])
+@pytest.mark.parametrize('cki', ckan_instances)
 def test_upload_package_nothing_to_upload_sequential(
+    cki,
     tmp_path,
-    ckan_instance,
-    secure_interface_input_args,
     ckan_entities,
-    ckan_setup_data,
-    config_section_instance,
+    dynamic_ckan_setup_data,
+    dynamic_config_section_instance,
     run_type,
 ):
-    del config_section_instance["section"]
-
+    del dynamic_config_section_instance["section"]
     (tmp_path / "f1").mkdir()
     (tmp_path / "f1" / "absas.txt").write_text("asada")
 
@@ -39,24 +44,25 @@ def test_upload_package_nothing_to_upload_sequential(
         workers=4,
         verify=False,
         test=True,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
 
 
 @pytest.mark.parametrize("run_type", ["parallel", "sequential"])
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.slow
 @pytest.mark.impure
 def test_upload_package(
+    cki,
     tmp_path,
-    ckan_instance,
-    secure_interface_input_args,
     ckan_entities,
-    ckan_setup_data,
+    dynamic_ckan_instance,
+    dynamic_ckan_setup_data,
     very_large_package,
-    config_section_instance,
+    dynamic_config_section_instance,
     run_type,
 ):
-    del config_section_instance["section"]
+    del dynamic_config_section_instance["section"]
 
     uploaded = _upload_package(
         package_name=ckan_entities["test_package"],
@@ -70,7 +76,7 @@ def test_upload_package(
         workers=4,
         verify=False,
         test=True,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
 
     for entry in uploaded:
@@ -85,18 +91,19 @@ def test_upload_package(
 
 @pytest.mark.slow
 @pytest.mark.impure
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.parametrize("run_type", ["parallel", "sequential"])
 def test_upload_package_with_compression(
+    cki,
     tmp_path,
-    ckan_instance,
-    secure_interface_input_args,
     ckan_entities,
-    ckan_setup_data,
+    dynamic_ckan_instance,
+    dynamic_ckan_setup_data,
     very_large_package,
-    config_section_instance,
+    dynamic_config_section_instance,
     run_type,
 ):
-    del config_section_instance["section"]
+    del dynamic_config_section_instance["section"]
 
     uploaded = _upload_package(
         package_name=ckan_entities["test_package"],
@@ -111,7 +118,7 @@ def test_upload_package_with_compression(
         verify=False,
         test=True,
         progressbar=True,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
 
     for entry in uploaded:
@@ -126,7 +133,7 @@ def test_upload_package_with_compression(
     assert all(
         [
             r.get("hash") != UPLOAD_IN_PROGRESS_STRING
-            for r in ckan_instance.get_package(ckan_entities["test_package"])[
+            for r in dynamic_ckan_instance.get_package(ckan_entities["test_package"])[
                 "resources"
             ]
         ]
@@ -145,7 +152,7 @@ def test_upload_package_with_compression(
         verify=False,
         test=True,
         progressbar=True,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
 
     for entry in uploaded:
@@ -160,18 +167,19 @@ def test_upload_package_with_compression(
 
 @pytest.mark.slow
 @pytest.mark.impure
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.parametrize(
     "ckan_root_disk_size, scp_upload, status",
     [(1, True, "replaced"), (20 * 1024**3, False, "normal")],
 )
 def test_upload_package_interrupted(
+    cki,
     tmp_path,
-    ckan_instance,
-    secure_interface_input_args,
+    dynamic_ckan_instance,
     ckan_entities,
-    ckan_setup_data,
+    dynamic_ckan_setup_data,
     pretty_large_file,
-    config_section_instance,
+    dynamic_config_section_instance,
     run_with_timeout,
     ckan_root_disk_size,
     scp_upload,
@@ -187,12 +195,12 @@ def test_upload_package_interrupted(
     (tmp := (tmp_path / TEMPORARY_DIRECTORY_NAME)).mkdir()
     (tmp / "pretty_large.bin.json").write_text(json.dumps(saved_meta))
 
-    del config_section_instance["section"]
-    config_section_instance["config"]["Test"]["other"][0][
+    del dynamic_config_section_instance["section"]
+    dynamic_config_section_instance["config"]["Test"]["other"][0][
         "space_available_on_server_root_disk"
     ] = ckan_root_disk_size
     len_before = len(
-        ckan_instance.get_package(ckan_entities["test_package"])["resources"]
+        dynamic_ckan_instance.get_package(ckan_entities["test_package"])["resources"]
     )
     _ = run_with_timeout(
         _upload_package,
@@ -209,10 +217,10 @@ def test_upload_package_interrupted(
         verify=False,
         test=True,
         progressbar=False,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
 
-    resources = ckan_instance.get_package(ckan_entities["test_package"])["resources"]
+    resources = dynamic_ckan_instance.get_package(ckan_entities["test_package"])["resources"]
     if scp_upload:
         assert len(resources) == len_before + 1
         assert any([r["hash"] == UPLOAD_IN_PROGRESS_STRING for r in resources])
@@ -230,10 +238,10 @@ def test_upload_package_interrupted(
         verify=False,
         test=True,
         progressbar=False,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
     assert uploaded[0]["status"] == status
-    resources = ckan_instance.get_package(ckan_entities["test_package"])["resources"]
+    resources = dynamic_ckan_instance.get_package(ckan_entities["test_package"])["resources"]
     assert len(resources) == 2
     assert any([r["hash"] == saved_meta["hash"] for r in resources])
 
@@ -250,7 +258,7 @@ def test_upload_package_interrupted(
         verify=False,
         test=True,
         progressbar=False,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
 
     assert uploaded[0]["status"] == "skipped"
@@ -327,13 +335,15 @@ def test_prepare_package(tmp_path, run_type, hash_type, compression_type, prepar
 
 
 @pytest.mark.impure
+@pytest.mark.parametrize('cki', ckan_instances)
 def test_download_resource(
+    cki,
     tmp_path,
-    ckan_instance,
+    dynamic_ckan_instance,
     ckan_entities,
-    ckan_setup_data,
+    dynamic_ckan_setup_data,
     small_file,
-    config_section_instance
+    dynamic_config_section_instance,
 ):
     meta = {
         "file": small_file,
@@ -343,8 +353,8 @@ def test_download_resource(
         "format": small_file.suffix[1:],
         "hashtype": "md5",
     }
-    ckan_instance.create_resource_of_type_file(**meta)
-    del config_section_instance["section"]
+    dynamic_ckan_instance.create_resource_of_type_file(**meta)
+    del dynamic_config_section_instance["section"]
     (dest := tmp_path / "downloads").mkdir()
     _download_resource(
         package_name=ckan_entities["test_package"],
@@ -352,21 +362,23 @@ def test_download_resource(
         destination=dest.as_posix(),
         verify=False,
         test=True,
-        **config_section_instance
+        **dynamic_config_section_instance,
     )
     assert (dest / small_file.name).exists()
 
 
 @pytest.mark.impure
+@pytest.mark.parametrize('cki', ckan_instances)
 def test_upload_resource(
+    cki,
     tmp_path,
-    ckan_instance,
+    dynamic_ckan_instance,
     ckan_entities,
-    ckan_setup_data,
+    dynamic_ckan_setup_data,
     small_file,
-    config_section_instance
+    dynamic_config_section_instance,
 ):
-    del config_section_instance["section"]
+    del dynamic_config_section_instance["section"]
 
     _upload_resource(
         package_name=ckan_entities["test_package"],
@@ -374,13 +386,15 @@ def test_upload_resource(
         hash_algorithm=HashTypes.md5,
         verify=False,
         test=True,
-        **config_section_instance
+        **dynamic_config_section_instance,
     )
-    meta = ckan_instance.get_resource_meta(
-        package_name=ckan_entities["test_package"],
-        resource_id_or_name=small_file.name
+    meta = dynamic_ckan_instance.get_resource_meta(
+        package_name=ckan_entities["test_package"], resource_id_or_name=small_file.name
     )
     assert meta
-    assert meta["hash"] == read_cache(
-        tmp_path / TEMPORARY_DIRECTORY_NAME / (small_file.name + ".json")
-    )["hash"]
+    assert (
+        meta["hash"]
+        == read_cache(
+            tmp_path / TEMPORARY_DIRECTORY_NAME / (small_file.name + ".json")
+        )["hash"]
+    )

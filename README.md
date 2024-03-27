@@ -15,6 +15,8 @@ CKAN Tool, in short ckool! A tool for working with CKAN.
 
 TODO's
 - cleanup `conftest.py`
+- cleanup the way config is passed to functions,
+  - more consistency is needed for different level function
 
 
 ## Installation
@@ -48,34 +50,46 @@ python -m pytest
 For some tests environment variables are required. Create an .env file called `.env` in the directory that contains the `conftest.py` file.
 The file should contain:
 ```env
-TEST_DATACITE_PASSWORD=...
-TEST_DATACITE_URL=https://api.test.datacite.org
-TEST_DATACITE_USER=...
+DATACITE_PASSWORD=...
+DATACITE_URL=https://api.test.datacite.org
+DATACITE_USER=...
+DATACITE_PREFIX=...
+DATACITE_OFFSET=...
 
-TEST_DATACITE_PREFIX=...
-TEST_DATACITE_OFFSET=0
+CKAN_PACKAGE_NAME=test_package
+CKAN_ORGANIZATION_NAME=test_organization
+CKAN_RESOURCE_NAME = test_resource_link
+CKAN_GROUP_NAME=test_group
 
 # SecureInterface
-SECURE_INTERFACE_HOST=...
-SECURE_INTERFACE_PORT=...
-SECURE_INTERFACE_USERNAME=ckan
-SECURE_INTERFACE_PASSWORD=
-SECURE_INTERFACE_SSH_KEY=...
-SECURE_INTERFACE_PASSPHRASE=
+INTERNAL_SECURE_INTERFACE_HOST=...
+INTERNAL_SECURE_INTERFACE_PORT=...
+INTERNAL_SECURE_INTERFACE_USERNAME=...
+INTERNAL_SECURE_INTERFACE_PASSWORD=
+INTERNAL_SECURE_INTERFACE_SSH_KEY=...
+INTERNAL_SECURE_INTERFACE_PASSPHRASE=
 
-CKAN_STORAGE_PATH=...
+INTERNAL_CKAN_STORAGE_PATH=/var/lib/ckan
+INTERNAL_CKAN_URL=https://localhost:8443
+INTERNAL_CKAN_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJTVlJJUFZzcS1XcGFhVkMwR28ZTUdCdjJwd3lFalZwdTVrcnV4ZzNFMHhqdVF2NDVINEVqTUtpOU93NGtQSVpBbmJfMXJSY3dFbk5rSWIyVCIsImlhdCI6MTcwNjcwMjQ4N30.l6yRKh-MeL-sBZYGbRpuZRaXKxmc3i4db0jtk5cxAZQ
 
-CKAN_URL=https://localhost:8443
-CKAN_TOKEN=...
-CKAN_TEST_PACKAGE_NAME=test_package
-CKAN_TEST_ORGANIZATION_NAME=test_organization
-CKAN_TEST_RESOURCE_NAME = test_resource_link
-CKAN_TEST_GROUP_NAME=test_group
+# SecureInterface
+OPEN_SECURE_INTERFACE_HOST=...
+OPEN_SECURE_INTERFACE_PORT=...
+OPEN_SECURE_INTERFACE_USERNAME=...
+OPEN_SECURE_INTERFACE_PASSWORD=
+OPEN_SECURE_INTERFACE_SSH_KEY=...
+OPEN_SECURE_INTERFACE_PASSPHRASE=
+
+OPEN_CKAN_STORAGE_PATH=/var/lib/ckan
+OPEN_CKAN_URL=https://localhost:8444
+OPEN_CKAN_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJ6X0YwRkpOcGNwMkpWOHhPLTJYeEk3a1ZpQXRORUNqVHhjUHR42k4zcjRkTXVSVDBjTXRIUnhieTAxMkdHYmY3VlNNRmdlcFhuT0VZNWRaRyIsImlhdCI6MTcxMTU0MDgzMH0.LAJkLGlJclp9sAG-jgY5qd9EuQF9ApnVIOLOc28sHvw
+
 ```
 
 For running **all** tests with a fully configured `.env` file.
 ```shell
-python -m pytest --run-slow --run-impure
+python -m pytest --run-slow --run-impure --run-dora --run-open
 ```
 
 Or you can use tox to run tests for multiple python versions. At the moment python 3.11 and 3.12 are configured.
@@ -88,7 +102,7 @@ python -m tox
 If you want to configure tox, find the section: `tool.tox` in the pyproject.toml.
 
 Some tests that are slow and/or require additional configuration are skipped by default.
-To run all tests run tests with the `--run-slow` and `--run-impure` flags (`tox -- --run-impure --run-slow`).
+To run all tests run tests with the flags `--run-slow`, `--run-impure`, `--run-dora` and `--run-open` flags (`tox -- --run-impure --run-slow --run-dora --run-open`).
 The variables needed to run all test must be specified in the `tool.pytest.ini_options` section under `env`.
 
 

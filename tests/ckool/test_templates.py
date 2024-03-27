@@ -16,6 +16,7 @@ from ckool.templates import (
     upload_resource_file_via_scp,
     wrapped_upload,
 )
+from conftest import ckan_instances
 
 hasher = get_hash_func(HASH_TYPE)
 
@@ -51,9 +52,10 @@ def test_resource_integrity_between_ckan_instances_intact(
     )
 
 
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.impure
 def test_upload_resource_file_via_api(
-    tmp_path, ckan_instance, ckan_entities, ckan_setup_data
+    cki, tmp_path, dynamic_ckan_instance, ckan_entities, dynamic_ckan_setup_data
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -65,9 +67,9 @@ def test_upload_resource_file_via_api(
 
     upload_resource_file_via_api(
         ckan_api_input={
-            "token": ckan_instance.token,
-            "server": ckan_instance.server,
-            "verify_certificate": ckan_instance.verify,
+            "token": dynamic_ckan_instance.token,
+            "server": dynamic_ckan_instance.server,
+            "verify_certificate": dynamic_ckan_instance.verify,
         },
         filepath=f,
         package_name=ckan_entities["test_package"],
@@ -75,16 +77,22 @@ def test_upload_resource_file_via_api(
         progressbar=False,
     )
 
-    resources = ckan_instance.get_package(
+    resources = dynamic_ckan_instance.get_package(
         package_name=ckan_entities["test_package"], filter_fields=["resources"]
     )["resources"]
 
     assert any([r["name"] == f.name for r in resources])
 
 
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.impure
 def test_upload_resource_file_via_scp(
-    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_entities, ckan_setup_data
+    cki,
+    tmp_path,
+    dynamic_ckan_instance,
+    dynamic_config,
+    ckan_entities,
+    dynamic_ckan_setup_data,
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -95,36 +103,42 @@ def test_upload_resource_file_via_scp(
     }
 
     ckan_input_args = {
-        "token": ckan_instance.token,
-        "server": ckan_instance.server,
-        "verify_certificate": ckan_instance.verify,
+        "token": dynamic_ckan_instance.token,
+        "server": dynamic_ckan_instance.server,
+        "verify_certificate": dynamic_ckan_instance.verify,
     }
-    abc = upload_resource_file_via_scp(
+    _ = upload_resource_file_via_scp(
         ckan_api_input=ckan_input_args,
-        secure_interface_input=secure_interface_input_args,
-        ckan_storage_path=ckan_envvars["storage_path"],
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         filepath=f,
         metadata=meta,
     )
 
-    resources = ckan_instance.get_package(
+    resources = dynamic_ckan_instance.get_package(
         package_name=ckan_entities["test_package"], filter_fields=["resources"]
     )["resources"]
 
     assert any([r["name"] == f.name for r in resources])
     assert resource_integrity_remote_intact(
         ckan_api_input=ckan_input_args,
-        secure_interface_input=secure_interface_input_args,
-        ckan_storage_path=ckan_envvars["storage_path"],
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )
 
 
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.impure
 def test_upload_func_chosen_api_file(
-    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_entities, ckan_setup_data
+    cki,
+    tmp_path,
+    dynamic_ckan_instance,
+    dynamic_config,
+    ckan_entities,
+    dynamic_ckan_setup_data,
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -142,37 +156,43 @@ def test_upload_func_chosen_api_file(
         is_link=False,
     )
     ckan_input_args = {
-        "token": ckan_instance.token,
-        "server": ckan_instance.server,
-        "verify_certificate": ckan_instance.verify,
+        "token": dynamic_ckan_instance.token,
+        "server": dynamic_ckan_instance.server,
+        "verify_certificate": dynamic_ckan_instance.verify,
     }
     upload(
         ckan_api_input=ckan_input_args,
-        secure_interface_input=secure_interface_input_args,
-        ckan_storage_path=ckan_envvars["storage_path"],
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         filepath=f,
         metadata=meta,
         progressbar=True,
     )
 
-    resources = ckan_instance.get_package(
+    resources = dynamic_ckan_instance.get_package(
         package_name=ckan_entities["test_package"], filter_fields=["resources"]
     )["resources"]
 
     assert any([r["name"] == f.name for r in resources])
     assert resource_integrity_remote_intact(
         ckan_api_input=ckan_input_args,
-        secure_interface_input=secure_interface_input_args,
-        ckan_storage_path=ckan_envvars["storage_path"],
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )
 
 
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.impure
 def test_upload_func_chosen_scp(
-    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_entities, ckan_setup_data
+    cki,
+    tmp_path,
+    dynamic_ckan_instance,
+    dynamic_config,
+    ckan_entities,
+    dynamic_ckan_setup_data,
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -190,37 +210,43 @@ def test_upload_func_chosen_scp(
         is_link=False,
     )
     ckan_input_args = {
-        "token": ckan_instance.token,
-        "server": ckan_instance.server,
-        "verify_certificate": ckan_instance.verify,
+        "token": dynamic_ckan_instance.token,
+        "server": dynamic_ckan_instance.server,
+        "verify_certificate": dynamic_ckan_instance.verify,
     }
     upload(
         ckan_api_input=ckan_input_args,
-        secure_interface_input=secure_interface_input_args,
-        ckan_storage_path=ckan_envvars["storage_path"],
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         filepath=f,
         metadata=meta,
         progressbar=True,
     )
 
-    resources = ckan_instance.get_package(
+    resources = dynamic_ckan_instance.get_package(
         package_name=ckan_entities["test_package"], filter_fields=["resources"]
     )["resources"]
 
     assert any([r["name"] == f.name for r in resources])
     assert resource_integrity_remote_intact(
         ckan_api_input=ckan_input_args,
-        secure_interface_input=secure_interface_input_args,
-        ckan_storage_path=ckan_envvars["storage_path"],
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )
 
 
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.impure
 def test_hash_remote(
-    tmp_path, ckan_instance, secure_interface_input_args, ckan_envvars, ckan_entities, ckan_setup_data
+    cki,
+    tmp_path,
+    dynamic_ckan_instance,
+    dynamic_config,
+    ckan_entities,
+    dynamic_ckan_setup_data,
 ):
     (f := tmp_path / "file.txt").write_text("test")
     meta = {
@@ -231,20 +257,20 @@ def test_hash_remote(
         "format": f.suffix[1:],
         "hashtype": HASH_TYPE,
     }
-    _ = ckan_instance.create_resource_of_type_file(**meta)
+    _ = dynamic_ckan_instance.create_resource_of_type_file(**meta)
     ckan_input_args = {
-        "token": ckan_instance.token,
-        "server": ckan_instance.server,
-        "verify_certificate": ckan_instance.verify,
+        "token": dynamic_ckan_instance.token,
+        "server": dynamic_ckan_instance.server,
+        "verify_certificate": dynamic_ckan_instance.verify,
     }
     hashed_remotely = hash_remote(
         ckan_api_input=ckan_input_args,
-        secure_interface_input=secure_interface_input_args,
-        ckan_storage_path=ckan_envvars["storage_path"],
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )
-    hashed_locally = ckan_instance.get_resource_meta(
+    hashed_locally = dynamic_ckan_instance.get_resource_meta(
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
     )["hash"]
@@ -252,14 +278,15 @@ def test_hash_remote(
     assert hashed_locally == hashed_remotely
 
 
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.impure
 def test_handle_upload(
+    cki,
     tmp_path,
-    ckan_instance,
-    secure_interface_input_args,
+    dynamic_ckan_instance,
     ckan_entities,
-    ckan_setup_data,
-    config_section_instance,
+    dynamic_ckan_setup_data,
+    dynamic_config_section_instance,
 ):
     hash_func = get_hash_func(HASH_TYPE)
 
@@ -275,14 +302,14 @@ def test_handle_upload(
     )
     cache_1 = handle_file(file=file_1, hash_func=hash_func)
     cache_2 = handle_file(file=file_2, hash_func=hash_func)
-    cache_3 = handle_file(file=file_3, hash_func=hash_func)
+    _ = handle_file(file=file_3, hash_func=hash_func)
 
-    ckan_instance.create_resource_of_type_file(
+    dynamic_ckan_instance.create_resource_of_type_file(
         package_id=ckan_entities["test_package"], **read_cache(cache_1)
     )
     meta_2 = read_cache(cache_2)
     meta_2["hash"] = UPLOAD_IN_PROGRESS_STRING
-    ckan_instance.create_resource_of_type_file(
+    dynamic_ckan_instance.create_resource_of_type_file(
         package_id=ckan_entities["test_package"], **meta_2
     )
 
@@ -292,7 +319,7 @@ def test_handle_upload(
         verify=False,
         parallel=False,
         progressbar=True,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
 
     for info in uploaded:
@@ -312,20 +339,20 @@ def test_handle_upload(
             },
         ]
 
-    for resource in ckan_instance.get_package(ckan_entities["test_package"])[
+    for resource in dynamic_ckan_instance.get_package(ckan_entities["test_package"])[
         "resources"
     ]:
         assert resource["hash"] != UPLOAD_IN_PROGRESS_STRING
 
 
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.impure
 def test_handle_upload_all_too_many_cache_files(
+    cki,
     tmp_path,
-    ckan_instance,
-    secure_interface_input_args,
     ckan_entities,
-    ckan_setup_data,
-    config_section_instance,
+    dynamic_ckan_setup_data,
+    dynamic_config_section_instance,
 ):
     hash_func = get_hash_func(HASH_TYPE)
 
@@ -339,9 +366,9 @@ def test_handle_upload_all_too_many_cache_files(
     (file_3 := (tmp_path / ckan_entities["test_package"] / "file_3.txt")).write_text(
         "ghi"
     )
-    cache_1 = handle_file(file=file_1, hash_func=hash_func)
-    cache_2 = handle_file(file=file_2, hash_func=hash_func)
-    cache_3 = handle_file(file=file_3, hash_func=hash_func)
+    _ = handle_file(file=file_1, hash_func=hash_func)
+    _ = handle_file(file=file_2, hash_func=hash_func)
+    _ = handle_file(file=file_3, hash_func=hash_func)
 
     file_3.unlink()
 
@@ -351,23 +378,23 @@ def test_handle_upload_all_too_many_cache_files(
         verify=False,
         parallel=False,
         progressbar=True,
-        **config_section_instance,
+        **dynamic_config_section_instance,
     )
     assert len(uploaded) == 2
 
 
+@pytest.mark.parametrize('cki', ckan_instances)
 @pytest.mark.impure
 @pytest.mark.parametrize(
     "upload_func", [upload_resource_file_via_api, upload_resource_file_via_scp]
 )
 def test_wrapped_upload_for_both_upload_types(
+    cki,
     tmp_path,
-    ckan_instance,
-    secure_interface_input_args,
-    ckan_envvars,
+    dynamic_ckan_instance,
+    dynamic_config,
     ckan_entities,
-    ckan_setup_data,
-    config_section_instance,
+    dynamic_ckan_setup_data,
     upload_func,
 ):
     (f := tmp_path / "file.txt").write_text("test")
@@ -381,19 +408,19 @@ def test_wrapped_upload_for_both_upload_types(
     wrapped_upload(
         meta=meta,
         package_name=ckan_entities["test_package"],
-        ckan_instance=ckan_instance,
-        cfg_other={"ckan_storage_path": ckan_envvars["storage_path"]},
+        ckan_instance=dynamic_ckan_instance,
+        cfg_other={"ckan_storage_path": dynamic_config["other"][0]["ckan_storage_path"]},
         cfg_ckan_api={
-            "token": ckan_instance.token,
-            "server": ckan_instance.server,
-            "verify_certificate": ckan_instance.verify,
+            "token": dynamic_ckan_instance.token,
+            "server": dynamic_ckan_instance.server,
+            "verify_certificate": dynamic_ckan_instance.verify,
         },
-        cfg_secure_interface=secure_interface_input_args,
+        cfg_secure_interface=dynamic_config["ckan_server"][0],
         upload_func=upload_func,
         progressbar=True,
     )
 
-    resources = ckan_instance.get_package(package_name=ckan_entities["test_package"])[
+    resources = dynamic_ckan_instance.get_package(package_name=ckan_entities["test_package"])[
         "resources"
     ]
 

@@ -297,7 +297,7 @@ def _prepare_package(
                     exclude_pattern=exclude_pattern,
                 )
             ],
-            workers=None  # max amount of workers will be used
+            workers=None,  # max amount of workers will be used
         )
 
 
@@ -823,9 +823,7 @@ def _publish_package(
                         ].resolve_resource_id_or_name_to_id(
                             package_name=metadata_filtered["name"],
                             resource_id_or_name=resource["name"],
-                        )[
-                            "id"
-                        ]
+                        )["id"]
                     )
 
                     create_resource_raw(

@@ -1,4 +1,5 @@
 import pytest
+from conftest import flatten_nested_structure
 
 from ckool import TEMPORARY_DIRECTORY_NAME
 from ckool.other.file_management import (
@@ -10,7 +11,6 @@ from ckool.other.file_management import (
     tar_files,
     zip_files,
 )
-from conftest import flatten_nested_structure
 
 
 def test_match_via_include_exclude_patters():

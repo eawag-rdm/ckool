@@ -121,5 +121,5 @@ line-length = 88
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 # Always generate Python 3.7-compatible code.
-target-version = "py37"
+target-version = "py310"
 

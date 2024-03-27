@@ -90,7 +90,7 @@ def test_get_doi(tmp_path, local_structure_doi):
 def test_get_doi_not_found(tmp_path, local_structure_doi):
     lds = LocalDoiStore(tmp_path)
     with pytest.raises(FileNotFoundError):
-        doi = lds.get_doi(
+        _ = lds.get_doi(
             package_name="package-url-232",
         )
 

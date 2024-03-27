@@ -5,15 +5,15 @@ from ckool.datacite.datacite import DataCiteException
 
 @pytest.mark.impure
 def test_doi_list_via_client(datacite_instance):
-    print(datacite_instance.doi_list_via_client())
-    doi = "10.5524/this-is-a-test-no-doi"
+    datacite_instance.doi_list_via_client()
+    _ = "10.5524/this-is-a-test-no-doi"
     # d = datacite_instance.doi_delete(doi)
     # assert datacite_instance.doi_list_via_client() == []
 
 
 @pytest.mark.impure
 def test_doi_list_via_prefix(datacite_instance):
-    print(datacite_instance.doi_list_via_prefix())
+    datacite_instance.doi_list_via_prefix()
     # assert datacite_instance.doi_list_via_prefix() == []
 
 

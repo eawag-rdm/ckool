@@ -9,7 +9,7 @@
   "license_id": null,
   "license_title": null,
   "maintainer": "ckan_admin",
-  "maintainer_email": null,
+  "maintainer_email": "ckan_admin@domain.com",
   "metadata_created": "2024-01-25T14:18:02.218655",
   "metadata_modified": "2024-01-25T14:18:02.444094",
   "name": "test_package",

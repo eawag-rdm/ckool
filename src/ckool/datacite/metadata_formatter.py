@@ -335,7 +335,7 @@ class MetaDataFormatter:
                 d[1] is not None
             ):  # TODO This allows empty resource descriptions, check with Stuart
                 lines = re.split(r"\s*\r\n", d[1])
-                lines = [l.strip() for l in lines]
+                lines = [line.strip() for line in lines]
                 if lines[0] == "relatedIdentifier":
                     rel_types = re.sub(r"relationTypes:\s*", "", lines[2])
                     rel_types = rel_types.split(",")
@@ -464,7 +464,6 @@ class MetaDataFormatter:
                 geo_locations.append(mk_point_location(lon, lat))
 
             if spatial["type"] == "MultiPoint":
-                pointlist = []
                 for point in spatial["coordinates"]:
                     lon = point[0]
                     lat = point[1]

@@ -7,8 +7,8 @@ md5 = get_hash_func("md5")
 
 
 @pytest.mark.impure
-def test_secure_interface_init(secure_interface_input_args):
-    SecureInterface(**secure_interface_input_args)
+def test_secure_interface_init(config_internal):
+    SecureInterface(**config_internal["ckan_server"][0])
 
     with pytest.raises(FileNotFoundError):
         SecureInterface(
@@ -42,17 +42,17 @@ def test_secure_interface_init(secure_interface_input_args):
 
 
 @pytest.mark.impure
-def test_ssh(secure_interface_input_args):
-    si = SecureInterface(**secure_interface_input_args)
+def test_ssh(config_internal):
+    si = SecureInterface(**config_internal["ckan_server"][0])
     out, err = si.ssh("ls /home")
     users = [i for i in out.split("\n") if i]
     assert si.username in users
 
 
 @pytest.mark.impure
-def test_scp(tmp_path, secure_interface_input_args):
+def test_scp(tmp_path, config_internal):
     file = tmp_path / "abc"
-    si = SecureInterface(**secure_interface_input_args)
+    si = SecureInterface(**config_internal["ckan_server"][0])
 
     file.touch()
     file.write_text("test")
@@ -63,8 +63,8 @@ def test_scp(tmp_path, secure_interface_input_args):
 
 @pytest.mark.slow
 @pytest.mark.impure
-def test_scp_large_with_progress(tmp_path, secure_interface_input_args, large_file):
-    si = SecureInterface(**secure_interface_input_args)
+def test_scp_large_with_progress(tmp_path, config_internal, large_file):
+    si = SecureInterface(**config_internal["ckan_server"][0])
 
     si.scp(large_file, "/tmp/test_file")
     print(si.ssh("md5sum /tmp/test_file"))
@@ -73,8 +73,8 @@ def test_scp_large_with_progress(tmp_path, secure_interface_input_args, large_fi
 
 @pytest.mark.slow
 @pytest.mark.impure
-def test_scp_large_without_progress(tmp_path, secure_interface_input_args, large_file):
-    si = SecureInterface(**secure_interface_input_args)
+def test_scp_large_without_progress(tmp_path, config_internal, large_file):
+    si = SecureInterface(**config_internal["ckan_server"][0])
 
     si.scp(large_file, "/tmp/test_file", progressbar=False)
     print(si.ssh("md5sum /tmp/test_file"))

@@ -18,9 +18,12 @@ clean:
 	make -C docs clean
 
 style-check:
-	isort .
-	black .
+	ruff check --select I --fix
+	ruff format
 	ruff check
+
+a-check:
+	ruff check --watch
 
 cov:
 	pytest --cov-report term:skip-covered --cov-report html --cov=src tests

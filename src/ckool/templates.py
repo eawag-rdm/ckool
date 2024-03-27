@@ -374,7 +374,7 @@ def wrapped_upload(
             )
             status = "replaced"
     LOGGER.debug("...starting upload.")
-    upload_func(
+    abc = upload_func(
         ckan_api_input=cfg_ckan_api,
         secure_interface_input=cfg_secure_interface,
         ckan_storage_path=cfg_other["ckan_storage_path"],
@@ -481,7 +481,6 @@ def handle_upload_single(
 
     meta = read_cache(pathlib.Path(metadata_file))
     ckan_instance = CKAN(**cfg_ckan_api)
-
     upload_func = get_upload_func(
         file_sizes=[int(meta["size"])],
         space_available_on_server_root_disk=cfg_other[

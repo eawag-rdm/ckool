@@ -17,6 +17,7 @@ package_data = {
     "owner_org": "test_organization",
     "reviewed_by": "",
     "maintainer": "ckan_admin",
+    "maintainer_email": "ckan_admin@domain.com",  # required by eric open
     "usage_contact": "ckan_admin",
     "notes": "some_note",
     "review_level": "none",

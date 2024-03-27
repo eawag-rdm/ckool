@@ -26,10 +26,9 @@ class Dora:
         response.raise_for_status()
         base_url = "https://www.dora.lib4ri.ch/eawag/islandora/object/"
 
-        # Extract links from response
         bs = BeautifulSoup(response.text, features="html")
 
-        links_of_pdfs = [  # for now not in use
+        links_of_pdfs = [  # returns links of pdfs for now not in use
             urljoin(base_url, html.find("a").get("href"))
             for html in bs.find_all("div", {"class": "lib4ridora-pdf-link"})
         ]

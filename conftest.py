@@ -3,15 +3,32 @@ import multiprocessing
 import os
 import pathlib
 import queue
+import re
+from contextlib import contextmanager
 
 import ckanapi
 import pytest
+from tests.ckool.data.inputs.ckan_entity_data import (
+    organization_data,
+    package_data,
+    project_data,
+    resource_data,
+)
 
 from ckool.ckan.ckan import CKAN
 from ckool.ckan.upload import upload_resource
 from ckool.datacite.datacite import DataCiteAPI
-from tests.ckool.data.inputs.ckan_entity_data import *
 
+
+ckan_instances = [
+    pytest.param(
+        'ckan_instance',
+    ),
+    pytest.param(
+        'ckan_open_instance',
+        marks=pytest.mark.open
+    )
+]
 
 def flatten_nested_structure(structure: dict | list):
     result = []
@@ -35,6 +52,9 @@ def pytest_addoption(parser):
         "--run-slow", action="store_true", default=False, help="run slow tests"
     )
     parser.addoption(
+        "--run-open", action="store_true", default=False, help="run tests that require ERIC open"
+    )
+    parser.addoption(
         "--run-impure", action="store_true", default=False, help="run impure tests"
     )
     parser.addoption(
@@ -48,6 +68,9 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: marks test as slow")
     config.addinivalue_line(
+        "markers", "open: marks test as requiring ERIC open test instance"
+    )
+    config.addinivalue_line(
         "markers", "impure: marks test as impure (depending on other systems)"
     )
     config.addinivalue_line(
@@ -60,11 +83,13 @@ def pytest_collection_modifyitems(config, items):
     skip_slow = pytest.mark.skip(reason="need --run-slow option to run")
     skip_impure = pytest.mark.skip(reason="need --run-impure option to run")
     skip_dora = pytest.mark.skip(reason="need --run-dora option to run")
+    skip_open = pytest.mark.skip(reason="need --run-open option to run")
 
     if (
         config.getoption("--run-slow")
         and config.getoption("--run-impure")
         and config.getoption("--run-dora")
+        and config.getoption("--run-open")
     ):
         return
 
@@ -75,6 +100,8 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_impure)
         elif "dora" in item.keywords and not config.getoption("--run-dora"):
             item.add_marker(skip_dora)
+        elif "open" in item.keywords and not config.getoption("--run-open"):
+            item.add_marker(skip_open)
 
 
 @pytest.fixture
@@ -114,158 +141,110 @@ def load_env_file():
 
 
 @pytest.fixture
-def secure_interface_input_args(load_env_file):
-    return {
-        "host": os.environ.get("INTERNAL_SECURE_INTERFACE_HOST"),
-        "port": os.environ.get("INTERNAL_SECURE_INTERFACE_PORT"),
-        "username": os.environ.get("INTERNAL_SECURE_INTERFACE_USERNAME"),
-        "ssh_key": os.environ.get("INTERNAL_SECURE_INTERFACE_SSH_KEY"),
-    }
-
-
-@pytest.fixture
 def ckan_entities(load_env_file):
     return {
-        "test_package": os.environ.get("CKAN_PACKAGE_NAME"),
-        "test_organization": os.environ.get("CKAN_ORGANIZATION_NAME"),
-        "test_project": os.environ.get("CKAN_GROUP_NAME"),
-        "test_resource": os.environ.get("CKAN_RESOURCE_NAME"),
-    }
-
-
-@pytest.fixture()
-def ckan_envvars(load_env_file):
-    return {
-        "host": os.environ.get("INTERNAL_CKAN_URL"),
-        "token": os.environ.get("INTERNAL_CKAN_TOKEN"),
-        "storage_path": os.environ.get("INTERNAL_CKAN_STORAGE_PATH"),
-
+        "test_package": os.environ.get("CKAN_PACKAGE_NAME") or "test_package",
+        "test_organization": os.environ.get("CKAN_ORGANIZATION_NAME")
+        or "test_organization",
+        "test_project": os.environ.get("CKAN_GROUP_NAME") or "test_group",
+        "test_resource": os.environ.get("CKAN_RESOURCE_NAME") or "test_resource",
     }
 
 
 @pytest.fixture
-def secure_interface_open_input_args(load_env_file):
-    return {
-        "host": os.environ.get("OPEN_SECURE_INTERFACE_HOST"),
-        "port": os.environ.get("OPEN_SECURE_INTERFACE_PORT"),
-        "username": os.environ.get("OPEN_SECURE_INTERFACE_USERNAME"),
-        "ssh_key": os.environ.get("OPEN_SECURE_INTERFACE_SSH_KEY"),
-    }
-
-
-@pytest.fixture()
-def ckan_open_envvars(load_env_file):
-    return {
-        "host": os.environ.get("OPEN_CKAN_URL"),
-        "token": os.environ.get("OPEN_CKAN_TOKEN"),
-        "storage_path": os.environ.get("OPEN_CKAN_STORAGE_PATH"),
-    }
-
-
-@pytest.fixture
-def config_section_instance(
-    tmp_path, ckan_envvars, datacite_instance, secure_interface_input_args
-):
-    config = {
-        "Test": {
+def config(tmp_path, load_env_file):
+    def _config(internal: bool):
+        string = "INTERNAL"
+        if not internal:
+            string = "OPEN"
+        return {
             "other": [
                 {
-                    "instance": "test_instance",
                     "space_available_on_server_root_disk": 10 * 1024**3,
-                    "ckan_storage_path": ckan_envvars["storage_path"],
+                    "ckan_storage_path": os.environ.get(f"{string}_CKAN_STORAGE_PATH"),
                 }
             ],
             "ckan_api": [
                 {
-                    "instance": "test_instance",
-                    "server": ckan_envvars["host"],
-                    "token": ckan_envvars["token"],
+                    "server": os.environ.get(f"{string}_CKAN_URL"),
+                    "token": os.environ.get(f"{string}_CKAN_TOKEN"),
                     "secret_token": "",
                 }
             ],
             "ckan_server": [
                 {
-                    "instance": "test_instance",
-                    "host": secure_interface_input_args["host"],
-                    "port": secure_interface_input_args["port"],
-                    "username": secure_interface_input_args["username"],
-                    "ssh_key": secure_interface_input_args["ssh_key"],
+                    "host": os.environ.get(f"{string}_SECURE_INTERFACE_HOST"),
+                    "port": os.environ.get(f"{string}_SECURE_INTERFACE_PORT"),
+                    "username": os.environ.get(f"{string}_SECURE_INTERFACE_USERNAME"),
+                    "ssh_key": os.environ.get(f"{string}_SECURE_INTERFACE_SSH_KEY"),
                     "secret_passphrase": "",
                     "secret_password": "",
                 }
             ],
             "datacite": {
-                "user": datacite_instance.auth.username,
-                "password": datacite_instance.auth.password,
-                "prefix": datacite_instance.prefix,
-                "host": datacite_instance.host,
-                "offset": datacite_instance.offset,
+                "user": os.environ["DATACITE_USER"],
+                "password": os.environ["DATACITE_PASSWORD"],
+                "prefix": os.environ["DATACITE_PREFIX"],
+                "host": os.environ["DATACITE_URL"],
+                "offset": os.environ["DATACITE_OFFSET"],
             },
             "local_doi_store_path": tmp_path,
         }
-    }
-    return {"config": config, "section": "Test", "ckan_instance_name": "test_instance"}
+
+    return _config
+
+
+def add_instance_names(cfg: dict, name: str):
+    for section in ["other", "ckan_api", "ckan_server"]:
+        for entry in range(len(cfg[section])):
+            cfg[section][entry]["instance"] = name
+    return cfg
 
 
 @pytest.fixture
-def config_section_instance_open(
-    tmp_path, ckan_open_envvars, datacite_instance, secure_interface_open_input_args
-):
-    config = {
-        "Test": {
-            "other": [
-                {
-                    "instance": "test_instance_open",
-                    "space_available_on_server_root_disk": 10 * 1024**3,
-                    "ckan_storage_path": ckan_open_envvars["storage_path"],
-                }
-            ],
-            "ckan_api": [
-                {
-                    "instance": "test_instance",
-                    "server": ckan_open_envvars["host"],
-                    "token": ckan_open_envvars["token"],
-                    "secret_token": "",
-                }
-            ],
-            "ckan_server": [
-                {
-                    "instance": "test_instance",
-                    "host": secure_interface_open_input_args["host"],
-                    "port": secure_interface_open_input_args["port"],
-                    "username": secure_interface_open_input_args["username"],
-                    "ssh_key": secure_interface_open_input_args["ssh_key"],
-                    "secret_passphrase": "",
-                    "secret_password": "",
-                }
-            ],
-            "datacite": {
-                "user": datacite_instance.auth.username,
-                "password": datacite_instance.auth.password,
-                "prefix": datacite_instance.prefix,
-                "host": datacite_instance.host,
-                "offset": datacite_instance.offset,
-            },
-            "local_doi_store_path": tmp_path,
-        }
-    }
-    return {"config": config, "section": "Test", "ckan_instance_name": "test_instance_open"}
+def config_internal(tmp_path, load_env_file, config):
+    return config(internal=True)
 
 
 @pytest.fixture
-def ckan_instance(ckan_envvars):
+def config_section_instance_internal(config_internal):
+    config_internal = add_instance_names(config_internal, "test_instance")
+    return {
+        "config": {"Test": config_internal},
+        "section": "Test",
+        "ckan_instance_name": "test_instance",
+    }
+
+
+@pytest.fixture
+def config_open(tmp_path, load_env_file, config):
+    return config(internal=False)
+
+
+@pytest.fixture
+def config_section_instance_open(config_open):
+    config_open = add_instance_names(config_open, "test_instance")
+    return {
+        "config": {"Test": config_open},
+        "section": "Test",
+        "ckan_instance_name": "test_instance_open",
+    }
+
+
+@pytest.fixture
+def ckan_instance(load_env_file):
     return CKAN(
-        server=ckan_envvars["host"],
-        token=ckan_envvars["token"],
+        server=os.environ.get("INTERNAL_CKAN_URL"),
+        token=os.environ.get("INTERNAL_CKAN_TOKEN"),
         verify_certificate=False,
     )
 
 
 @pytest.fixture
-def ckan_open_instance(ckan_open_envvars):
+def ckan_open_instance(load_env_file):
     return CKAN(
-        server=ckan_open_envvars["host_open"],
-        token=ckan_open_envvars["token_open"],
+        server=os.environ.get("OPEN_CKAN_URL"),
+        token=os.environ.get("OPEN_CKAN_TOKEN"),
         verify_certificate=False,
     )
 
@@ -280,7 +259,6 @@ def patch_user(ckan_instance):
 
 def setup(ckan_instance, ckan_entities):
     patch_user(ckan_instance)
-
     organization_data.update({"name": ckan_entities["test_organization"]})
     package_data.update({"name": ckan_entities["test_package"]})
     resource_data.update(
@@ -318,9 +296,59 @@ def teardown(ckan_instance, ckan_entities):
     ckan_instance.purge_organization(ckan_entities["test_organization"])
 
 
+@contextmanager
+def managed_ckan_setup(ckan_instance: CKAN, ckan_entities):
+    try:
+        setup(ckan_instance, ckan_entities)
+        yield
+    finally:
+        teardown(ckan_instance, ckan_entities)
+
+
+@pytest.fixture
+def ckan_setup_data(ckan_instance, ckan_entities):
+    with managed_ckan_setup(ckan_instance, ckan_entities):
+        yield
+
+
+def detect_ckan_instance(request):
+    test_name = request.node.name
+    fixture_name = re.search(r"\[(.*?)\]", test_name).group(1)
+    return [f for f in fixture_name.split("-") if "ckan" in f and "instance" in f][0]
+
+
+@pytest.fixture(scope="function")
+def dynamic_ckan_instance(request):
+    fixture_name = detect_ckan_instance(request)
+    instance = request.getfixturevalue(fixture_name)
+    yield instance
+
+
+@pytest.fixture
+def dynamic_ckan_setup_data(request, dynamic_ckan_instance, ckan_entities):
+    with managed_ckan_setup(dynamic_ckan_instance, ckan_entities):
+        yield
+
+
+@pytest.fixture
+def dynamic_config(request, config):
+    fixture_name = detect_ckan_instance(request)
+    return config(internal="open" not in fixture_name.lower())
+
+
+@pytest.fixture
+def dynamic_config_section_instance(request, config):
+    fixture_name = detect_ckan_instance(request)
+    return {
+        "config": {"Test": add_instance_names(config(internal="open" not in fixture_name.lower()), "test_instance")},
+        "section": "Test",
+        "ckan_instance_name": "test_instance",
+    }
+
+
 @pytest.fixture()
-def add_file_resources(tmp_path, ckan_instance, ckan_envvars, ckan_entities):
-    def _add_file_resources(package_sizes: list):
+def add_file_resources(tmp_path, ckan_entities):
+    def _add_file_resources(ckan_instance: CKAN, package_sizes: list):
         files = []
         for i in range(len(package_sizes)):
             with open(
@@ -332,8 +360,8 @@ def add_file_resources(tmp_path, ckan_instance, ckan_envvars, ckan_entities):
                 upload_resource(
                     file_path=file,
                     package_id=ckan_entities["test_package"],
-                    ckan_url=ckan_envvars["host"],
-                    api_key=ckan_envvars["token"],
+                    ckan_url=ckan_instance.server,
+                    api_key=ckan_instance.token,
                     size=file.stat().st_size,
                     hash="absd",
                     resource_type="Dataset",
@@ -346,13 +374,6 @@ def add_file_resources(tmp_path, ckan_instance, ckan_envvars, ckan_entities):
             f.unlink()
 
     return _add_file_resources
-
-
-@pytest.fixture
-def ckan_setup_data(ckan_instance, ckan_entities):
-    setup(ckan_instance, ckan_entities)
-    yield
-    teardown(ckan_instance, ckan_entities)
 
 
 @pytest.fixture
