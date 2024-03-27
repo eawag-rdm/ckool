@@ -31,7 +31,6 @@ def _hash(
     https://docs.python.org/3/library/hashlib.html#hashlib.file_digest
     """
     hf = hash_func()
-    iterations = filepath.stat().st_size / block_size
 
     position = None
     global position_queue
@@ -39,22 +38,19 @@ def _hash(
         position = position_queue.get()
 
     bar = tqdm(
-        total=int(iterations) + 1,
+        total=filepath.stat().st_size,
         desc=f"Hashing {filepath.name}",
         disable=not progressbar,
         position=position,
+        unit="B",
+        unit_scale=True,
     )
 
     with filepath.open("rb") as f:
-        chunk = f.read(block_size)
-        while chunk:
-            bar.update()
-            bar.refresh()
+        for chunk in iter(lambda: f.read(block_size), b''):
+            bar.update(len(chunk))  # Update progress bar based on the size of the chunk read
             hf.update(chunk)
-            chunk = f.read(block_size)
 
-    bar.update()
-    bar.refresh()
     bar.close()
 
     return hf.hexdigest()
