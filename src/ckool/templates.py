@@ -123,7 +123,7 @@ def hash_remote(
     ckan_storage_path: str,
     package_name: str,
     resource_id_or_name: str,
-    hash_type: HashTypes | str = HASH_TYPE.sha256,
+    hashtype: HashTypes | str = HASH_TYPE.sha256,
 ):
     hash_type_map = {  # mapping the input one might expect to linux command CKAN only supports md5 and sha256
         "md5": "md5sum",
@@ -138,7 +138,7 @@ def hash_remote(
         package_name, resource_id_or_name, ckan_storage_path
     )
     out, err = si.ssh(
-        f"{hash_type_map[hash_type if isinstance(hash_type, str) else hash_type.value]} {filepath}"
+        f"{hash_type_map[hashtype if isinstance(hashtype, str) else hashtype.value]} {filepath}"
     )
 
     if err:
@@ -154,12 +154,18 @@ def hash_all_resources(
     ckan_api_input: dict,
     secure_interface_input: dict,
     ckan_storage_path: str,
-    hash_type: HashTypes | str = HASH_TYPE.sha256,
+    hashtype: HashTypes | str = HASH_TYPE.sha256,
     only_if_hash_missing: bool = True,
 ):
     ckan = CKAN(**ckan_api_input)
     resources = ckan.get_package(package_name)["resources"]
     for resource in resources:
+        if resource_is_link(resource):
+            LOGGER.info(
+                f"Skipping resource '{resource['name']}', as it's a link..."
+            )
+            continue
+
         if only_if_hash_missing:
             if resource["hash"] and resource.get("hashtype", False):
                 continue
@@ -174,12 +180,12 @@ def hash_all_resources(
                 ckan_storage_path,
                 package_name,
                 resource["id"],
-                hash_type,
+                hashtype,
             )
 
             ckan.patch_resource_metadata(
                 resource_id=resource["id"],
-                resource_data_to_update={"hash": hash_, "hashtype": hash_type.value},
+                resource_data_to_update={"hash": hash_, "hashtype": hashtype.value},
             )
         elif not only_if_hash_missing:
             LOGGER.info(f"... hashing '{resource['name']}'.")
@@ -189,12 +195,12 @@ def hash_all_resources(
                 ckan_storage_path,
                 package_name,
                 resource["id"],
-                hash_type,
+                hashtype,
             )
 
             ckan.patch_resource_metadata(
                 resource_id=resource["id"],
-                resource_data_to_update={"hash": hash_, "hashtype": hash_type.value},
+                resource_data_to_update={"hash": hash_, "hashtype": hashtype.value},
             )
         else:
             raise ValueError("Ooops this is unexpected, ")
@@ -222,7 +228,7 @@ def resource_integrity_remote_intact(
         ckan_storage_path,
         package_name,
         resource_id_or_name,
-        hash_type=meta["hashtype"],
+        hashtype=meta["hashtype"],
     )
     if not hash_local == hash_remote_:
         raise DataIntegrityError(
@@ -243,12 +249,16 @@ def package_integrity_remote_intact(
     LOGGER.info(f"... checking resource integrity for package '{package_name}'.")
     ckan = CKAN(**ckan_api_input)
     for resource in ckan.get_package(package_name)["resources"]:
+
+        if resource_is_link(resource):
+            continue
+
         intact = resource_integrity_remote_intact(
             ckan_api_input=ckan_api_input,
             secure_interface_input=secure_interface_input,
             ckan_storage_path=ckan_storage_path,
             package_name=package_name,
-            resource_id_or_name=resource["id"],
+            resource_id_or_name=resource["name"],
         )
         if not intact:
             raise ValueError(
@@ -637,6 +647,7 @@ def handle_missing_entities(
 
 def handle_resource_download_with_integrity_check(
     cfg_ckan_source: dict,
+    package_name: str,
     resource: dict,
     check_data_integrity: bool,
     cwd: pathlib.Path,
@@ -644,17 +655,17 @@ def handle_resource_download_with_integrity_check(
 ):
     ckan_source = CKAN(**cfg_ckan_source)
 
-    url = resource["url"]
+    name = resource["name"]
     id_ = resource["id"]
-    temporary_resource_name = f"{id_}-{pathlib.Path(url).name}"
+    temporary_resource_name = f"{id_}-{name}"
     temporary_resource_path = cwd / temporary_resource_name
     if not temporary_resource_path.exists() or re_download:
-        ckan_source.download_resource(url=url, destination=temporary_resource_path)
-    if check_data_integrity:
+        ckan_source.download_resource(package_name=package_name, resource_name=name, destination=temporary_resource_path)
+    if check_data_integrity and resource["url_type"] == "upload":  # skipping link resources
         LOGGER.info(f"... running integrity check for '{resource['name']}'.")
         if not resource["hash"]:
             raise ValueError(
-                f"No resource hash for '{resource['name']}' on '{cfg_ckan_source['instance']}'."
+                f"No resource hash for '{resource['name']}'."
             )
 
         hash_func = get_hash_func(resource["hashtype"])
@@ -677,7 +688,7 @@ def create_resource_raw_wrapped(
     package_name: str,
 ):
     upload_func = get_upload_func(
-        file_sizes=[int(resource["size"])],
+        file_sizes=[int("0" if resource["size"] is None else resource["size"])],  # if link size will be set to "0"
         space_available_on_server_root_disk=cfg_other_target[
             "space_available_on_server_root_disk"
         ],

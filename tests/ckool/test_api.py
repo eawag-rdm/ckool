@@ -1,25 +1,27 @@
 import json
 import time
+from unittest.mock import Mock
 
 import pytest
+from conftest import ckan_instance_names_of_fixtures
 
 from ckool import TEMPORARY_DIRECTORY_NAME, UPLOAD_IN_PROGRESS_STRING
 from ckool.api import (
     _download_resource,
     _prepare_package,
+    _publish_package,
     _upload_package,
     _upload_resource,
 )
 from ckool.other.caching import read_cache
 from ckool.other.types import CompressionTypes, HashTypes
-from conftest import ckan_instances
 
 SWITCH = {"parallel": True, "sequential": False, "ignore": False, "overwrite": True}
 
 
 @pytest.mark.impure
 @pytest.mark.parametrize("run_type", ["parallel", "sequential"])
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 def test_upload_package_nothing_to_upload_sequential(
     cki,
     tmp_path,
@@ -49,7 +51,7 @@ def test_upload_package_nothing_to_upload_sequential(
 
 
 @pytest.mark.parametrize("run_type", ["parallel", "sequential"])
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.slow
 @pytest.mark.impure
 def test_upload_package(
@@ -91,7 +93,7 @@ def test_upload_package(
 
 @pytest.mark.slow
 @pytest.mark.impure
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.parametrize("run_type", ["parallel", "sequential"])
 def test_upload_package_with_compression(
     cki,
@@ -167,7 +169,7 @@ def test_upload_package_with_compression(
 
 @pytest.mark.slow
 @pytest.mark.impure
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.parametrize(
     "ckan_root_disk_size, scp_upload, status",
     [(1, True, "replaced"), (20 * 1024**3, False, "normal")],
@@ -220,7 +222,9 @@ def test_upload_package_interrupted(
         **dynamic_config_section_instance,
     )
 
-    resources = dynamic_ckan_instance.get_package(ckan_entities["test_package"])["resources"]
+    resources = dynamic_ckan_instance.get_package(ckan_entities["test_package"])[
+        "resources"
+    ]
     if scp_upload:
         assert len(resources) == len_before + 1
         assert any([r["hash"] == UPLOAD_IN_PROGRESS_STRING for r in resources])
@@ -241,7 +245,9 @@ def test_upload_package_interrupted(
         **dynamic_config_section_instance,
     )
     assert uploaded[0]["status"] == status
-    resources = dynamic_ckan_instance.get_package(ckan_entities["test_package"])["resources"]
+    resources = dynamic_ckan_instance.get_package(ckan_entities["test_package"])[
+        "resources"
+    ]
     assert len(resources) == 2
     assert any([r["hash"] == saved_meta["hash"] for r in resources])
 
@@ -335,7 +341,7 @@ def test_prepare_package(tmp_path, run_type, hash_type, compression_type, prepar
 
 
 @pytest.mark.impure
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 def test_download_resource(
     cki,
     tmp_path,
@@ -368,7 +374,7 @@ def test_download_resource(
 
 
 @pytest.mark.impure
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 def test_upload_resource(
     cki,
     tmp_path,
@@ -398,3 +404,214 @@ def test_upload_resource(
             tmp_path / TEMPORARY_DIRECTORY_NAME / (small_file.name + ".json")
         )["hash"]
     )
+
+
+@pytest.mark.slow
+@pytest.mark.open
+@pytest.mark.impure
+@pytest.mark.parametrize(
+    "projects_to_publish", ("test_group", None)
+)  # This value can be specified in the .env file!
+@pytest.mark.parametrize("check_data_integrity", (True, False))
+@pytest.mark.parametrize(
+    "exclude_resources", ("file_0,file_1", None)
+)  # resource names a re specified in conftest.py
+@pytest.mark.parametrize("only_hash_source_if_missing", (True, False))
+@pytest.mark.parametrize("re_download_resources", (True, False))
+def test_publish_package_simple(
+    tmp_path,
+    doi_setup,
+    ckan_instance_name_internal,
+    ckan_instance_name_open,
+    full_config,
+    ckan_setup_data,
+    ckan_instance,
+    ckan_open_instance,
+    ckan_open_cleanup,
+    ckan_entities,
+    add_file_resources,
+    projects_to_publish,
+    check_data_integrity,
+    exclude_resources,
+    only_hash_source_if_missing,
+    re_download_resources,
+):
+
+    mock_prompt = Mock()  # mocking prompt function
+    mock_prompt.side_effect = [
+        "no",  # no to providing orcids
+        "no",  # no to providing affiliations
+        "no",  # no to providing related_identifiers
+        "no",  # no to publishing the doi
+    ] * 2  # running publishing twice
+
+    add_file_resources(
+        ckan_instance,
+        [
+            4 * 1024**2,  # file_0
+            5 * 1024**2,  # file_1
+            6 * 1024**2,  # file_2
+            7 * 1024**2,  # file_3
+        ],
+    )
+
+    for resource in ckan_instance.get_package(package_name=ckan_entities["test_package"])["resources"]:
+        _id = resource["id"]
+        ckan_instance.patch_resource_metadata(
+            resource_id=_id,
+            resource_data_to_update={"hash": "", "hashtype": "md5"}
+        )
+
+    ckan_instance.patch_package_metadata(
+        package_id=ckan_entities["test_package"],
+        data={"geographic_name": ["Switzerland"]}  # this field is required for the publication (required on ERIC Open)
+    )
+
+    ckan_instance.add_package_to_project(
+        package_name=ckan_entities["test_package"],
+        project_name=ckan_entities["test_project"],
+    )
+    _publish_package(
+        package_name=ckan_entities["test_package"],
+        projects_to_publish=projects_to_publish,
+        check_data_integrity=check_data_integrity,
+        create_missing_=True,
+        exclude_resources=exclude_resources,
+        only_hash_source_if_missing=only_hash_source_if_missing,
+        re_download_resources=re_download_resources,
+        no_resource_overwrite_prompt=True,
+        ckan_instance_source=ckan_instance_name_internal,
+        config=full_config,
+        ckan_instance_target=ckan_instance_name_open,
+        verify=False,
+        test=True,
+        prompt_function=mock_prompt,
+        working_directory=tmp_path.as_posix(),
+    )
+    number_of_resources = len(ckan_open_instance.get_package(package_name=ckan_entities["test_package"])["resources"])
+
+    if isinstance(exclude_resources, str):
+        assert number_of_resources == 3  # 2 files, 1 link
+    else:
+        assert number_of_resources == 5  # 4 files, 1 link
+
+    number_of_projects = len(ckan_open_instance.get_all_projects())
+    if isinstance(projects_to_publish, str):
+        assert number_of_projects == 1
+    else:
+        assert number_of_projects == 0
+
+    # Delete some stuff on eric_open
+    resource_id = ckan_open_instance.resolve_resource_id_or_name_to_id(
+        package_name=ckan_entities["test_package"], resource_id_or_name="file_2"
+    )["id"]
+    ckan_open_instance.delete_resource(resource_id=resource_id)
+
+    # Running a second time to simulate republishing
+    _publish_package(
+        package_name=ckan_entities["test_package"],
+        projects_to_publish=projects_to_publish,
+        check_data_integrity=check_data_integrity,
+        create_missing_=True,  # nothing missing at this point
+        exclude_resources=exclude_resources,
+        only_hash_source_if_missing=only_hash_source_if_missing,
+        re_download_resources=re_download_resources,
+        no_resource_overwrite_prompt=True,
+        ckan_instance_source=ckan_instance_name_internal,
+        config=full_config,
+        ckan_instance_target=ckan_instance_name_open,
+        verify=False,
+        test=True,
+        prompt_function=mock_prompt,
+        working_directory=tmp_path.as_posix(),
+    )
+
+    number_of_resources = len(ckan_open_instance.get_package(package_name=ckan_entities["test_package"])["resources"])
+    if isinstance(exclude_resources, str):
+        assert number_of_resources == 3  # 2 files, 1 link
+    else:
+        assert number_of_resources == 5  # 4 files, 1 link
+
+
+@pytest.mark.slow
+@pytest.mark.open
+@pytest.mark.impure
+@pytest.mark.parametrize(
+    "projects_to_publish", ("test_group", None)
+)  # This value can be specified in the .env file!
+@pytest.mark.parametrize("check_data_integrity", (True, False))
+@pytest.mark.parametrize(
+    "exclude_resources", ("file_0", None)
+)  # resource names a re specified in conftest.py
+@pytest.mark.parametrize("only_hash_source_if_missing", (True, False))
+@pytest.mark.parametrize("re_download_resources", (True, False))
+def test_publish_package_do_not_create_missing(
+    tmp_path,
+    doi_setup,
+    ckan_instance_name_internal,
+    ckan_instance_name_open,
+    full_config,
+    ckan_setup_data,
+    ckan_instance,
+    ckan_open_instance,
+    ckan_open_cleanup,
+    ckan_entities,
+    add_file_resources,
+    projects_to_publish,
+    check_data_integrity,
+    exclude_resources,
+    only_hash_source_if_missing,
+    re_download_resources,
+):
+    mock_prompt = Mock()
+    mock_prompt.side_effect = [
+        "no",  # no to providing orcids
+        "no",  # no to providing affiliations
+        "no",  # no to providing related_identifiers
+        "no",  # no to publishing the doi
+    ] * 2
+
+    add_file_resources(
+        ckan_instance,
+        [
+            4 * 1024 ** 2,  # file_0
+            5 * 1024 ** 2,  # file_1
+        ],
+    )
+    for resource in ckan_instance.get_package(package_name=ckan_entities["test_package"])["resources"]:
+        _id = resource["id"]
+        ckan_instance.patch_resource_metadata(
+            resource_id=_id,
+            resource_data_to_update={"hash": "", "hashtype": "md5"}
+        )
+
+    ckan_instance.patch_package_metadata(
+        package_id=ckan_entities["test_package"],
+        data={"geographic_name": ["Switzerland"]}  # this field is required for the publication (required on ERIC Open)
+    )
+
+    ckan_instance.add_package_to_project(
+        package_name=ckan_entities["test_package"],
+        project_name=ckan_entities["test_project"],
+    )
+    with pytest.raises(ValueError)as exc_info:
+        _publish_package(
+            package_name=ckan_entities["test_package"],
+            projects_to_publish=projects_to_publish,
+            check_data_integrity=check_data_integrity,
+            create_missing_=False,
+            exclude_resources=exclude_resources,
+            only_hash_source_if_missing=only_hash_source_if_missing,
+            re_download_resources=re_download_resources,
+            no_resource_overwrite_prompt=True,
+            ckan_instance_source=ckan_instance_name_internal,
+            config=full_config,
+            ckan_instance_target=ckan_instance_name_open,
+            verify=False,
+            test=True,
+            prompt_function=mock_prompt,
+            working_directory=tmp_path.as_posix(),
+        )
+        assert "Publication can not continue. These entities are missing:" in str(exc_info.value)
+
+

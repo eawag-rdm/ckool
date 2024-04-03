@@ -82,7 +82,7 @@ def enrich_resource_metadata(
     hash_string: str,
     file_size: int = None,
     resource_type: str = None,
-    hash_type: str = "sha256",
+    hashtype: str = "sha256",
 ):
     return {
         "package_id": pkg_name,
@@ -91,17 +91,17 @@ def enrich_resource_metadata(
         "resource_type": resource_type or "Dataset",
         "url": "dummy",
         "restricted_level": "public",
-        "hashtype": hash_type,
+        "hashtype": hashtype,
         "hash": hash_string,
         "size": file_size or filename.stat().st_size,
     }
 
 
-def collect_metadata(file: pathlib.Path, hash_: str, hash_type: HashTypes):
+def collect_metadata(file: pathlib.Path, hash_: str, hashtype: HashTypes):
     return {
         "file": file.as_posix(),
         "hash": hash_,
-        "hashtype": hash_type.value,
+        "hashtype": hashtype.value,
         "size": file.stat().st_size,
         "format": file.suffix[1:],  # erasing the point from suffix
     }

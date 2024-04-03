@@ -4,11 +4,11 @@ from copy import deepcopy
 
 import ckanapi
 import pytest
+from conftest import ckan_instance_names_of_fixtures
 
 from ckool import HASH_TYPE
-from ckool.ckan.ckan import filter_resources, CKAN
+from ckool.ckan.ckan import CKAN, filter_resources
 from ckool.other.hashing import get_hash_func
-from conftest import ckan_instances
 from tests.ckool.data.inputs.ckan_entity_data import package_data
 
 hasher = get_hash_func(HASH_TYPE)
@@ -40,28 +40,32 @@ def _delete_resource_ids_and_times(data: dict):
     return data
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_get_all_packages(cki, request):
     ckan_instance: CKAN = request.getfixturevalue(cki)
     assert ckan_instance.get_all_packages()["count"] == 0
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_get_all_packages2(cki, dynamic_ckan_instance, dynamic_ckan_setup_data):
     assert dynamic_ckan_instance.get_all_packages()["count"] == 1
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_get_all_packages_with_data(cki, dynamic_ckan_instance, dynamic_ckan_setup_data):
+def test_get_all_packages_with_data(
+    cki, dynamic_ckan_instance, dynamic_ckan_setup_data
+):
     assert dynamic_ckan_instance.get_all_packages()["count"] == 1
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_get_package(cki, dynamic_ckan_instance, dynamic_ckan_setup_data, ckan_entities, valid_outputs):
+def test_get_package(
+    cki, dynamic_ckan_instance, dynamic_ckan_setup_data, ckan_entities, valid_outputs
+):
     data = dynamic_ckan_instance.get_package(ckan_entities["test_package"])
     with (valid_outputs / "package_data_from_ckan.json").open() as f:
         right_data = json.load(f)
@@ -70,23 +74,27 @@ def test_get_package(cki, dynamic_ckan_instance, dynamic_ckan_setup_data, ckan_e
     )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_get_package_metadata_package_does_not_exist(cki, dynamic_ckan_instance, dynamic_ckan_setup_data):
+def test_get_package_metadata_package_does_not_exist(
+    cki, dynamic_ckan_instance, dynamic_ckan_setup_data
+):
     with pytest.raises(ckanapi.errors.NotFound):
         dynamic_ckan_instance.get_package("this-package-name-does-not-exist")
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_get_package_metadata_filtered_1(cki, dynamic_ckan_instance, dynamic_ckan_setup_data, ckan_entities):
+def test_get_package_metadata_filtered_1(
+    cki, dynamic_ckan_instance, dynamic_ckan_setup_data, ckan_entities
+):
     data = dynamic_ckan_instance.get_package(
         ckan_entities["test_package"], filter_fields=["maintainer", "author"]
     )
     assert len(data) == 2
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_reorder_package_resources(
     tmp_path, ckan_entities, cki, dynamic_ckan_instance, dynamic_ckan_setup_data
@@ -124,7 +132,7 @@ def test_reorder_package_resources(
     assert sorted(resource_names_initial) == resource_names_ordered
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_reorder_package_resources_with_readme(
     tmp_path, ckan_entities, cki, dynamic_ckan_instance, dynamic_ckan_setup_data
@@ -166,7 +174,7 @@ def test_reorder_package_resources_with_readme(
     ] == resource_names_ordered
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_reorder_package_resources_with_readme_raises(
     tmp_path, dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
@@ -194,7 +202,7 @@ def test_reorder_package_resources_with_readme_raises(
         dynamic_ckan_instance.reorder_package_resources(ckan_entities["test_package"])
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_get_package_metadata_filtered_2(
     tmp_path, dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
@@ -224,7 +232,7 @@ def test_get_package_metadata_filtered_2(
     )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_get_local_resource_path(
     tmp_path, dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
@@ -272,13 +280,15 @@ def test_get_local_resource_path(
     assert resource_path == "/var/lib/ckan/resources/" + relative_resource_path
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_resource_patch(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_resource_patch(
+    dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     new_name = "new_name"
-    resource_id = dynamic_ckan_instance.get_package(ckan_entities["test_package"])["resources"][
-        0
-    ]["id"]
+    resource_id = dynamic_ckan_instance.get_package(ckan_entities["test_package"])[
+        "resources"
+    ][0]["id"]
     dynamic_ckan_instance.patch_resource_metadata(
         resource_id=resource_id, resource_data_to_update={"name": new_name}
     )
@@ -288,9 +298,11 @@ def test_resource_patch(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_
     assert new_name == name_in_ckan
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_update_package_metadata(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_update_package_metadata(
+    dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     data = dynamic_ckan_instance.get_package(ckan_entities["test_package"])
 
     new_message = "this field was changed"
@@ -309,9 +321,11 @@ def test_update_package_metadata(dynamic_ckan_instance, ckan_entities, cki, dyna
     assert data["notes"] == original_message
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_patch_package_metadata(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_patch_package_metadata(
+    dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     data = dynamic_ckan_instance.get_package(ckan_entities["test_package"])
     original_message = data["notes"]
     new_message = "this field was changed"
@@ -327,9 +341,11 @@ def test_patch_package_metadata(dynamic_ckan_instance, ckan_entities, cki, dynam
     assert data["notes"] == original_message
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_resource_create_link(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_resource_create_link(
+    dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     dynamic_ckan_instance.create_resource_of_type_link(
         **{
             "package_id": ckan_entities["test_package"],
@@ -341,7 +357,7 @@ def test_resource_create_link(dynamic_ckan_instance, ckan_entities, cki, dynamic
     )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_resource_create_file_minimal(
     dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data, small_file
@@ -356,7 +372,7 @@ def test_resource_create_file_minimal(
     )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_resource_create_file_maximal(
     dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data, small_file
@@ -379,10 +395,15 @@ def test_resource_create_file_maximal(
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_download_package_with_resources_sequential(
-    tmp_path, dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data, add_file_resources
+    tmp_path,
+    dynamic_ckan_instance,
+    ckan_entities,
+    cki,
+    dynamic_ckan_setup_data,
+    add_file_resources,
 ):
     add_file_resources(
         dynamic_ckan_instance,
@@ -391,7 +412,7 @@ def test_download_package_with_resources_sequential(
             100 * 1024**2,
             100 * 1024**2,
             10 * 1024**2,
-        ]
+        ],
     )
 
     data = dynamic_ckan_instance.get_package(ckan_entities["test_package"])
@@ -414,9 +435,11 @@ def test_download_package_with_resources_sequential(
     assert len(list(tmp_path.iterdir())) == 5
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_filter_resource(tmp_path, dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_filter_resource(
+    tmp_path, dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     for i in range(3):
         (file := tmp_path / f"file_{i}.txt").write_text(f"{i}")
         dynamic_ckan_instance.create_resource_of_type_file(
@@ -447,7 +470,7 @@ def test_filter_resource(tmp_path, dynamic_ckan_instance, ckan_entities, cki, dy
         )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_filter_resource_requires_resource_ids(
     tmp_path, dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
@@ -482,45 +505,60 @@ def test_filter_resource_requires_resource_ids(
         filter_resources(data, resources_to_exclude=resource_names)
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_organization_existence(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_organization_existence(
+    dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     dynamic_ckan_instance.get_organization(ckan_entities["test_organization"])
     with pytest.raises(ckanapi.errors.NotFound):
         dynamic_ckan_instance.get_organization("does-not-exist")
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_get_group(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
     assert (
-        len(dynamic_ckan_instance.get_project(ckan_entities["test_project"])["packages"]) == 0
+        len(
+            dynamic_ckan_instance.get_project(ckan_entities["test_project"])["packages"]
+        )
+        == 0
     )
     with pytest.raises(ckanapi.errors.NotFound):
         dynamic_ckan_instance.get_project("absas")
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_add_package_to_project(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_add_package_to_project(
+    dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     dynamic_ckan_instance.add_package_to_project(
         ckan_entities["test_package"], ckan_entities["test_project"]
     )
     assert (
-        len(dynamic_ckan_instance.get_project(ckan_entities["test_project"])["packages"]) == 1
+        len(
+            dynamic_ckan_instance.get_project(ckan_entities["test_project"])["packages"]
+        )
+        == 1
     )
-    assert len(dynamic_ckan_instance.get_package(ckan_entities["test_package"])["groups"]) == 1
+    assert (
+        len(dynamic_ckan_instance.get_package(ckan_entities["test_package"])["groups"])
+        == 1
+    )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_get_user(dynamic_ckan_instance, cki, dynamic_ckan_setup_data):
     assert dynamic_ckan_instance.get_user("ckan_admin")
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_create_package_with_additional_field(dynamic_ckan_instance, cki, dynamic_ckan_setup_data):
+def test_create_package_with_additional_field(
+    dynamic_ckan_instance, cki, dynamic_ckan_setup_data
+):
     pkg_name = "another_new_package"
     pkg = deepcopy(package_data)
 
@@ -532,14 +570,17 @@ def test_create_package_with_additional_field(dynamic_ckan_instance, cki, dynami
     assert "geographic_name" in dynamic_ckan_instance.get_package(pkg_name).keys()
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_package_delete_purge(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_package_delete_purge(
+    dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     pkg = deepcopy(package_data)
 
     dynamic_ckan_instance.delete_package(ckan_entities["test_package"])
     assert (
-        dynamic_ckan_instance.get_package(ckan_entities["test_package"])["state"] == "deleted"
+        dynamic_ckan_instance.get_package(ckan_entities["test_package"])["state"]
+        == "deleted"
     )
 
     dynamic_ckan_instance.create_package(**pkg)
@@ -549,13 +590,16 @@ def test_package_delete_purge(dynamic_ckan_instance, ckan_entities, cki, dynamic
         dynamic_ckan_instance.get_package(ckan_entities["test_package"])
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
-def test_package_delete_delete_purge(dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data):
+def test_package_delete_delete_purge(
+    dynamic_ckan_instance, ckan_entities, cki, dynamic_ckan_setup_data
+):
     dynamic_ckan_instance.delete_package(ckan_entities["test_package"])
     dynamic_ckan_instance.delete_package(ckan_entities["test_package"])
     assert (
-        dynamic_ckan_instance.get_package(ckan_entities["test_package"])["state"] == "deleted"
+        dynamic_ckan_instance.get_package(ckan_entities["test_package"])["state"]
+        == "deleted"
     )
     dynamic_ckan_instance.purge_package(ckan_entities["test_package"])
     with pytest.raises(ckanapi.errors.NotFound):

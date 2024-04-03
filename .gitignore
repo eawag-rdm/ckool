@@ -18,3 +18,4 @@ __pycache__
 .env
 .ckool.toml
 run.sh
+.gitlab-ci-local

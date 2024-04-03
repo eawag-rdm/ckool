@@ -47,8 +47,10 @@ def _hash(
     )
 
     with filepath.open("rb") as f:
-        for chunk in iter(lambda: f.read(block_size), b''):
-            bar.update(len(chunk))  # Update progress bar based on the size of the chunk read
+        for chunk in iter(lambda: f.read(block_size), b""):
+            bar.update(
+                len(chunk)
+            )  # Update progress bar based on the size of the chunk read
             hf.update(chunk)
 
     bar.close()

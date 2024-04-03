@@ -137,6 +137,18 @@ class CKAN:
 
         return self.plain_action_call("package_search", **kwargs)
 
+    def get_all_projects(self, **kwargs):
+        """
+        https://docs.ckan.org/en/2.9/api/#ckan.logic.action.get.package_search
+        """
+        return self.plain_action_call("group_list", **kwargs)
+
+    def get_all_organizations(self, **kwargs):
+        """
+        https://docs.ckan.org/en/2.9/api/#ckan.logic.action.get.package_search
+        """
+        return self.plain_action_call("organization_list", **kwargs)
+
     def get_package(self, package_name: str, filter_fields: list = None):
         """
         filter_fields: list,
@@ -192,6 +204,9 @@ class CKAN:
 
     def create_project(self, **kwargs):
         return self.plain_action_call("group_create", **kwargs)
+
+    def create_user(self, **kwargs):
+        return self.plain_action_call("user_create", **kwargs)
 
     def create_organization(self, **kwargs):
         return self.plain_action_call("organization_create", **kwargs)

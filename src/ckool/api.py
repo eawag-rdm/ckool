@@ -555,7 +555,7 @@ def _patch_resource_hash(
         ckan_storage_path=cfg_other["ckan_storage_path"],
         package_name=package_name,
         resource_id_or_name=resource_name,
-        hash_type=hash_algorithm,
+        hashtype=hash_algorithm,
     )
 
     if local_resource_path is not None:
@@ -605,7 +605,7 @@ def _patch_all_resource_hashes_in_package(
         ckan_api_input=cfg["cfg_ckan_source"],
         secure_interface_input=cfg["cfg_secure_interface_source"],
         ckan_storage_path=cfg["cfg_other_source"]["ckan_storage_path"],
-        hash_type=hash_algorithm,
+        hashtype=hash_algorithm,
         only_if_hash_missing=False,
     )
 
@@ -659,7 +659,8 @@ def _publish_package(
     ckan_instance_source: str,
     verify: bool,
     test: bool,
-    prompt_function: Prompt.ask,
+    prompt_function: Prompt.ask = Prompt.ask,
+    working_directory: str = None,
 ):
     LOGGER.info("Reading config.")
 
@@ -668,7 +669,11 @@ def _publish_package(
     if projects_to_publish:
         projects_to_publish = projects_to_publish.split(",")
 
-    (cwd := pathlib.Path.cwd() / TEMPORARY_DIRECTORY_NAME / package_name).mkdir(
+    wd = pathlib.Path.cwd()
+    if working_directory is not None:
+        wd = pathlib.Path(working_directory)
+
+    (cwd := wd / TEMPORARY_DIRECTORY_NAME / package_name).mkdir(
         exist_ok=True, parents=True
     )
 
@@ -686,7 +691,7 @@ def _publish_package(
         ckan_api_input=cfg["cfg_ckan_source"],
         secure_interface_input=cfg["cfg_secure_interface_source"],
         ckan_storage_path=cfg["cfg_other_source"]["ckan_storage_path"],
-        hash_type=HASH_TYPE,
+        hashtype=HASH_TYPE,
         only_if_hash_missing=only_hash_source_if_missing,
     )
 
@@ -708,6 +713,7 @@ def _publish_package(
     for resource in metadata_filtered["resources"]:
         res = handle_resource_download_with_integrity_check(
             cfg_ckan_source=cfg["cfg_ckan_source"],
+            package_name=package_name,
             resource=resource,
             check_data_integrity=check_data_integrity,
             cwd=cwd,
@@ -740,7 +746,7 @@ def _publish_package(
 
         for resource in metadata_filtered["resources"]:
             filepath = cwd / temporary_resource_names[resource["id"]]
-
+            print("--++--++--++-++--++--", resource["name"])
             create_resource_raw_wrapped(
                 cfg_ckan_target=cfg["cfg_ckan_target"],
                 cfg_other_target=cfg["cfg_other_target"],
@@ -764,6 +770,7 @@ def _publish_package(
         )
 
         for resource in metadata_filtered["resources"]:
+            print("--------> ---------> ", resource["name"])
             filepath = cwd / temporary_resource_names[resource["id"]]
 
             if not cfg["ckan_target"].resource_exists(  # Create resource fresh.
@@ -865,7 +872,7 @@ def _publish_package(
     else:
         raise ValueError(
             "Oops, this should not happen, seems like the package your trying to publish "
-            "is not flagged as 'missing' neither as 'existing'."
+            "is not flagged as 'missing' neither as 'existing' in ckool."
         )
 
     enrich_and_store_metadata(
@@ -875,6 +882,7 @@ def _publish_package(
         ask_orcids=True,
         ask_affiliations=True,
         ask_related_identifiers=True,
+        prompt_function=prompt_function,
     )
 
     update_datacite_doi(

@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Callable
 
 import ckanapi.errors
+from rich.prompt import Prompt
 
 from ckool.ckan.ckan import CKAN
 from ckool.datacite.datacite import DataCiteAPI
@@ -396,6 +397,7 @@ def enrich_and_store_metadata(
     ask_orcids: bool = True,
     ask_affiliations: bool = True,
     ask_related_identifiers: bool = True,
+    prompt_function: Prompt.ask = Prompt.ask
 ):
     filepath_xml = local_doi_store_instance.generate_xml_filepath(package_name)
 
@@ -404,26 +406,29 @@ def enrich_and_store_metadata(
     ]
 
     if ask_orcids:
-        orcids = ask_for_orcids(authors=authors)
-        update_cache(
-            orcids, local_doi_store_instance.generate_orcids_filepath(package_name)
-        )
+        orcids = ask_for_orcids(authors=authors, prompt_func=prompt_function)
+        if orcids:
+            update_cache(
+                orcids, local_doi_store_instance.generate_orcids_filepath(package_name)
+            )
 
     if ask_affiliations:
-        affiliations = ask_for_affiliations(authors=authors)
-        update_cache(
-            affiliations,
-            local_doi_store_instance.generate_affiliations_filepath(package_name),
-        )
+        affiliations = ask_for_affiliations(authors=authors, prompt_func=prompt_function)
+        if affiliations:
+            update_cache(
+                affiliations,
+                local_doi_store_instance.generate_affiliations_filepath(package_name),
+            )
 
     if ask_related_identifiers:
-        related_identifiers = ask_for_related_identifiers()
-        update_cache(
-            related_identifiers,
-            local_doi_store_instance.generate_related_publications_filepath(
-                package_name
-            ),
-        )
+        related_identifiers = ask_for_related_identifiers(prompt_func=prompt_function)
+        if related_identifiers:
+            update_cache(
+                related_identifiers,
+                local_doi_store_instance.generate_related_publications_filepath(
+                    package_name
+                ),
+            )
 
     # enrich metadata save json
     mdf = MetaDataFormatter(

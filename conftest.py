@@ -14,21 +14,18 @@ from tests.ckool.data.inputs.ckan_entity_data import (
     project_data,
     resource_data,
 )
-
+from ckool import HashTypes
 from ckool.ckan.ckan import CKAN
 from ckool.ckan.upload import upload_resource
 from ckool.datacite.datacite import DataCiteAPI
 
-
-ckan_instances = [
+ckan_instance_names_of_fixtures = [
     pytest.param(
-        'ckan_instance',
+        "ckan_instance",
     ),
-    pytest.param(
-        'ckan_open_instance',
-        marks=pytest.mark.open
-    )
+    pytest.param("ckan_open_instance", marks=pytest.mark.open),
 ]
+
 
 def flatten_nested_structure(structure: dict | list):
     result = []
@@ -52,7 +49,10 @@ def pytest_addoption(parser):
         "--run-slow", action="store_true", default=False, help="run slow tests"
     )
     parser.addoption(
-        "--run-open", action="store_true", default=False, help="run tests that require ERIC open"
+        "--run-open",
+        action="store_true",
+        default=False,
+        help="run tests that require ERIC open",
     )
     parser.addoption(
         "--run-impure", action="store_true", default=False, help="run impure tests"
@@ -162,6 +162,7 @@ def config(tmp_path, load_env_file):
                 {
                     "space_available_on_server_root_disk": 10 * 1024**3,
                     "ckan_storage_path": os.environ.get(f"{string}_CKAN_STORAGE_PATH"),
+                    "datamanager": "" if string == "INTERNAL" else "eawrdmadmin"
                 }
             ],
             "ckan_api": [
@@ -207,12 +208,22 @@ def config_internal(tmp_path, load_env_file, config):
 
 
 @pytest.fixture
-def config_section_instance_internal(config_internal):
-    config_internal = add_instance_names(config_internal, "test_instance")
+def ckan_instance_name_internal(config_internal):
+    return "test_instance"
+
+
+@pytest.fixture
+def ckan_instance_name_open(config_internal):
+    return "test_instance_open"
+
+
+@pytest.fixture
+def config_section_instance_internal(config_internal, ckan_instance_name_internal):
+    config_internal = add_instance_names(config_internal, ckan_instance_name_internal)
     return {
         "config": {"Test": config_internal},
         "section": "Test",
-        "ckan_instance_name": "test_instance",
+        "ckan_instance_name": ckan_instance_name_internal,
     }
 
 
@@ -222,13 +233,32 @@ def config_open(tmp_path, load_env_file, config):
 
 
 @pytest.fixture
-def config_section_instance_open(config_open):
-    config_open = add_instance_names(config_open, "test_instance")
+def config_section_instance_open(config_open, ckan_instance_name_open):
+    config_open = add_instance_names(config_open, ckan_instance_name_open)
     return {
         "config": {"Test": config_open},
         "section": "Test",
-        "ckan_instance_name": "test_instance_open",
+        "ckan_instance_name": ckan_instance_name_open,
     }
+
+
+@pytest.fixture
+def full_config(config_open, config_internal, ckan_instance_name_internal, ckan_instance_name_open):
+    config_internal = add_instance_names(config_internal, ckan_instance_name_internal)
+    config_open = add_instance_names(config_open, ckan_instance_name_open)
+    return {"Test": {
+        "other": [
+            config_internal["other"][0], config_open["other"][0]
+        ],
+        "ckan_api": [
+            config_internal["ckan_api"][0], config_open["ckan_api"][0]
+        ],
+        "ckan_server": [
+           config_internal["ckan_server"][0], config_open["ckan_server"][0]
+        ],
+        "datacite": config_internal["datacite"],
+        "local_doi_store_path": config_internal["local_doi_store_path"],
+    }}
 
 
 @pytest.fixture
@@ -253,14 +283,16 @@ def patch_user(ckan_instance):
     user_record = ckan_instance.get_user("ckan_admin")
     if not user_record["fullname"]:
         ckan_instance.patch_user(
-            user_id=user_record["id"], data={"fullname": "ckan_admin"}
+            user_id=user_record["id"], data={"fullname": "ckan admin"}
         )
 
 
 def setup(ckan_instance, ckan_entities):
     patch_user(ckan_instance)
+
     organization_data.update({"name": ckan_entities["test_organization"]})
     package_data.update({"name": ckan_entities["test_package"]})
+
     resource_data.update(
         {
             "package_id": ckan_entities["test_package"],
@@ -289,25 +321,60 @@ def setup(ckan_instance, ckan_entities):
 def teardown(ckan_instance, ckan_entities):
     packages = ckan_instance.get_all_packages()["results"]
     for package in packages:
+        if package["organization"]["name"] != ckan_entities["test_organization"]:
+            continue
         ckan_instance.delete_package(package["id"])
-    ckan_instance.delete_project(ckan_entities["test_project"])
-    ckan_instance.purge_project(ckan_entities["test_project"])
-    ckan_instance.delete_organization(ckan_entities["test_organization"])
-    ckan_instance.purge_organization(ckan_entities["test_organization"])
+        ckan_instance.purge_package(package["id"])
+    try:
+        ckan_instance.delete_project(ckan_entities["test_project"])
+        ckan_instance.purge_project(ckan_entities["test_project"])
+    except ckanapi.NotFound:
+        pass
+    try:
+        ckan_instance.delete_organization(ckan_entities["test_organization"])
+        ckan_instance.purge_organization(ckan_entities["test_organization"])
+    except ckanapi.NotFound:
+        pass
 
 
 @contextmanager
-def managed_ckan_setup(ckan_instance: CKAN, ckan_entities):
+def managed_ckan_setup(ckan_instance: CKAN, ckan_entities, run_setup=True):
     try:
-        setup(ckan_instance, ckan_entities)
+        if run_setup:
+            setup(ckan_instance, ckan_entities)
         yield
     finally:
         teardown(ckan_instance, ckan_entities)
 
 
+@contextmanager
+def managed_doi_setup(tmp_path, datacite_instance, ckan_entities):
+    doi = "10.5524/123C45"
+    try:
+        datacite_instance.doi_reserve(doi)
+
+        (pkg_dir := tmp_path / "name-1" / ckan_entities["test_package"]).mkdir(parents=True)
+        (pkg_dir / "doi.txt").write_text(doi)
+        yield
+    finally:
+        datacite_instance.doi_delete(doi)
+
+
 @pytest.fixture
 def ckan_setup_data(ckan_instance, ckan_entities):
-    with managed_ckan_setup(ckan_instance, ckan_entities):
+    with managed_ckan_setup(ckan_instance, ckan_entities, run_setup=True):
+        yield
+
+
+@pytest.fixture
+def ckan_open_cleanup(ckan_open_instance, ckan_entities):
+    with managed_ckan_setup(ckan_open_instance, ckan_entities, run_setup=False):
+        yield
+
+
+@pytest.fixture
+def doi_setup(tmp_path, datacite_instance, ckan_entities):
+    with managed_doi_setup(tmp_path, datacite_instance, ckan_entities):
         yield
 
 
@@ -340,7 +407,11 @@ def dynamic_config(request, config):
 def dynamic_config_section_instance(request, config):
     fixture_name = detect_ckan_instance(request)
     return {
-        "config": {"Test": add_instance_names(config(internal="open" not in fixture_name.lower()), "test_instance")},
+        "config": {
+            "Test": add_instance_names(
+                config(internal="open" not in fixture_name.lower()), "test_instance"
+            )
+        },
         "section": "Test",
         "ckan_instance_name": "test_instance",
     }
@@ -363,7 +434,8 @@ def add_file_resources(tmp_path, ckan_entities):
                     ckan_url=ckan_instance.server,
                     api_key=ckan_instance.token,
                     size=file.stat().st_size,
-                    hash="absd",
+                    hash="fake-hash-to-save-time",
+                    hashtype=HashTypes.md5,
                     resource_type="Dataset",
                     restricted_level="public",
                     verify=False,

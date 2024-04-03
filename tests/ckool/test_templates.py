@@ -1,6 +1,7 @@
 import pathlib
 
 import pytest
+from conftest import ckan_instance_names_of_fixtures
 
 from ckool import HASH_TYPE, UPLOAD_IN_PROGRESS_STRING
 from ckool.other.caching import read_cache
@@ -16,7 +17,6 @@ from ckool.templates import (
     upload_resource_file_via_scp,
     wrapped_upload,
 )
-from conftest import ckan_instances
 
 hasher = get_hash_func(HASH_TYPE)
 
@@ -52,7 +52,7 @@ def test_resource_integrity_between_ckan_instances_intact(
     )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_upload_resource_file_via_api(
     cki, tmp_path, dynamic_ckan_instance, ckan_entities, dynamic_ckan_setup_data
@@ -84,7 +84,7 @@ def test_upload_resource_file_via_api(
     assert any([r["name"] == f.name for r in resources])
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_upload_resource_file_via_scp(
     cki,
@@ -130,7 +130,7 @@ def test_upload_resource_file_via_scp(
     )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_upload_func_chosen_api_file(
     cki,
@@ -184,7 +184,7 @@ def test_upload_func_chosen_api_file(
     )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_upload_func_chosen_scp(
     cki,
@@ -238,7 +238,7 @@ def test_upload_func_chosen_scp(
     )
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_hash_remote(
     cki,
@@ -278,7 +278,7 @@ def test_hash_remote(
     assert hashed_locally == hashed_remotely
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_handle_upload(
     cki,
@@ -345,7 +345,7 @@ def test_handle_upload(
         assert resource["hash"] != UPLOAD_IN_PROGRESS_STRING
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 def test_handle_upload_all_too_many_cache_files(
     cki,
@@ -383,7 +383,7 @@ def test_handle_upload_all_too_many_cache_files(
     assert len(uploaded) == 2
 
 
-@pytest.mark.parametrize('cki', ckan_instances)
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.impure
 @pytest.mark.parametrize(
     "upload_func", [upload_resource_file_via_api, upload_resource_file_via_scp]
@@ -409,7 +409,9 @@ def test_wrapped_upload_for_both_upload_types(
         meta=meta,
         package_name=ckan_entities["test_package"],
         ckan_instance=dynamic_ckan_instance,
-        cfg_other={"ckan_storage_path": dynamic_config["other"][0]["ckan_storage_path"]},
+        cfg_other={
+            "ckan_storage_path": dynamic_config["other"][0]["ckan_storage_path"]
+        },
         cfg_ckan_api={
             "token": dynamic_ckan_instance.token,
             "server": dynamic_ckan_instance.server,
@@ -420,9 +422,9 @@ def test_wrapped_upload_for_both_upload_types(
         progressbar=True,
     )
 
-    resources = dynamic_ckan_instance.get_package(package_name=ckan_entities["test_package"])[
-        "resources"
-    ]
+    resources = dynamic_ckan_instance.get_package(
+        package_name=ckan_entities["test_package"]
+    )["resources"]
 
     resource = None
     for resource in resources:
