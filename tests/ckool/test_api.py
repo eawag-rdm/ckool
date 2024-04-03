@@ -436,7 +436,6 @@ def test_publish_package_simple(
     only_hash_source_if_missing,
     re_download_resources,
 ):
-
     mock_prompt = Mock()  # mocking prompt function
     mock_prompt.side_effect = [
         "no",  # no to providing orcids
@@ -455,16 +454,19 @@ def test_publish_package_simple(
         ],
     )
 
-    for resource in ckan_instance.get_package(package_name=ckan_entities["test_package"])["resources"]:
+    for resource in ckan_instance.get_package(
+        package_name=ckan_entities["test_package"]
+    )["resources"]:
         _id = resource["id"]
         ckan_instance.patch_resource_metadata(
-            resource_id=_id,
-            resource_data_to_update={"hash": "", "hashtype": "md5"}
+            resource_id=_id, resource_data_to_update={"hash": "", "hashtype": "md5"}
         )
 
     ckan_instance.patch_package_metadata(
         package_id=ckan_entities["test_package"],
-        data={"geographic_name": ["Switzerland"]}  # this field is required for the publication (required on ERIC Open)
+        data={
+            "geographic_name": ["Switzerland"]
+        },  # this field is required for the publication (required on ERIC Open)
     )
 
     ckan_instance.add_package_to_project(
@@ -488,7 +490,11 @@ def test_publish_package_simple(
         prompt_function=mock_prompt,
         working_directory=tmp_path.as_posix(),
     )
-    number_of_resources = len(ckan_open_instance.get_package(package_name=ckan_entities["test_package"])["resources"])
+    number_of_resources = len(
+        ckan_open_instance.get_package(package_name=ckan_entities["test_package"])[
+            "resources"
+        ]
+    )
 
     if isinstance(exclude_resources, str):
         assert number_of_resources == 3  # 2 files, 1 link
@@ -526,7 +532,11 @@ def test_publish_package_simple(
         working_directory=tmp_path.as_posix(),
     )
 
-    number_of_resources = len(ckan_open_instance.get_package(package_name=ckan_entities["test_package"])["resources"])
+    number_of_resources = len(
+        ckan_open_instance.get_package(package_name=ckan_entities["test_package"])[
+            "resources"
+        ]
+    )
     if isinstance(exclude_resources, str):
         assert number_of_resources == 3  # 2 files, 1 link
     else:
@@ -574,27 +584,30 @@ def test_publish_package_do_not_create_missing(
     add_file_resources(
         ckan_instance,
         [
-            4 * 1024 ** 2,  # file_0
-            5 * 1024 ** 2,  # file_1
+            4 * 1024**2,  # file_0
+            5 * 1024**2,  # file_1
         ],
     )
-    for resource in ckan_instance.get_package(package_name=ckan_entities["test_package"])["resources"]:
+    for resource in ckan_instance.get_package(
+        package_name=ckan_entities["test_package"]
+    )["resources"]:
         _id = resource["id"]
         ckan_instance.patch_resource_metadata(
-            resource_id=_id,
-            resource_data_to_update={"hash": "", "hashtype": "md5"}
+            resource_id=_id, resource_data_to_update={"hash": "", "hashtype": "md5"}
         )
 
     ckan_instance.patch_package_metadata(
         package_id=ckan_entities["test_package"],
-        data={"geographic_name": ["Switzerland"]}  # this field is required for the publication (required on ERIC Open)
+        data={
+            "geographic_name": ["Switzerland"]
+        },  # this field is required for the publication (required on ERIC Open)
     )
 
     ckan_instance.add_package_to_project(
         package_name=ckan_entities["test_package"],
         project_name=ckan_entities["test_project"],
     )
-    with pytest.raises(ValueError)as exc_info:
+    with pytest.raises(ValueError) as exc_info:
         _publish_package(
             package_name=ckan_entities["test_package"],
             projects_to_publish=projects_to_publish,
@@ -612,6 +625,6 @@ def test_publish_package_do_not_create_missing(
             prompt_function=mock_prompt,
             working_directory=tmp_path.as_posix(),
         )
-        assert "Publication can not continue. These entities are missing:" in str(exc_info.value)
-
-
+        assert "Publication can not continue. These entities are missing:" in str(
+            exc_info.value
+        )

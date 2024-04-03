@@ -397,7 +397,7 @@ def enrich_and_store_metadata(
     ask_orcids: bool = True,
     ask_affiliations: bool = True,
     ask_related_identifiers: bool = True,
-    prompt_function: Prompt.ask = Prompt.ask
+    prompt_function: Prompt.ask = Prompt.ask,
 ):
     filepath_xml = local_doi_store_instance.generate_xml_filepath(package_name)
 
@@ -413,7 +413,9 @@ def enrich_and_store_metadata(
             )
 
     if ask_affiliations:
-        affiliations = ask_for_affiliations(authors=authors, prompt_func=prompt_function)
+        affiliations = ask_for_affiliations(
+            authors=authors, prompt_func=prompt_function
+        )
         if affiliations:
             update_cache(
                 affiliations,

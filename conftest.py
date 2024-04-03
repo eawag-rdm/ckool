@@ -14,6 +14,7 @@ from tests.ckool.data.inputs.ckan_entity_data import (
     project_data,
     resource_data,
 )
+
 from ckool import HashTypes
 from ckool.ckan.ckan import CKAN
 from ckool.ckan.upload import upload_resource
@@ -162,7 +163,7 @@ def config(tmp_path, load_env_file):
                 {
                     "space_available_on_server_root_disk": 10 * 1024**3,
                     "ckan_storage_path": os.environ.get(f"{string}_CKAN_STORAGE_PATH"),
-                    "datamanager": "" if string == "INTERNAL" else "eawrdmadmin"
+                    "datamanager": "" if string == "INTERNAL" else "eawrdmadmin",
                 }
             ],
             "ckan_api": [
@@ -243,22 +244,23 @@ def config_section_instance_open(config_open, ckan_instance_name_open):
 
 
 @pytest.fixture
-def full_config(config_open, config_internal, ckan_instance_name_internal, ckan_instance_name_open):
+def full_config(
+    config_open, config_internal, ckan_instance_name_internal, ckan_instance_name_open
+):
     config_internal = add_instance_names(config_internal, ckan_instance_name_internal)
     config_open = add_instance_names(config_open, ckan_instance_name_open)
-    return {"Test": {
-        "other": [
-            config_internal["other"][0], config_open["other"][0]
-        ],
-        "ckan_api": [
-            config_internal["ckan_api"][0], config_open["ckan_api"][0]
-        ],
-        "ckan_server": [
-           config_internal["ckan_server"][0], config_open["ckan_server"][0]
-        ],
-        "datacite": config_internal["datacite"],
-        "local_doi_store_path": config_internal["local_doi_store_path"],
-    }}
+    return {
+        "Test": {
+            "other": [config_internal["other"][0], config_open["other"][0]],
+            "ckan_api": [config_internal["ckan_api"][0], config_open["ckan_api"][0]],
+            "ckan_server": [
+                config_internal["ckan_server"][0],
+                config_open["ckan_server"][0],
+            ],
+            "datacite": config_internal["datacite"],
+            "local_doi_store_path": config_internal["local_doi_store_path"],
+        }
+    }
 
 
 @pytest.fixture
@@ -353,7 +355,9 @@ def managed_doi_setup(tmp_path, datacite_instance, ckan_entities):
     try:
         datacite_instance.doi_reserve(doi)
 
-        (pkg_dir := tmp_path / "name-1" / ckan_entities["test_package"]).mkdir(parents=True)
+        (pkg_dir := tmp_path / "name-1" / ckan_entities["test_package"]).mkdir(
+            parents=True
+        )
         (pkg_dir / "doi.txt").write_text(doi)
         yield
     finally:
