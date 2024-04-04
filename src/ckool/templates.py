@@ -369,8 +369,7 @@ def wrapped_upload(
             status = "skipped"
             return {"id": meta_on_ckan["id"], "name": filepath.name, "status": status}
 
-        elif meta_on_ckan["hash"] == UPLOAD_IN_PROGRESS_STRING:
-            # This resource was not uploaded properly and needs to be uploaded again, deleting faulty resource
+        else:  # meta_on_ckan["hash"] == UPLOAD_IN_PROGRESS_STRING:
             LOGGER.info(
                 "... resource hash on CKAN does not match the local hash preparing to overwrite."
             )
@@ -380,8 +379,9 @@ def wrapped_upload(
                 )["id"]
             )
             status = "replaced"
+
     LOGGER.debug("...starting upload.")
-    abc = upload_func(
+    _ = upload_func(
         ckan_api_input=cfg_ckan_api,
         secure_interface_input=cfg_secure_interface,
         ckan_storage_path=cfg_other["ckan_storage_path"],

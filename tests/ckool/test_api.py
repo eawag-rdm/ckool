@@ -84,11 +84,68 @@ def test_upload_package(
     for entry in uploaded:
         del entry["id"]
         assert entry in [
-            {"name": "large_0.bin", "status": "normal"},
-            {"name": "large_1.bin", "status": "normal"},
-            {"name": "large_2.bin", "status": "normal"},
-            {"name": "large_3.bin", "status": "normal"},
+            {"name": f"large_{i}.bin", "status": "normal"} for i in range(4)
         ]
+
+
+@pytest.mark.parametrize("run_type", ["parallel", "sequential"])
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
+@pytest.mark.slow
+@pytest.mark.impure
+def test_upload_package_separate_uploads(
+    cki,
+    tmp_path,
+    ckan_entities,
+    dynamic_ckan_instance,
+    dynamic_ckan_setup_data,
+    large_package,
+    very_large_package,
+    dynamic_config_section_instance,
+    run_type,
+):
+    del dynamic_config_section_instance["section"]
+
+    uploaded = _upload_package(
+        package_name=ckan_entities["test_package"],
+        package_folder=very_large_package,
+        include_sub_folders=False,
+        include_pattern=None,
+        exclude_pattern=None,
+        hash_algorithm=HashTypes.sha256,
+        compression_type=CompressionTypes.zip,
+        parallel=SWITCH.get(run_type),
+        workers=4,
+        verify=False,
+        test=True,
+        **dynamic_config_section_instance,
+    )
+
+    for entry in uploaded:
+        del entry["id"]
+        assert entry in [
+            {"name": f"large_{i}.bin", "status": "normal"} for i in range(4)
+        ]
+
+    uploaded_also = _upload_package(
+        package_name=ckan_entities["test_package"],
+        package_folder=large_package,
+        include_sub_folders=False,
+        include_pattern=None,
+        exclude_pattern=None,
+        hash_algorithm=HashTypes.sha256,
+        compression_type=CompressionTypes.zip,
+        parallel=SWITCH.get(run_type),
+        workers=4,
+        verify=False,
+        test=True,
+        **dynamic_config_section_instance,
+    )
+
+    for entry in uploaded_also:
+        del entry["id"]
+        assert entry in [
+            {"name": f"large_{i}.bin", "status": "replaced"} for i in range(4)
+        ] + [{"name": f"large_{i}.bin", "status": "normal"} for i in range(4, 10)]
 
 
 @pytest.mark.slow

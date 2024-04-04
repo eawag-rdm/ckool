@@ -2,6 +2,7 @@ import re
 
 import requests
 from bs4 import BeautifulSoup
+from rich import print as rprint
 
 from ckool.interfaces.dora import Dora
 
@@ -21,7 +22,7 @@ def get_citation_from_doi(doi, prefix=10.25678):
     if not r.ok:
         # r.raise_for_status()
         # raise requests.exceptions.RequestException(
-        print("Failed to get citation for DOI {}".format(doi))
+        rprint("Failed to get citation for DOI {}".format(doi))
         return None
 
     return r.text.encode(r.encoding).decode("utf-8")

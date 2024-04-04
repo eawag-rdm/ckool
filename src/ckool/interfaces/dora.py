@@ -4,6 +4,7 @@ from urllib.parse import quote, urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from rich import print as rprint
 
 
 class Dora:
@@ -39,10 +40,10 @@ class Dora:
         ]
 
         if not links_of_detailed_records:
-            print(f"WARNING: No DORA entry for DOI '{doi}'")
+            rprint(f"WARNING: No DORA entry for DOI '{doi}'")
             return
         if len(links_of_detailed_records) > 1:
-            print(
+            rprint(
                 f"WARNING: multiple DORA records for one DOI: '{doi}'. Only the first will be returned."
             )
 
@@ -81,15 +82,15 @@ class Dora:
         )
 
         if not dois:
-            print(f"WARNING: No DOIs in Dora for dora_id: '{dora_id}'.")
+            rprint(f"WARNING: No DOIs in Dora for dora_id: '{dora_id}'.")
             return
 
         if len(dois) > 1:
-            print(
+            rprint(
                 f"WARNING: multiple DOIs for the dora_id: '{dora_id}'. Only the first will be returned."
             )
         if related_dois:
-            print(
+            rprint(
                 f"INFO: related DOIs found for the dora_id: '{dora_id}'. Related DOIs: '{', '.join(related_dois)}'"
             )
 

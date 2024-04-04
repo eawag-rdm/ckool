@@ -746,7 +746,6 @@ def _publish_package(
 
         for resource in metadata_filtered["resources"]:
             filepath = cwd / temporary_resource_names[resource["id"]]
-            print("--++--++--++-++--++--", resource["name"])
             create_resource_raw_wrapped(
                 cfg_ckan_target=cfg["cfg_ckan_target"],
                 cfg_other_target=cfg["cfg_other_target"],
@@ -770,7 +769,6 @@ def _publish_package(
         )
 
         for resource in metadata_filtered["resources"]:
-            print("--------> ---------> ", resource["name"])
             filepath = cwd / temporary_resource_names[resource["id"]]
 
             if not cfg["ckan_target"].resource_exists(  # Create resource fresh.

@@ -550,13 +550,15 @@ def _large_package(root_folder, file_sizes, files_per_folders):
 
 
 @pytest.fixture()
-def large_package(my_package_dir):
-    yield from _large_package(my_package_dir, [1024**2 * 15] * 10, 1)
+def large_package(tmp_path):
+    (pkg := tmp_path / "large-package-dir").mkdir()
+    MB = 1024**2
+    yield from _large_package(pkg, [MB * 15] * 10, 1)
 
 
 @pytest.fixture()
 def very_large_package(tmp_path):
-    (pkg := tmp_path / "package-dir").mkdir()
+    (pkg := tmp_path / "very-large-package-dir").mkdir()
     MB = 1024**2
     yield from _large_package(pkg, [10 * MB, 20 * MB, 80 * MB, 100 * MB], 8)
 
