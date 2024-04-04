@@ -154,6 +154,7 @@ def test_upload_func_chosen_api_file(
         parallel_upload=False,
         factor=2,
         is_link=False,
+        force_scp=False,
     )
     ckan_input_args = {
         "token": dynamic_ckan_instance.token,
@@ -208,6 +209,7 @@ def test_upload_func_chosen_scp(
         parallel_upload=False,
         factor=2,
         is_link=False,
+        force_scp=False,
     )
     ckan_input_args = {
         "token": dynamic_ckan_instance.token,
@@ -319,6 +321,7 @@ def test_handle_upload(
         verify=False,
         parallel=False,
         progressbar=True,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
 
@@ -378,6 +381,7 @@ def test_handle_upload_all_too_many_cache_files(
         verify=False,
         parallel=False,
         progressbar=True,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
     assert len(uploaded) == 2

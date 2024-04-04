@@ -268,6 +268,12 @@ def upload_package(
         "-ha",
         help="Default is sha256.",
     ),
+    force_scp: bool = typer.Option(
+        False,
+        "--force-scp",
+        "-fs",
+        help="Force the upload via scp instead of via the API.",
+    ),
     parallel: bool = typer.Option(
         False,
         "--parallel",
@@ -289,6 +295,7 @@ def upload_package(
         include_pattern,
         exclude_pattern,
         hash_algorithm,
+        force_scp,
         parallel,
         workers,
         OPTIONS["config"],
@@ -312,11 +319,18 @@ def upload_resource(
         "-ha",
         help="Default is sha256.",
     ),
+    force_scp: bool = typer.Option(
+        False,
+        "--force-scp",
+        "-fs",
+        help="Force the upload via scp instead of via the API.",
+    ),
 ):
     return _upload_resource(
         package_name,
         filepath,
         hash_algorithm,
+        force_scp,
         OPTIONS["config"],
         OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
@@ -640,6 +654,12 @@ def publish_package(
         help="Resource names to exclude from the publication process. Separate resource_names fields by comma. "
         "If multiple resources in the package share the same name, resource_ids must be provided.",
     ),
+    force_scp: bool = typer.Option(
+        False,
+        "--force-scp",
+        "-fs",
+        help="Force the upload via scp instead of via the API.",
+    ),
     only_hash_source_if_missing: bool = typer.Option(
         True,
         "--hash-source-resources",
@@ -674,6 +694,7 @@ def publish_package(
         check_data_integrity,
         create_missing,
         exclude_resources,
+        force_scp,
         only_hash_source_if_missing,
         re_download_resources,
         no_resource_overwrite_prompt,

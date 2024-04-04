@@ -67,6 +67,7 @@ def _upload_package(
     include_pattern: str | None,
     exclude_pattern: str | None,
     hash_algorithm: HashTypes,
+    force_scp: bool,
     parallel: bool,
     workers: int,
     config: dict,
@@ -146,6 +147,7 @@ def _upload_package(
                 verify,
                 parallel,
                 progressbar=progressbar,
+                force_scp=force_scp
             )
     else:
         res = map_function_with_processpool(
@@ -163,6 +165,7 @@ def _upload_package(
                     verify=verify,
                     section=section,
                     progressbar=progressbar,
+                    force_scp=force_scp,
                 )
                 for info in iter_package(
                     package_folder,
@@ -182,6 +185,7 @@ def _upload_resource(
     package_name: str,
     filepath: str,
     hash_algorithm: HashTypes,
+        force_scp: bool,
     config: dict,
     ckan_instance_name: str,
     verify: bool,
@@ -216,6 +220,7 @@ def _upload_resource(
         ckan_instance_name=ckan_instance_name,
         verify=verify,
         progressbar=True,
+        force_scp=force_scp
     )
 
 
@@ -651,6 +656,7 @@ def _publish_package(
     check_data_integrity: bool,
     create_missing_: bool,
     exclude_resources: str,
+    force_scp: bool,
     only_hash_source_if_missing: bool,
     re_download_resources: bool,
     no_resource_overwrite_prompt: bool,
@@ -753,6 +759,7 @@ def _publish_package(
                 filepath=filepath,
                 resource=resource,
                 package_name=package_name,
+                force_scp=force_scp
             )
         cfg["ckan_target"].reorder_package_resources(
             package_name=metadata_filtered["name"]
@@ -783,6 +790,7 @@ def _publish_package(
                     filepath=filepath,
                     resource=resource,
                     package_name=package_name,
+                    force_scp=force_scp
                 )
 
                 continue
@@ -819,6 +827,7 @@ def _publish_package(
                         parallel_upload=False,
                         factor=UPLOAD_FUNC_FACTOR,
                         is_link=resource_is_link(resource),
+                        force_scp=force_scp,
                     )
 
                     # Deleting the entire resource, and re-uploading it.

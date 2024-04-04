@@ -46,6 +46,7 @@ def test_upload_package_nothing_to_upload_sequential(
         workers=4,
         verify=False,
         test=True,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
 
@@ -78,6 +79,7 @@ def test_upload_package(
         workers=4,
         verify=False,
         test=True,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
 
@@ -117,6 +119,7 @@ def test_upload_package_separate_uploads(
         workers=4,
         verify=False,
         test=True,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
 
@@ -138,6 +141,7 @@ def test_upload_package_separate_uploads(
         workers=4,
         verify=False,
         test=True,
+        force_scp=True,
         **dynamic_config_section_instance,
     )
 
@@ -177,6 +181,7 @@ def test_upload_package_with_compression(
         verify=False,
         test=True,
         progressbar=True,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
 
@@ -211,6 +216,7 @@ def test_upload_package_with_compression(
         verify=False,
         test=True,
         progressbar=True,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
 
@@ -276,6 +282,7 @@ def test_upload_package_interrupted(
         verify=False,
         test=True,
         progressbar=False,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
 
@@ -299,6 +306,7 @@ def test_upload_package_interrupted(
         verify=False,
         test=True,
         progressbar=False,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
     assert uploaded[0]["status"] == status
@@ -321,6 +329,7 @@ def test_upload_package_interrupted(
         verify=False,
         test=True,
         progressbar=False,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
 
@@ -449,6 +458,7 @@ def test_upload_resource(
         hash_algorithm=HashTypes.md5,
         verify=False,
         test=True,
+        force_scp=False,
         **dynamic_config_section_instance,
     )
     meta = dynamic_ckan_instance.get_resource_meta(
@@ -544,6 +554,7 @@ def test_publish_package_simple(
         ckan_instance_target=ckan_instance_name_open,
         verify=False,
         test=True,
+        force_scp=False,
         prompt_function=mock_prompt,
         working_directory=tmp_path.as_posix(),
     )
@@ -585,6 +596,7 @@ def test_publish_package_simple(
         ckan_instance_target=ckan_instance_name_open,
         verify=False,
         test=True,
+        force_scp=False,
         prompt_function=mock_prompt,
         working_directory=tmp_path.as_posix(),
     )
@@ -679,6 +691,7 @@ def test_publish_package_do_not_create_missing(
             ckan_instance_target=ckan_instance_name_open,
             verify=False,
             test=True,
+            force_scp=False,
             prompt_function=mock_prompt,
             working_directory=tmp_path.as_posix(),
         )
