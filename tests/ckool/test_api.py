@@ -156,7 +156,7 @@ def test_upload_package_separate_uploads(
 @pytest.mark.impure
 @pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
 @pytest.mark.parametrize("run_type", ["parallel", "sequential"])
-def test_upload_package_with_compression(
+def test_upload_package_twice(
     cki,
     tmp_path,
     ckan_entities,

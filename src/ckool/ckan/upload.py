@@ -109,4 +109,6 @@ def upload_resource(
 
         progress_callback.close()
 
+        response.raise_for_status()
+
         return response
