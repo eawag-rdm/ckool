@@ -3,6 +3,8 @@ import time
 from unittest.mock import Mock
 
 import pytest
+
+from ckool.other.file_management import get_compression_func, generate_archive_destination
 from conftest import ckan_instance_names_of_fixtures
 
 from ckool import TEMPORARY_DIRECTORY_NAME, UPLOAD_IN_PROGRESS_STRING
@@ -469,6 +471,49 @@ def test_upload_resource(
         meta["hash"]
         == read_cache(
             tmp_path / TEMPORARY_DIRECTORY_NAME / (small_file.name + ".json")
+        )["hash"]
+    )
+
+
+@pytest.mark.impure
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
+@pytest.mark.parametrize("compression_type", [CompressionTypes.zip, CompressionTypes.tar_gz, CompressionTypes.tar_xz, CompressionTypes.tar_bz2])
+def test_upload_resource_compressed(
+    cki,
+    tmp_path,
+    compression_type,
+    dynamic_ckan_instance,
+    ckan_entities,
+    dynamic_ckan_setup_data,
+    dynamic_config_section_instance,
+):
+    del dynamic_config_section_instance["section"]
+
+    (file := tmp_path / "some_file.txt").write_text("Some content!")
+
+    compression_func = get_compression_func(compression_type)
+    archive = compression_func(
+        root_folder=tmp_path,
+        archive_destination=file,
+        files=[file],
+    )
+    _upload_resource(
+        package_name=ckan_entities["test_package"],
+        filepath=archive,
+        hash_algorithm=HashTypes.md5,
+        verify=False,
+        test=True,
+        force_scp=False,
+        **dynamic_config_section_instance,
+    )
+    meta = dynamic_ckan_instance.get_resource_meta(
+        package_name=ckan_entities["test_package"], resource_id_or_name=archive.name
+    )
+    assert meta
+    assert (
+        meta["hash"]
+        == read_cache(
+            tmp_path / TEMPORARY_DIRECTORY_NAME / (archive.name + ".json")
         )["hash"]
     )
 
