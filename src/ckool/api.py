@@ -147,7 +147,7 @@ def _upload_package(
                 verify,
                 parallel,
                 progressbar=progressbar,
-                force_scp=force_scp
+                force_scp=force_scp,
             )
     else:
         res = map_function_with_processpool(
@@ -185,7 +185,7 @@ def _upload_resource(
     package_name: str,
     filepath: str,
     hash_algorithm: HashTypes,
-        force_scp: bool,
+    force_scp: bool,
     config: dict,
     ckan_instance_name: str,
     verify: bool,
@@ -220,7 +220,7 @@ def _upload_resource(
         ckan_instance_name=ckan_instance_name,
         verify=verify,
         progressbar=True,
-        force_scp=force_scp
+        force_scp=force_scp,
     )
 
 
@@ -759,7 +759,7 @@ def _publish_package(
                 filepath=filepath,
                 resource=resource,
                 package_name=package_name,
-                force_scp=force_scp
+                force_scp=force_scp,
             )
         cfg["ckan_target"].reorder_package_resources(
             package_name=metadata_filtered["name"]
@@ -790,7 +790,7 @@ def _publish_package(
                     filepath=filepath,
                     resource=resource,
                     package_name=package_name,
-                    force_scp=force_scp
+                    force_scp=force_scp,
                 )
 
                 continue

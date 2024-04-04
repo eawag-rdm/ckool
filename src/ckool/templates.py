@@ -448,7 +448,7 @@ def handle_upload_all(
         ],
         parallel_upload=parallel,
         factor=UPLOAD_FUNC_FACTOR,
-        force_scp=force_scp
+        force_scp=force_scp,
     )
     if "via_scp" in upload_func.__name__:
         LOGGER.info("... upload via SCP selected.")
@@ -502,7 +502,7 @@ def handle_upload_single(
         ],
         parallel_upload=False,
         factor=UPLOAD_FUNC_FACTOR,
-        force_scp=force_scp
+        force_scp=force_scp,
     )
 
     return wrapped_upload(
@@ -584,7 +584,7 @@ def handle_folder_file_upload(
             ckan_instance_name=ckan_instance_name,
             verify=verify,
             progressbar=progressbar,
-            force_scp=force_scp
+            force_scp=force_scp,
         )
 
 
@@ -697,7 +697,7 @@ def create_resource_raw_wrapped(
     filepath: pathlib.Path,
     resource: dict,
     package_name: str,
-    force_scp: bool = False
+    force_scp: bool = False,
 ):
     upload_func = get_upload_func(
         file_sizes=[
@@ -709,7 +709,7 @@ def create_resource_raw_wrapped(
         parallel_upload=False,
         factor=UPLOAD_FUNC_FACTOR,
         is_link=resource_is_link(resource),
-        force_scp=force_scp
+        force_scp=force_scp,
     )
     LOGGER.info(f"... creating resource '{filepath.name}'.")
     create_resource_raw(

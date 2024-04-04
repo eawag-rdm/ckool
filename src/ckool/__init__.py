@@ -1,3 +1,7 @@
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 from ckool.other.logger import MainLogger
 from ckool.other.types import CompressionTypes, HashTypes
 

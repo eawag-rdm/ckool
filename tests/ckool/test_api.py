@@ -3,8 +3,6 @@ import time
 from unittest.mock import Mock
 
 import pytest
-
-from ckool.other.file_management import get_compression_func, generate_archive_destination
 from conftest import ckan_instance_names_of_fixtures
 
 from ckool import TEMPORARY_DIRECTORY_NAME, UPLOAD_IN_PROGRESS_STRING
@@ -16,6 +14,9 @@ from ckool.api import (
     _upload_resource,
 )
 from ckool.other.caching import read_cache
+from ckool.other.file_management import (
+    get_compression_func,
+)
 from ckool.other.types import CompressionTypes, HashTypes
 
 SWITCH = {"parallel": True, "sequential": False, "ignore": False, "overwrite": True}
@@ -477,7 +478,15 @@ def test_upload_resource(
 
 @pytest.mark.impure
 @pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
-@pytest.mark.parametrize("compression_type", [CompressionTypes.zip, CompressionTypes.tar_gz, CompressionTypes.tar_xz, CompressionTypes.tar_bz2])
+@pytest.mark.parametrize(
+    "compression_type",
+    [
+        CompressionTypes.zip,
+        CompressionTypes.tar_gz,
+        CompressionTypes.tar_xz,
+        CompressionTypes.tar_bz2,
+    ],
+)
 def test_upload_resource_compressed(
     cki,
     tmp_path,
@@ -512,9 +521,9 @@ def test_upload_resource_compressed(
     assert meta
     assert (
         meta["hash"]
-        == read_cache(
-            tmp_path / TEMPORARY_DIRECTORY_NAME / (archive.name + ".json")
-        )["hash"]
+        == read_cache(tmp_path / TEMPORARY_DIRECTORY_NAME / (archive.name + ".json"))[
+            "hash"
+        ]
     )
 
 
