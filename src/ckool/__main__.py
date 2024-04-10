@@ -674,6 +674,12 @@ def publish_package(
         help="Resources are typically only downloaded, if they're not yet available locally. If resources have changed "
         "on the ckan source instance, you can pass this flag to re-download all resources.",
     ),
+    keep_resources: bool = typer.Option(
+        False,
+        "--keep-resources",
+        "-kr",
+        help="Single resources will not be deleted after the upload.",
+    ),
     no_resource_overwrite_prompt: bool = typer.Option(
         False,
         "--no-resource-overwrite-prompt",
@@ -697,6 +703,7 @@ def publish_package(
         force_scp,
         only_hash_source_if_missing,
         re_download_resources,
+        keep_resources,
         no_resource_overwrite_prompt,
         ckan_instance_target,
         OPTIONS["config"],
