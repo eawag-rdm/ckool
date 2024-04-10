@@ -69,7 +69,6 @@ def upload_resource_file_via_scp(
     metadata,
     progressbar: bool = True,
 ):
-    si = SecureInterface(**secure_interface_input)
     # Upload empty resource (already using the correct metadata
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
@@ -89,6 +88,7 @@ def upload_resource_file_via_scp(
         ckan_storage_path=ckan_storage_path,
     )
 
+    si = SecureInterface(**secure_interface_input)
     si.scp(
         local_filepath=filepath,
         remote_filepath=empty_file_location,
