@@ -456,6 +456,9 @@ class MetaDataFormatter:
             geo_locations.append({"geoLocation": [{"geoLocationPlace": nam}]})
 
         spatial = self.package_metadata.get("spatial")
+        # Old eric has default of '{}' which represents empty
+        if spatial == "{}":
+            spatial = ""
         if spatial:
             spatial = json.loads(self.package_metadata.get("spatial"))
             if spatial["type"] == "Point":
