@@ -383,9 +383,18 @@ def doi_setup(tmp_path, datacite_instance, ckan_entities):
 
 
 def detect_ckan_instance(request):
+    def _extract_parameters(txt):
+        separated = txt[:-1].split("-")
+        initial = separated[0]
+        position = 0
+        while initial[position] != "[" or position > 5000: # prevent endless loop (should never be necessary)
+            position += 1
+        separated[0] = initial[(position + 1):]
+        return separated
+
     test_name = request.node.name
-    fixture_name = re.search(r"\[(.*?)\]", test_name).group(1)
-    return [f for f in fixture_name.split("-") if "ckan" in f and "instance" in f][0]
+    parameters = _extract_parameters(test_name)
+    return [p for p in parameters if "ckan" in p and "instance" in p][0]
 
 
 @pytest.fixture(scope="function")

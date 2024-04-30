@@ -1,6 +1,11 @@
+import json
 import pathlib
+from copy import deepcopy
 
+import ckanapi
 import pytest
+
+from ckool.ckan.publishing import create_package_raw
 from conftest import ckan_instance_names_of_fixtures
 
 from ckool import HASH_TYPE, UPLOAD_IN_PROGRESS_STRING
@@ -17,6 +22,7 @@ from ckool.templates import (
     upload_resource_file_via_scp,
     wrapped_upload,
 )
+from tests.ckool.data.inputs.ckan_entity_data import full_package_data, package_data
 
 hasher = get_hash_func(HASH_TYPE)
 
@@ -438,3 +444,58 @@ def test_wrapped_upload_for_both_upload_types(
     assert pathlib.Path(resource["url"]).name == f.name
     assert resource["hash"] == meta["hash"]
     assert resource["hashtype"] == meta["hashtype"]
+
+
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
+@pytest.mark.impure
+@pytest.mark.parametrize(
+    "spatial",
+    (
+        "",
+        '{"type": "Point", "coordinates": [8.609776496939471, 47.40384502816517]}',
+        '{"type": "MultiPoint", "coordinates": [[100.0, 0.0],[101.0, 1.0]]}',
+        '{"type": "LineString", "coordinates": [[100.0, 0.0], [101.0, 1.0]]}',
+        '{"type": "MultiLineString", "coordinates": [[[100.0, 0.0], [101.0, 1.0]], [[102.0, 2.0], [103.0, 3.0]]]}',
+        '{"type": "Polygon", "coordinates": [[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]]]}',
+        '{"type": "MultiPolygon", "coordinates": [[[[102.0, 2.0], [103.0, 2.0], [103.0, 3.0], [102.0, 3.0], [102.0, 2.0]]], [[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]], [[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]]]}',
+    )
+)
+def test_create_package_different_spatial_formats_valid(
+    cki,
+    tmp_path,
+    dynamic_ckan_instance,
+    dynamic_config,
+    ckan_entities,
+    dynamic_ckan_setup_data,
+    spatial,
+):
+    pkg = deepcopy(package_data)
+    pkg["name"] = "new_package"
+    pkg["owner_org"] = ckan_entities["test_organization"]
+    pkg["spatial"] = spatial
+    dynamic_ckan_instance.create_package(
+        **pkg
+    )
+
+
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
+@pytest.mark.impure
+@pytest.mark.parametrize("spatial", ("{}",))
+def test_create_package_different_spatial_formats_invalid(
+    cki,
+    tmp_path,
+    dynamic_ckan_instance,
+    dynamic_config,
+    ckan_entities,
+    dynamic_ckan_setup_data,
+    spatial,
+):
+    """This test is required for the old ckan"""
+    pkg = deepcopy(package_data)
+    pkg["name"] = "new_package"
+    pkg["owner_org"] = ckan_entities["test_organization"]
+    pkg["spatial"] = spatial
+    with pytest.raises(ckanapi.errors.ValidationError):
+        dynamic_ckan_instance.create_package(
+            **pkg
+        )
