@@ -69,6 +69,8 @@ def upload_resource_file_via_scp(
     metadata,
     progressbar: bool = True,
 ):
+    if isinstance(filepath, str):
+        filepath = pathlib.Path(filepath)
     # Upload empty resource (already using the correct metadata
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
