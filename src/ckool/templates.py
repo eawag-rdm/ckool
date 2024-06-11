@@ -225,7 +225,7 @@ def resource_integrity_remote_intact(
         resource_id_or_name=resource_id_or_name,
     )
     hash_local = meta["hash"]
-    LOGGER.info("... hashing resource file remotely.")
+    LOGGER.info(f"... hashing resource '{meta['name']}' remotely.")
     hash_remote_ = hash_remote(
         ckan_api_input,
         secure_interface_input,
