@@ -109,14 +109,34 @@ The variables needed to run all test must be specified in the `tool.pytest.ini_o
 ## Usage
 You can use the tool via its CLI. 
 
+### Additional Setup
+
+For taking full advantage of `ckool`'s functionalities, you need to have an API key (or token) ready to be used and for large file uploads, that will use **ssh** you will need an ssh key on the server. 
+Make sure the key is stored in the right user account, which must have write permissions in the ckan resource store. 
+
 ```shell
 ckool --help
 ```
 
-### Publishing example
+### Examples
 
+The `get` interface allows you to retrieve useful information from any configured ckan instance:
 ```shell
+# get the metadata of a package
+ckool get --no-verify -ci eric_staging metadata data-for-degradation-dispersal-cycles-on-polysaccharides
 
+# display local path of resource
+ckool get --no-verify -ci eric_open_staging local-path greifensee-abiotic-data-2018-june-2023 ReadMe.txt
+
+# get all metadata from ckan instance
+ckool get --no-verify -ci eric_open_staging all_metadata
+```
+
+Via `publish` packages can be moved from one ckan instance to another.
+```shell
+ckool -v publish -ci eric_staging package -cit eric_open_staging this-is-a-ckool-test-package -cdi -er large-file-3.img --hash-source-resources
+
+ckool publish --no-verify -ci eric_staging package -cit eric_open_staging --check-data-integrity --exclude-resources abc.bin --force-scp --keep-resources test-package-123
 ```
 
 ## Additional notes

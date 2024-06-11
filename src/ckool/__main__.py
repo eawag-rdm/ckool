@@ -650,7 +650,7 @@ def publish_package(
     exclude_resources: str = typer.Option(
         None,
         "--exclude-resources",
-        "-es",
+        "-er",
         help="Resource names to exclude from the publication process. Separate resource_names fields by comma. "
         "If multiple resources in the package share the same name, resource_ids must be provided.",
     ),
