@@ -177,15 +177,16 @@ def iter_package(
             yield {"file": file_or_folder, "folder": {}}
         elif file_or_folder.is_dir():
             if ignore_folders:
-                yield {
-                    "file": "",
-                    "folder": {
-                        "location": file_or_folder,
-                        "files": [],
-                        "archive_destination": None,
-                        "root_folder": file_or_folder.parent,
-                    },
-                }
+                continue
+                # yield {
+                #     "file": "",
+                #     "folder": {
+                #         "location": file_or_folder,
+                #         "files": [],
+                #         "archive_destination": None,
+                #         "root_folder": file_or_folder.parent,
+                #     },
+                # }
 
             if ignore_tmp_dir and TEMPORARY_DIRECTORY_NAME in file_or_folder.as_posix():
                 continue
