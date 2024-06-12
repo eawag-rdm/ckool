@@ -397,56 +397,6 @@ def _download_resource(
     )
 
 
-def _download_resources(
-    url_file: str,
-    destination_folder: str,
-    parallel: bool,
-    config: dict,
-    ckan_instance_name: str,
-    verify: bool,
-    test: bool,
-    chunk_size: int = DOWNLOAD_CHUNK_SIZE,
-):
-    destination = pathlib.Path(destination_folder)
-    if not destination.exists() or destination.is_file():
-        raise NotADirectoryError(
-            f"The destination folder '{destination.as_posix()}' you provided does not exist or it is not a folder."
-        )
-
-    url_file = pathlib.Path(url_file)
-    with url_file.open("r") as urls:
-        urls_to_download = [url for url in urls]
-
-    if parallel:
-        map_function_with_threadpool(
-            _download_resource,
-            [
-                [
-                    url,
-                    destination.as_posix(),
-                    config,
-                    ckan_instance_name,
-                    verify,
-                    test,
-                    chunk_size,
-                ]
-                for url in urls_to_download
-            ],
-        )
-    else:
-        for url in urls:
-            LOGGER.info(f"Downloading resource to '{destination.as_posix()}'.")
-            _download_resource(
-                url,
-                destination.as_posix(),
-                config,
-                ckan_instance_name,
-                verify,
-                test,
-                chunk_size,
-            )
-
-
 def _download_metadata(
     package_name: str,
     filter_fields: str,

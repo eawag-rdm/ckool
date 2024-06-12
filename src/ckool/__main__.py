@@ -11,7 +11,6 @@ from ckool.api import (
     _download_metadata,
     _download_package,
     _download_resource,
-    _download_resources,
     _get_local_resource_location,
     _patch_all_resource_hashes_in_package,
     _patch_datacite,
@@ -385,7 +384,6 @@ def get_local_resource_location(
     )
 
 
-# TODO: is this useful?
 @get_app.command("resource", help="Download a single resource.")
 def get_resource(
     package_name: str = typer.Argument(
@@ -405,36 +403,6 @@ def get_resource(
         package_name,
         resource_name,
         destination,
-        OPTIONS["config"],
-        OPTIONS["ckan-instance-name"],
-        OPTIONS["verify"],
-        OPTIONS["test"],
-    )
-
-
-# TODO: is this useful?
-@get_app.command("resources", help="Download all resources, specified in a file.")
-def get_resources(
-    url_file: str = typer.Argument(
-        help="A file containing all urls that should be downloaded. Each one in a new line.",
-    ),
-    destination: str = typer.Option(
-        pathlib.Path.cwd().as_posix(),
-        "--destination",
-        "-d",
-        help="Where should the resources be saved.",
-    ),
-    parallel: bool = typer.Option(
-        False,
-        "--parallel",
-        "-p",
-        help="Use multiple threads/processes to handle job.",
-    ),
-):
-    return _download_resources(
-        url_file,
-        destination,
-        parallel,
         OPTIONS["config"],
         OPTIONS["ckan-instance-name"],
         OPTIONS["verify"],
