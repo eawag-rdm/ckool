@@ -1,5 +1,5 @@
-from ckool.other.config_parser import generate_example_config
 from ckool import DEFAULT_TOML_NAME
+from ckool.other.config_parser import generate_example_config
 
 
 def test_generate_example_config_overwrite_protection(tmp_path):

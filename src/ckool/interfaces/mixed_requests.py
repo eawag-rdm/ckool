@@ -112,7 +112,6 @@ def _format_orcid_response(data):
 
 def search_orcid_by_author(author):
     data = _request_orcid(author)
-    print(data)
     if data["num-found"] == 0:
         return []
 
@@ -120,7 +119,6 @@ def search_orcid_by_author(author):
         return _format_orcid_response(data)
 
     data = _request_orcid(author, additional_filters=" AND affiliation-org-name: Eawag")
-    print(data)
     if data["num-found"] == 0:
         return []
 
