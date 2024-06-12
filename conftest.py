@@ -3,7 +3,6 @@ import multiprocessing
 import os
 import pathlib
 import queue
-import re
 from contextlib import contextmanager
 
 import ckanapi
@@ -387,9 +386,11 @@ def detect_ckan_instance(request):
         separated = txt[:-1].split("-")
         initial = separated[0]
         position = 0
-        while initial[position] != "[" or position > 5000: # prevent endless loop (should never be necessary)
+        while (
+            initial[position] != "[" or position > 5000
+        ):  # prevent endless loop (should never be necessary)
             position += 1
-        separated[0] = initial[(position + 1):]
+        separated[0] = initial[(position + 1) :]
         return separated
 
     test_name = request.node.name
