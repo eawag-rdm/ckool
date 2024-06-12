@@ -75,6 +75,18 @@ def test_search_orcid_by_author():
     ]
 
 
+def test_search_orcid_by_author_multiple_with_one_eawag_affiliation():
+    author = "Johnson, David"
+    assert search_orcid_by_author(author) == [
+        {"id": "0000-0002-6728-8462", "url": "https://orcid.org/0000-0002-6728-8462"}
+    ]
+
+
+def test_search_orcid_by_author_multiple_no_eawag_affiliation():
+    author = "Schmidt, Dieter"
+    assert search_orcid_by_author(author) == []
+
+
 def test_search_orcid_by_author_does_not_exist():
     author = "dsdsdsd, sdasas"
     assert search_orcid_by_author(author) == []

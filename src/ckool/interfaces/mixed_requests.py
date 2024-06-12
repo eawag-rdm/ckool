@@ -83,25 +83,48 @@ def url_exists(url):
         return False
 
 
-def search_orcid_by_author(author):
+def _request_orcid(author, additional_filters=""):
     last_name, first_name = author.split(", ")
     base_url = "https://pub.orcid.org/v3.0/search/"
     headers = {"Accept": "application/json"}
 
     query = f"family-name:{last_name} AND given-names:{first_name}"
+    if additional_filters:
+        query += additional_filters
     params = {"q": query}
 
     response = requests.get(base_url, headers=headers, params=params)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return []
 
-    if response.status_code == 200 and (data := response.json())["num-found"] > 0:
-        return [
-            {
-                "id": item["orcid-identifier"]["path"],
-                "url": item["orcid-identifier"]["uri"],
-            }
-            for item in data["result"]
-        ]
-    return []
+
+def _format_orcid_response(data):
+    return [
+        {
+            "id": item["orcid-identifier"]["path"],
+            "url": item["orcid-identifier"]["uri"],
+        }
+        for item in data["result"]
+    ]
+
+
+def search_orcid_by_author(author):
+    data = _request_orcid(author)
+    print(data)
+    if data["num-found"] == 0:
+        return []
+
+    if data and data["num-found"] == 1:
+        return _format_orcid_response(data)
+
+    data = _request_orcid(author, additional_filters=" AND affiliation-org-name: Eawag")
+    print(data)
+    if data["num-found"] == 0:
+        return []
+
+    return _format_orcid_response(data)
 
 
 def orcid_exists(orcid: str):
