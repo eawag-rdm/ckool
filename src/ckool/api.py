@@ -23,7 +23,7 @@ from ckool.ckan.publishing import (
     patch_package_raw,
     patch_resource_metadata_raw,
     publish_datacite_doi,
-    update_datacite_doi,
+    update_datacite_doi, create_organization_raw, create_project_raw,
 )
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
@@ -907,22 +907,55 @@ def _publish_package(
 
 def _publish_organization(
     organization_name: str,
+    ckan_instance_target: str,
     config: dict,
-    ckan_instance_name: str,
+    ckan_instance_source: str,
     verify: bool,
     test: bool,
 ):
-    raise NotImplementedError("This feature is not implemented yet.")
+    LOGGER.info("Reading config.")
+
+    cfg = parse_config_for_use(
+        config=config,
+        test=test,
+        verify=verify,
+        ckan_instance_source=ckan_instance_source,
+        ckan_instance_target=ckan_instance_target,
+    )
+    LOGGER.info(f"Retrieving data for organization '{organization_name}'.")
+    organization_data = cfg["ckan_source"].get_organization(organization_name)
+    LOGGER.info(f"... publishing.")
+    created = create_organization_raw(
+        cfg["ckan_target"], organization_data, datamanager=cfg["cfg_other_target"]["datamanager"]
+    )
+    return created
 
 
 def _publish_project(
     project_name: str,
+    ckan_instance_target: str,
     config: dict,
-    ckan_instance_name: str,
+    ckan_instance_source: str,
     verify: bool,
     test: bool,
 ):
-    raise NotImplementedError("This feature is not implemented yet.")
+    LOGGER.info("Reading config.")
+
+    cfg = parse_config_for_use(
+        config=config,
+        test=test,
+        verify=verify,
+        ckan_instance_source=ckan_instance_source,
+        ckan_instance_target=ckan_instance_target,
+    )
+    LOGGER.info(f"Retrieving data for project '{project_name}'.")
+    project_data = cfg["ckan_source"].get_project(project_name)
+
+    LOGGER.info(f"... publishing.")
+    created = create_project_raw(
+        cfg["ckan_target"], project_data, prepare_for_publication=False
+    )
+    return created
 
 
 def _publish_doi(

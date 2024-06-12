@@ -2,6 +2,7 @@ import json
 import time
 from unittest.mock import Mock
 
+import ckanapi
 import pytest
 from conftest import ckan_instance_names_of_fixtures
 
@@ -12,6 +13,7 @@ from ckool.api import (
     _publish_package,
     _upload_package,
     _upload_resource,
+    _publish_organization, _publish_project,
 )
 from ckool.other.caching import read_cache
 from ckool.other.file_management import (
@@ -755,3 +757,66 @@ def test_publish_package_do_not_create_missing(
         assert "Publication can not continue. These entities are missing:" in str(
             exc_info.value
         )
+
+
+@pytest.mark.slow
+@pytest.mark.open
+@pytest.mark.impure
+def test__publish_organization(
+    tmp_path,
+    doi_setup,
+    ckan_instance_name_internal,
+    ckan_instance_name_open,
+    full_config,
+    ckan_setup_data,
+    ckan_instance,
+    ckan_open_instance,
+    ckan_open_cleanup,
+    ckan_entities,
+):
+    with pytest.raises(ckanapi.errors.NotFound):
+        ckan_open_instance.get_organization(ckan_entities["test_organization"])
+
+    _publish_organization(
+        organization_name=ckan_entities["test_organization"],
+        ckan_instance_target=ckan_instance_name_open,
+        config=full_config,
+        ckan_instance_source=ckan_instance_name_internal,
+        verify=False,
+        test=True
+    )
+    assert ckan_open_instance.get_organization(ckan_entities["test_organization"])
+
+
+@pytest.mark.slow
+@pytest.mark.open
+@pytest.mark.impure
+def test__publish_project(
+    tmp_path,
+    doi_setup,
+    ckan_instance_name_internal,
+    ckan_instance_name_open,
+    full_config,
+    ckan_setup_data,
+    ckan_instance,
+    ckan_open_instance,
+    ckan_open_cleanup,
+    ckan_entities,
+):
+    with pytest.raises(ckanapi.errors.NotFound):
+        ckan_open_instance.get_organization(ckan_entities["test_project"])
+
+    _publish_project(
+        project_name=ckan_entities["test_project"],
+        ckan_instance_target=ckan_instance_name_open,
+        config=full_config,
+        ckan_instance_source=ckan_instance_name_internal,
+        verify=False,
+        test=True
+    )
+
+    assert ckan_open_instance.get_project(ckan_entities["test_project"])
+
+
+
+

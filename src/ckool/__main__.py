@@ -741,13 +741,21 @@ def publish_organization(
     organization_name: str = typer.Argument(
         help="Name of the organization to publish.",
     ),
+    ckan_instance_target: str = typer.Option(
+        None,
+        "--ckan-instance-target",
+        "-cit",
+        help="If more than 2 instances are defined in your .ckool.toml configuration file, "
+        "specify the instance to publish to.",
+    ),
 ):
     return _publish_organization(
         organization_name,
-        OPTIONS["config"],
-        OPTIONS["ckan-instance-name"],
-        OPTIONS["verify"],
-        OPTIONS["test"],
+        ckan_instance_target=ckan_instance_target,
+        config=OPTIONS["config"],
+        ckan_instance_source=OPTIONS["ckan-instance-name"],
+        verify=OPTIONS["verify"],
+        test=OPTIONS["test"],
     )
 
 
@@ -758,13 +766,21 @@ def publish_project(
     project_name: str = typer.Argument(
         help="Name of the organization to publish.",
     ),
+    ckan_instance_target: str = typer.Option(
+        None,
+        "--ckan-instance-target",
+        "-cit",
+        help="If more than 2 instances are defined in your .ckool.toml configuration file, "
+        "specify the instance to publish to.",
+    ),
 ):
     return _publish_project(
         project_name,
-        OPTIONS["config"],
-        OPTIONS["ckan-instance-name"],
-        OPTIONS["verify"],
-        OPTIONS["test"],
+        ckan_instance_target=ckan_instance_target,
+        config=OPTIONS["config"],
+        ckan_instance_source=OPTIONS["ckan-instance-name"],
+        verify=OPTIONS["verify"],
+        test=OPTIONS["test"],
     )
 
 
