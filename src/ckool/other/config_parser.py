@@ -4,7 +4,7 @@ from textwrap import dedent
 
 import tomllib
 
-from ckool import DEFAULT_TOML_NAME
+from ckool import DEFAULT_TOML_NAME, LOGGER
 from ckool.ckan.ckan import CKAN
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
@@ -76,6 +76,12 @@ def parse_config(config_file: pathlib.Path):
 def generate_example_config(config_file: pathlib.Path = None):
     if config_file.exists() and config_file.is_dir():
         config_file = config_file / DEFAULT_TOML_NAME
+
+    if config_file.exists():
+        LOGGER.info(
+            f"A config file at '{config_file.as_posix()}' already exists. Aborting example generation."
+        )
+        return
     with open(config_file, "w+") as file:
         file.write(CKOOL_TOML)
 
