@@ -42,7 +42,7 @@ def ask_for_affiliations(
             prompt_func(
                 f"Affiliation for '{author}' (enter 'skip' to skip)",
                 default=default_affiliation,
-                show_default=False,
+                show_default=True,
             )
             .lstrip()
             .rstrip()

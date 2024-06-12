@@ -84,6 +84,7 @@ def generate_example_config(config_file: pathlib.Path = None):
         return
     with open(config_file, "w+") as file:
         file.write(CKOOL_TOML)
+        return config_file
 
 
 def load_config(config_file: pathlib.Path = None):
