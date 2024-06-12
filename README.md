@@ -139,6 +139,12 @@ ckool -v publish -ci eric_staging package -cit eric_open_staging this-is-a-ckool
 ckool publish --no-verify -ci eric_staging package -cit eric_open_staging --check-data-integrity --exclude-resources abc.bin --force-scp --keep-resources test-package-123
 ```
 
+Via `patch` data within packages can be changed:
+```shell
+# update a resource hash
+ckool -v patch -ci eric_open_staging resource_hash this-is-a-ckool-test-package large-file-2.img
+```
+
 ## Additional notes
 - For uploading resource via API a user that does have permissions to write in the ckan datastorage location must be present on the system. (ERIC Open - ckan user created on system)
 - 

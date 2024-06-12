@@ -71,7 +71,7 @@ def upload_resource_file_via_scp(
 ):
     if isinstance(filepath, str):
         filepath = pathlib.Path(filepath)
-    # Upload empty resource (already using the correct metadata
+    # Upload empty resource (already using the correct metadata)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
         empty = tmp / filepath.name
@@ -81,12 +81,14 @@ def upload_resource_file_via_scp(
         ckan_instance.create_resource_of_type_file(
             file=empty, package_id=package_name, progressbar=False, **metadata
         )
-
         empty.unlink()
+
+    if not (resource_name := metadata.get("name")):
+        resource_name = filepath.name
 
     empty_file_location = ckan_instance.get_local_resource_path(
         package_name=package_name,
-        resource_id_or_name=filepath.name,
+        resource_id_or_name=resource_name,
         ckan_storage_path=ckan_storage_path,
     )
 
