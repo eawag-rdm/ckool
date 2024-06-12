@@ -134,8 +134,10 @@ ckool get --no-verify -ci eric_open_staging all_metadata
 
 Via `publish` packages can be moved from one ckan instance to another.
 ```shell
+# with official CA certificate
 ckool -v publish -ci eric_staging package -cit eric_open_staging this-is-a-ckool-test-package -cdi -er large-file-3.img --hash-source-resources
 
+# without official ca certificate
 ckool publish --no-verify -ci eric_staging package -cit eric_open_staging --check-data-integrity --exclude-resources abc.bin --force-scp --keep-resources test-package-123
 ```
 
