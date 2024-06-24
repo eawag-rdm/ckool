@@ -17,13 +17,15 @@ from ckool import (
 )
 from ckool.ckan.ckan import CKAN
 from ckool.ckan.publishing import (
+    create_organization_raw,
     create_package_raw,
+    create_project_raw,
     create_resource_raw,
     enrich_and_store_metadata,
     patch_package_raw,
     patch_resource_metadata_raw,
     publish_datacite_doi,
-    update_datacite_doi, create_organization_raw, create_project_raw,
+    update_datacite_doi,
 )
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
@@ -36,7 +38,6 @@ from ckool.other.types import CompressionTypes, HashTypes
 from ckool.other.utilities import resource_is_link
 from ckool.parallel_runner import (
     map_function_with_processpool,
-    map_function_with_threadpool,
 )
 from ckool.templates import (
     create_resource_raw_wrapped,
@@ -874,9 +875,11 @@ def _publish_organization(
     )
     LOGGER.info(f"Retrieving data for organization '{organization_name}'.")
     organization_data = cfg["ckan_source"].get_organization(organization_name)
-    LOGGER.info(f"... publishing.")
+    LOGGER.info("... publishing.")
     created = create_organization_raw(
-        cfg["ckan_target"], organization_data, datamanager=cfg["cfg_other_target"]["datamanager"]
+        cfg["ckan_target"],
+        organization_data,
+        datamanager=cfg["cfg_other_target"]["datamanager"],
     )
     return created
 
@@ -901,7 +904,7 @@ def _publish_project(
     LOGGER.info(f"Retrieving data for project '{project_name}'.")
     project_data = cfg["ckan_source"].get_project(project_name)
 
-    LOGGER.info(f"... publishing.")
+    LOGGER.info("... publishing.")
     created = create_project_raw(
         cfg["ckan_target"], project_data, prepare_for_publication=False
     )

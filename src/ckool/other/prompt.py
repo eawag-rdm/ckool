@@ -3,7 +3,7 @@ from typing import Callable
 from rich import print as rprint
 from rich.prompt import Prompt
 
-from ckool import DEFAULT_AFFILIATION
+from ckool import DEFAULT_AFFILIATION, LOGGER
 from ckool.datacite.parse_datacite_schema import SchemaParser
 from ckool.interfaces.mixed_requests import (
     doi_exists,
@@ -25,6 +25,12 @@ def ask_for_affiliations(
     prompt_func: Callable = Prompt.ask,
     default_affiliation: str = DEFAULT_AFFILIATION,
 ):
+    if not authors:
+        LOGGER.info(
+            "The package's authors are not in the right format. Skip prompting for affiliations."
+        )
+        return
+
     if not is_yes("Do you want to provide affiliations?", prompt_func=prompt_func):
         return
 
@@ -170,6 +176,12 @@ def prompt_orcid(author: str, prompt_func: Callable = Prompt.ask):
 
 
 def ask_for_orcids(authors: list, prompt_func: Callable = Prompt.ask):
+    if not authors:
+        LOGGER.info(
+            "The package's authors are not in the right format. Skip prompting for ORCiDs."
+        )
+        return
+
     if not is_yes("Do you want to provide ORCiDs?", prompt_func=prompt_func):
         return
 

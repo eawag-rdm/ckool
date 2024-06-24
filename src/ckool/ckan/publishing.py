@@ -7,7 +7,7 @@ from rich.prompt import Prompt
 from ckool.ckan.ckan import CKAN
 from ckool.datacite.datacite import DataCiteAPI
 from ckool.datacite.doi_store import LocalDoiStore
-from ckool.datacite.metadata_formatter import MetaDataFormatter, split_author
+from ckool.datacite.metadata_formatter import MetaDataFormatter, try_splitting_authors
 from ckool.datacite.xml_writer import MetaDataToXMLConverter
 from ckool.other.caching import update_cache
 from ckool.other.metadata_tools import (
@@ -401,10 +401,7 @@ def enrich_and_store_metadata(
 ):
     filepath_xml = local_doi_store_instance.generate_xml_filepath(package_name)
 
-    authors = [
-        "{1}, {0}".format(*split_author(author)) for author in metadata["author"]
-    ]
-
+    authors = try_splitting_authors(metadata["author"])
     if ask_orcids:
         orcids = ask_for_orcids(authors=authors, prompt_func=prompt_function)
         if orcids:

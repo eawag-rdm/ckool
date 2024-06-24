@@ -38,6 +38,20 @@ def split_author(author):
     return first, last, email
 
 
+def try_splitting_authors(authors):
+    """
+    if authors are not ppl but organizations (like in the NADUF dataset) this functon should return [], as it is used by
+    'enrich_and_store_metadata' in 'ask_for_orcids', 'ask_for_affiliations'.
+    """
+    extracted_authors = []
+    for author in authors:
+        try:
+            extracted_authors.append("{1}, {0}".format(*split_author(author)))
+        except ValueError:
+            return []
+    return extracted_authors
+
+
 def _description_parse(desc):
     # creates a list of br-elements (<children>) with appropriate tails
     # and a string <text>, representing the text-value of the parent.

@@ -10,10 +10,11 @@ from ckool import TEMPORARY_DIRECTORY_NAME, UPLOAD_IN_PROGRESS_STRING
 from ckool.api import (
     _download_resource,
     _prepare_package,
+    _publish_organization,
     _publish_package,
+    _publish_project,
     _upload_package,
     _upload_resource,
-    _publish_organization, _publish_project,
 )
 from ckool.other.caching import read_cache
 from ckool.other.file_management import (
@@ -783,7 +784,7 @@ def test__publish_organization(
         config=full_config,
         ckan_instance_source=ckan_instance_name_internal,
         verify=False,
-        test=True
+        test=True,
     )
     assert ckan_open_instance.get_organization(ckan_entities["test_organization"])
 
@@ -812,11 +813,7 @@ def test__publish_project(
         config=full_config,
         ckan_instance_source=ckan_instance_name_internal,
         verify=False,
-        test=True
+        test=True,
     )
 
     assert ckan_open_instance.get_project(ckan_entities["test_project"])
-
-
-
-

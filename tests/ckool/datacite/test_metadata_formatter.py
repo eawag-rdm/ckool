@@ -1,6 +1,18 @@
 import json
 
-from ckool.datacite.metadata_formatter import MetaDataFormatter
+from ckool.datacite.metadata_formatter import MetaDataFormatter, try_splitting_authors
+
+
+def test_try_splitting_authors():
+    authors = [
+        "Eawag: Swiss Federal Institute of Aquatic Science and Technology",
+        "Federal Office for the Environment(FOEN)",
+    ]
+
+    assert try_splitting_authors(authors) == []
+    assert try_splitting_authors(
+        ["förster, christian <christian.foerster@eawag.ch>", "dennis, stuart"]
+    ) == ["förster, christian", "dennis, stuart"]
 
 
 def test_init_metadata_formatter(tmp_path, json_test_data):
