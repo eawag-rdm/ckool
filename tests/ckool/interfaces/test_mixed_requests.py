@@ -4,6 +4,7 @@ from ckool.interfaces.mixed_requests import (
     fix_publication_link,
     get_citation_from_doi,
     search_orcid_by_author,
+doi_exists
 )
 
 
@@ -90,3 +91,9 @@ def test_search_orcid_by_author_multiple_no_eawag_affiliation():
 def test_search_orcid_by_author_does_not_exist():
     author = "dsdsdsd, sdasas"
     assert search_orcid_by_author(author) == []
+
+
+def test_doi_exists():
+    assert not doi_exists("10.1016/jghnfgxxyvxyvxcxvcv")
+    assert doi_exists("https://doi.org/10.1016/j.jenvman.2024.121465")
+    assert doi_exists("10.1016/j.jenvman.2024.121465")

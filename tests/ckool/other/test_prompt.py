@@ -1,12 +1,70 @@
+import pathlib
 from unittest.mock import Mock
 
 import pytest
 
+from ckool.datacite.parse_datacite_schema import SchemaParser
 from ckool.other.prompt import (
     ask_for_affiliations,
     prompt_orcid,
     prompt_related_identifiers,
 )
+
+
+sp = SchemaParser(
+    pathlib.Path(__file__).parent.parent.parent.parent
+    / "src"
+    / "ckool"
+    / "datacite"
+    / "schema"
+    / "datacite"
+    / "metadata_schema_4.5.xsd"
+)
+
+
+@pytest.mark.parametrize(
+    "relationType", sp.get_schema_choices("relationType")
+)
+def test_prompt_related_identifiers_check_all_relation_types(relationType):
+    mock_prompt = Mock()
+    mock_prompt.side_effect = [
+        "DOI",
+        "Collection",
+        relationType,
+        "10.3389/fmicb.2019.03155",
+    ]
+
+    result = prompt_related_identifiers(prompt_func=mock_prompt)
+
+    expected_result = {
+        "relatedIdentifier": {
+            "val": "10.3389/fmicb.2019.03155",
+            "att": {
+                "resourceTypeGeneral": "Collection",
+                "relatedIdentifierType": "DOI",
+                "relationType": relationType,
+            },
+        }
+    }
+
+    assert result == expected_result
+
+
+@pytest.mark.parametrize(
+    "doi", ["sdfsdfsfsd", "10.1016/j.abcdcddccdcdc.2024.121465 "]
+)
+def test_prompt_doi_exists_check_not_exists(doi):
+    mock_prompt = Mock()
+    mock_prompt.side_effect = [
+        "DOI",
+        "Collection",
+        "IsSupplementTo",
+        doi,
+    ]
+    try:
+        _ = prompt_related_identifiers(prompt_func=mock_prompt)
+    except Exception as e:
+        assert isinstance(e, StopIteration)
 
 
 def test_prompt_related_identifiers_valid_doi():

@@ -62,10 +62,10 @@ def identifier_exists(identifier_info: dict):
     rel_id_typ = identifier_info["relatedIdentifier"]["att"]["relatedIdentifierType"]
     val = identifier_info["relatedIdentifier"]["val"]
     if rel_id_typ == "DOI":
-        rprint(f"... checking the if the 'DOI: {val}' exists.")
+        rprint(f"... checking the if the DOI '{val}' exists.")
         return doi_exists(val)
     elif rel_id_typ == "URL":
-        rprint(f"... checking the if the 'URL: {val}' exists.")
+        rprint(f"... checking the if the URL '{val}' exists.")
         return url_exists(val)
     else:
         return True  # if no check implemented assuming the identifier exists
@@ -133,7 +133,8 @@ def ask_for_related_identifiers(prompt_func: Callable = Prompt.ask):
 
     identifiers = []
     while identifier_info := prompt_related_identifiers(prompt_func):
-        identifiers.append(identifier_info)
+        if identifier_info is not None:
+            identifiers.append(identifier_info)
 
     return identifiers
 

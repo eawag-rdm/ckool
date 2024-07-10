@@ -5,8 +5,13 @@ from ckool.datacite.datacite import DataCiteException
 
 @pytest.mark.impure
 def test_doi_list_via_client(datacite_instance):
-    datacite_instance.doi_list_via_client()
-    _ = "10.5524/this-is-a-test-no-doi"
+    dois = datacite_instance.doi_list_via_client()
+    # for data in dois:
+    #     doi = data["id"]
+    #     try:
+    #         datacite_instance.doi_delete(doi)
+    #     except Exception as e:
+    #         print(e)
     # d = datacite_instance.doi_delete(doi)
     # assert datacite_instance.doi_list_via_client() == []
 
