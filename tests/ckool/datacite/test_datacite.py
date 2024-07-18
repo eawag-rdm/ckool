@@ -16,9 +16,30 @@ def test_doi_list_via_client(datacite_instance):
     # assert datacite_instance.doi_list_via_client() == []
 
 
+def test_generate_unused_dois(datacite_instance):
+    dois = ['10.5524/000000', '10.5524/000011', '10.5524/000022', '10.5524/000033', '10.5524/000044', '10.5524/000055']
+    generated = [doi for doi in datacite_instance._generate_unused_dois(
+        dois, 2, datacite_instance.prefix, datacite_instance.offset
+    )]
+    assert generated == ['10.5524/000066', '10.5524/000077']
+
+    dois = ['10.5524/000000', '10.5524/000033']
+    generated = [doi for doi in datacite_instance._generate_unused_dois(
+        dois, 1, datacite_instance.prefix, datacite_instance.offset
+    )]
+    assert generated == ['10.5524/000011']
+
+    dois = ['10.5524/000000', '10.5524/000033']
+    generated = [doi for doi in datacite_instance._generate_unused_dois(
+        dois, 4, datacite_instance.prefix, datacite_instance.offset
+    )]
+    assert generated == ['10.5524/000011', '10.5524/000022', '10.5524/000044', '10.5524/000055']
+
+
 @pytest.mark.impure
 def test_doi_list_via_prefix(datacite_instance):
-    datacite_instance.doi_list_via_prefix()
+    dois = datacite_instance.doi_list_fast()
+    print(dois)
     # assert datacite_instance.doi_list_via_prefix() == []
 
 

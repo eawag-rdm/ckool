@@ -1,3 +1,4 @@
+import re
 from base64 import b64encode
 from urllib.parse import urljoin
 
@@ -6,7 +7,7 @@ from requests.auth import HTTPBasicAuth
 
 from ckool.other.utilities import get_secret
 
-from .doi_generator import generate_doi
+from .doi_generator import generate_doi, revert_doi
 
 
 def requests_raise_add(response, status_code, message):
@@ -39,15 +40,24 @@ class DataCiteAPI:
     def generate_doi_url(package_name: str):
         return f"https://opendata.eawag.ch/dataset/{package_name}"
 
-    def doi_generate_string(self, n, offset=None):
-        if offset is None:
-            offset = self.offset
-        return generate_doi(self.prefix, n, offset)
+    @staticmethod
+    def _generate_unused_dois(dois, number_to_generate, prefix, offset):
+        i = 0
+        generated = 0
+        while generated < number_to_generate:
+            _doi = generate_doi(prefix, i, offset)
+            if _doi not in dois:
+                yield _doi
+                generated += 1
+            i += 1
 
-    def doi_generate_string_unused(self, offset=None):
+    def doi_generate_n_strings_unused(self, n=1, offset=None):
         if offset is None:
             offset = self.offset
-        return generate_doi(self.prefix, len(self.doi_list_via_client()), offset)
+        dois = self.doi_list_fast()
+        return [
+            doi for doi in self._generate_unused_dois(dois, n, self.prefix, offset)
+        ]
 
     def doi_list_via_client(self, client_id=None, page_size=1000, page_number=1):
         if client_id is None:
@@ -65,19 +75,26 @@ class DataCiteAPI:
         response.raise_for_status()
         return response.json()["data"]
 
-    def doi_list_via_prefix(self, page_size=1000, page_number=1):
+    def doi_list_fast(
+        self, client_id=None, page_size=1000, page_number=1
+    ):
+        if client_id is None:
+            client_id = self.username
         response = requests.get(
             url=urljoin(self.host, "dois"),
             headers={"accept": "application/vnd.api+json"},
             params={
-                "prefix": self.prefix,
+                "client-id": client_id,
+                "fields[dois]": "doi",
                 "page[size]": page_size,
                 "page[number]": page_number,
             },
             auth=self.auth,
+            timeout=5.0,
         )
         response.raise_for_status()
-        return response.json()["data"]
+        return [d["id"] for d in response.json()["data"]]
+
 
     def _filter(self, record):
         # print("\tFiltering {}".format(record["doi"]))
@@ -182,3 +199,5 @@ class DataCiteAPI:
         if return_response:
             return response.json()["data"]
         return response.ok
+
+
