@@ -59,6 +59,13 @@ def test_fix_publication_link_doi():
     }
 
 
+@pytest.mark.dora
+@pytest.mark.impure
+def test_fix_publication_link_doi_2():
+    publication_link = " https://doi.org/10.1088/1748-9326/ad6462 "
+    _ = fix_publication_link(publication_link)
+
+
 def test_fix_publication_link_other():
     publication_link = "https://whatevar.url/this/is.txt"
     res = fix_publication_link(publication_link)

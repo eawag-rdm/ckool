@@ -29,6 +29,7 @@ def get_citation_from_doi(doi, prefix=10.25678):
 
 
 def fix_publication_link(publication_link):
+    publication_link = publication_link.lstrip(" ").rstrip(" ")  # removes of leading and trailing whitespaces!
     if not publication_link:
         return {}
     elif re.search(r"lib4ri", publication_link):
@@ -38,7 +39,6 @@ def fix_publication_link(publication_link):
         paper_dois = [
             tag.get("content") for tag in bs.find_all("meta", {"name": "citation_doi"})
         ]
-
         if paper_dois:
             paper_doi = paper_dois[0]
             publicationlink = f"https://doi.org/{paper_doi}"
