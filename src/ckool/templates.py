@@ -73,7 +73,10 @@ def upload_resource_file_via_scp(
 ):
     if isinstance(filepath, str):
         filepath = pathlib.Path(filepath)
-    # Upload empty resource (already using the correct metadata)
+
+    real_hash = metadata["hash"]
+    metadata["hash"] = UPLOAD_IN_PROGRESS_STRING
+
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
         empty = tmp / filepath.name
@@ -99,6 +102,14 @@ def upload_resource_file_via_scp(
         local_filepath=filepath,
         remote_filepath=empty_file_location,
         progressbar=progressbar,
+    )
+
+    resource_id = ckan_instance.resolve_resource_id_or_name_to_id(
+        package_name=package_name, resource_id_or_name=filepath.name
+    )["id"]
+
+    ckan_instance.patch_resource_metadata(
+        resource_id=resource_id, resource_data_to_update={"hash": real_hash}
     )
 
 
@@ -389,8 +400,6 @@ def wrapped_upload(
     del meta_copy["file"]
 
     # Check if resource with corresponding hash is already on ckan
-    real_hash = meta_copy["hash"]
-    meta_copy["hash"] = UPLOAD_IN_PROGRESS_STRING
     LOGGER.info(f"... uploading resource '{filepath.name}' to '{package_name}'.")
     if ckan_instance.resource_exists(
         package_name=package_name, resource_name=filepath.name
@@ -400,7 +409,7 @@ def wrapped_upload(
             package_name=package_name, resource_id_or_name=filepath.name
         )
 
-        if meta_on_ckan["hash"] == real_hash:
+        if meta_on_ckan["hash"] == meta_copy["hash"]:
             # Resource is already on ckan and was uploaded successfully, skip resource upload
             LOGGER.info(
                 "... resource hash on CKAN matches the local hash, upload skipped."
@@ -434,9 +443,6 @@ def wrapped_upload(
         package_name=package_name, resource_id_or_name=filepath.name
     )["id"]
 
-    ckan_instance.patch_resource_metadata(
-        resource_id=resource_id, resource_data_to_update={"hash": real_hash}
-    )
     return {"id": resource_id, "name": filepath.name, "status": status}
 
 
