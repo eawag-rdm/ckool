@@ -14,6 +14,7 @@ COMPRESSION_TYPE = CompressionTypes.zip
 OVERWRITE_FILE_STATS = True
 DOWNLOAD_CHUNK_SIZE = 8192
 PACKAGE_META_DATA_FILE_ENDING = ".json.meta"
+PUBLICATION_INTEGRITY_CHECK_CACHE = "integrity-check-cache.json"
 UPLOAD_FUNC_FACTOR = 4.8
 UPLOAD_IN_PROGRESS_STRING = "-- scp overwrite in progress --"
 

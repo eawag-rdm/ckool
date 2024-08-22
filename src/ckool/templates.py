@@ -1,4 +1,5 @@
 import pathlib
+import sys
 import tempfile
 from copy import deepcopy
 from typing import Callable
@@ -13,6 +14,7 @@ from ckool import (
     TEMPORARY_DIRECTORY_NAME,
     UPLOAD_FUNC_FACTOR,
     UPLOAD_IN_PROGRESS_STRING,
+    PUBLICATION_INTEGRITY_CHECK_CACHE,
 )
 from ckool.ckan.ckan import CKAN, filter_resources
 from ckool.ckan.publishing import (
@@ -218,31 +220,58 @@ def resource_integrity_remote_intact(
     ckan_storage_path: str,
     package_name: str,
     resource_id_or_name: str,
+    cache_directory: pathlib.Path
 ):
+    hash_remote_ = None
+    cf = {}
+
     LOGGER.info(f"... checking resource integrity for '{resource_id_or_name}'.")
     ckan = CKAN(**ckan_api_input)
     LOGGER.info("... retrieving hash value from CKAN.")
+
     meta = ckan.get_resource_meta(
         package_name=package_name,
         resource_id_or_name=resource_id_or_name,
     )
     hash_local = meta["hash"]
-    LOGGER.info(f"... hashing resource '{meta['name']}' remotely.")
-    hash_remote_ = hash_remote(
-        ckan_api_input,
-        secure_interface_input,
-        ckan_storage_path,
-        package_name,
-        resource_id_or_name,
-        hashtype=meta["hashtype"],
-    )
+
+    integrity_cache_file = cache_directory / PUBLICATION_INTEGRITY_CHECK_CACHE
+    temporary_resource_name = f"{meta['id']}-{meta['name']}"
+    integrity_cache_key = f"remote-{temporary_resource_name}"
+    if integrity_cache_file.exists():
+        cf = read_cache(integrity_cache_file)
+        hash_remote_ = cf.get(integrity_cache_key, None)
+
+    if hash_remote_ is None:
+        LOGGER.info(f"... hashing resource '{meta['name']}' remotely.")
+        hash_remote_ = hash_remote(
+            ckan_api_input,
+            secure_interface_input,
+            ckan_storage_path,
+            package_name,
+            resource_id_or_name,
+            hashtype=meta["hashtype"],
+        )
+    else:
+        LOGGER.info(f"... using cached remote hash for resource '{meta['name']}'.")
+
     if not hash_local == hash_remote_:
-        raise DataIntegrityError(
+        LOGGER.warn(
             f"The local hash and the remote hash are different. The data integrity is compromised.\n"
             f"local hash: '{hash_local}'\n"
             f"remote hash: {hash_remote_}"
+            "\nUpdating the resource hash on CKAN. The resource will be re-uploaded, when running 'ckool' again."
         )
+        ckan.patch_resource_metadata(
+            resource_id=resource_id_or_name,
+            resource_data_to_update={"hash": hash_remote_, "hashtype": meta["hashtype"]},
+        )
+        sys.exit()
     LOGGER.info("... resource integrity intact.")
+
+    cf[integrity_cache_key] = hash_local
+    update_cache(cf, integrity_cache_file)
+
     return hash_local == hash_remote_
 
 
@@ -251,6 +280,7 @@ def package_integrity_remote_intact(
     secure_interface_input: dict,
     ckan_storage_path: str,
     package_name: str,
+    cache_directory: pathlib.Path
 ):
     LOGGER.info(f"... checking resource integrity for package '{package_name}'.")
     ckan = CKAN(**ckan_api_input)
@@ -264,6 +294,7 @@ def package_integrity_remote_intact(
             ckan_storage_path=ckan_storage_path,
             package_name=package_name,
             resource_id_or_name=resource["name"],
+            cache_directory=cache_directory
         )
         if not intact:
             raise ValueError(
@@ -670,6 +701,8 @@ def handle_resource_download_with_integrity_check(
     id_ = resource["id"]
     temporary_resource_name = f"{id_}-{name}"
     temporary_resource_path = cwd / temporary_resource_name
+    integrity_cache_file = cwd / PUBLICATION_INTEGRITY_CHECK_CACHE
+    integrity_cache_key = f"local-{temporary_resource_name}"
     if not temporary_resource_path.exists() or re_download:
         ckan_source.download_resource(
             package_name=package_name,
@@ -683,14 +716,27 @@ def handle_resource_download_with_integrity_check(
         if not resource["hash"]:
             raise ValueError(f"No resource hash for '{resource['name']}'.")
 
-        hash_func = get_hash_func(resource["hashtype"])
-        hash_local = hash_func(temporary_resource_path)
+        cf = {}
+        if integrity_cache_file.exists():
+            cf = read_cache(integrity_cache_file)
+
+        if (hash_local := cf.get(integrity_cache_key)) and not re_download:
+            LOGGER.info(f"... using cached local hash for resource '{resource['name']}'.")
+        else:
+            hash_func = get_hash_func(resource["hashtype"])
+            hash_local = hash_func(temporary_resource_path)
+
         if hash_local != resource["hash"]:
-            raise ValueError(
+            LOGGER.warn(
                 f"Something went wrong. The hash value '{hash_local}' ('{resource['hashtype']}') of the "
                 f"downloaded resource '{temporary_resource_name}' does not match the one "
-                f"on CKAN '{resource['hash']}'."
+                f"on CKAN '{resource['hash']}'. "
+                f"Resource will be deleted locally and re-downloaded when running 'ckool' again."
             )
+            temporary_resource_path.unlink()
+            sys.exit()
+        cf[integrity_cache_key] = hash_local
+        update_cache(cf, integrity_cache_file)
     return {"id": id_, "name": temporary_resource_name}
 
 

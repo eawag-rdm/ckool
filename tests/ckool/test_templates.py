@@ -1,4 +1,5 @@
 import pathlib
+import time
 from copy import deepcopy
 
 import ckanapi
@@ -14,6 +15,7 @@ from ckool.templates import (
     handle_upload_all,
     hash_remote,
     resource_integrity_between_ckan_instances_intact,
+    handle_resource_download_with_integrity_check,
     resource_integrity_remote_intact,
     upload_resource_file_via_api,
     upload_resource_file_via_scp,
@@ -130,6 +132,7 @@ def test_upload_resource_file_via_scp(
         ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
+        cache_directory=tmp_path
     )
 
 
@@ -185,6 +188,7 @@ def test_upload_func_chosen_api_file(
         ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
+        cache_directory=tmp_path
     )
 
 
@@ -240,6 +244,7 @@ def test_upload_func_chosen_scp(
         ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
+        cache_directory=tmp_path
     )
 
 
@@ -492,3 +497,113 @@ def test_create_package_different_spatial_formats_invalid(
     pkg["spatial"] = spatial
     with pytest.raises(ckanapi.errors.ValidationError):
         dynamic_ckan_instance.create_package(**pkg)
+
+
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
+@pytest.mark.impure
+def test_resource_integrity_remote_intact_cache(
+    cki,
+    tmp_path,
+    dynamic_ckan_instance,
+    dynamic_config,
+    ckan_entities,
+    dynamic_ckan_setup_data,
+    large_file
+):
+    meta = {
+        "file": large_file,
+        "package_id": ckan_entities["test_package"],
+        "size": large_file.stat().st_size,
+        "hash": hasher(large_file),
+        "format": large_file.suffix[1:],
+        "hashtype": HASH_TYPE,
+    }
+    _ = dynamic_ckan_instance.create_resource_of_type_file(**meta)
+    ckan_input_args = {
+        "token": dynamic_ckan_instance.token,
+        "server": dynamic_ckan_instance.server,
+        "verify_certificate": dynamic_ckan_instance.verify,
+    }
+
+    st = time.perf_counter()
+    resource_integrity_remote_intact(
+        ckan_api_input=ckan_input_args,
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
+        package_name=ckan_entities["test_package"],
+        resource_id_or_name=large_file.name,
+        cache_directory=tmp_path
+
+    )
+    dt_long = time.perf_counter() - st
+
+    st = time.perf_counter()
+    resource_integrity_remote_intact(
+        ckan_api_input=ckan_input_args,
+        secure_interface_input=dynamic_config["ckan_server"][0],
+        ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
+        package_name=ckan_entities["test_package"],
+        resource_id_or_name=large_file.name,
+        cache_directory=tmp_path
+    )
+    dt_short = time.perf_counter() - st
+    assert dt_long > dt_short * 10
+
+
+@pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)
+@pytest.mark.parametrize("re_download", [True, False])
+@pytest.mark.impure
+def test_handle_resource_download_with_integrity_check(
+    cki,
+    re_download,
+    tmp_path,
+    dynamic_ckan_instance,
+    dynamic_config,
+    ckan_entities,
+    dynamic_ckan_setup_data,
+    large_file,
+):
+    meta = {
+        "file": large_file,
+        "package_id": ckan_entities["test_package"],
+        "size": large_file.stat().st_size,
+        "hash": hasher(large_file),
+        "format": large_file.suffix[1:],
+        "hashtype": HASH_TYPE,
+
+    }
+    _ = dynamic_ckan_instance.create_resource_of_type_file(**meta)
+    ckan_input_args = {
+        "token": dynamic_ckan_instance.token,
+        "server": dynamic_ckan_instance.server,
+        "verify_certificate": dynamic_ckan_instance.verify,
+    }
+    meta = dynamic_ckan_instance.get_resource_meta(
+            ckan_entities["test_package"], large_file.name
+    )
+
+    st = time.perf_counter()
+    assert handle_resource_download_with_integrity_check(
+        cfg_ckan_source=ckan_input_args,
+        package_name=ckan_entities["test_package"],
+        resource=meta,
+        check_data_integrity=True,
+        cwd=tmp_path,
+        re_download=re_download,
+    )
+    dt_long = time.perf_counter() - st
+
+    st = time.perf_counter()
+    assert handle_resource_download_with_integrity_check(
+        cfg_ckan_source=ckan_input_args,
+        package_name=ckan_entities["test_package"],
+        resource=meta,
+        check_data_integrity=True,
+        cwd=tmp_path,
+        re_download=re_download,
+    )
+    dt_short = time.perf_counter() - st
+    if not re_download:
+        assert dt_long > dt_short * 10
+    else:
+        assert abs(1-dt_long/dt_short) < 0.1
