@@ -149,4 +149,6 @@ ckool -v patch -ci eric_open_staging resource_hash this-is-a-ckool-test-package 
 
 ## Additional notes
 - For uploading resource via API a user that does have permissions to write in the ckan datastorage location must be present on the system. (ERIC Open - ckan user created on system)
-- 
+- At the moment the tests are quite slow, as a lot of large files are generated and uploaded for testing. There would be a lot of potential for speeding up the tests:
+  - generate large files only once per session
+  - don't use large files but use `--force-scp` feature to test upload via scp
