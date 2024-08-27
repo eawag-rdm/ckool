@@ -38,7 +38,7 @@ from .other.config_parser import (
 
 OPTIONS = {"config": {}, "verify": True, "ckan-instance-name": "None"}
 
-app = typer.Typer()
+app = typer.Typer(pretty_exceptions_show_locals=False)
 
 
 @app.callback()
