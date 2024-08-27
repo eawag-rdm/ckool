@@ -815,7 +815,7 @@ def _publish_package(
             secure_interface_input=cfg["cfg_secure_interface_target"],
             ckan_storage_path=cfg["cfg_other_target"]["ckan_storage_path"],
             package_name=package_name,
-            cache_directory=cwd
+            cache_directory=cwd,
         )
 
     cfg["ckan_target"].reorder_package_resources(package_name=metadata_filtered["name"])

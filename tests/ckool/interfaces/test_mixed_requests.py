@@ -1,10 +1,10 @@
 import pytest
 
 from ckool.interfaces.mixed_requests import (
+    doi_exists,
     fix_publication_link,
     get_citation_from_doi,
     search_orcid_by_author,
-doi_exists
 )
 
 

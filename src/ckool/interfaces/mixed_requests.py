@@ -29,7 +29,9 @@ def get_citation_from_doi(doi, prefix=10.25678):
 
 
 def fix_publication_link(publication_link):
-    publication_link = publication_link.lstrip(" ").rstrip(" ")  # removes of leading and trailing whitespaces!
+    publication_link = publication_link.lstrip(" ").rstrip(
+        " "
+    )  # removes of leading and trailing whitespaces!
     if not publication_link:
         return {}
     elif re.search(r"lib4ri", publication_link):

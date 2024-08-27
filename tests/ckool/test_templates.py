@@ -12,10 +12,10 @@ from ckool.other.hashing import get_hash_func
 from ckool.templates import (
     get_upload_func,
     handle_file,
+    handle_resource_download_with_integrity_check,
     handle_upload_all,
     hash_remote,
     resource_integrity_between_ckan_instances_intact,
-    handle_resource_download_with_integrity_check,
     resource_integrity_remote_intact,
     upload_resource_file_via_api,
     upload_resource_file_via_scp,
@@ -132,7 +132,7 @@ def test_upload_resource_file_via_scp(
         ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
-        cache_directory=tmp_path
+        cache_directory=tmp_path,
     )
 
 
@@ -188,7 +188,7 @@ def test_upload_func_chosen_api_file(
         ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
-        cache_directory=tmp_path
+        cache_directory=tmp_path,
     )
 
 
@@ -244,7 +244,7 @@ def test_upload_func_chosen_scp(
         ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=f.name,
-        cache_directory=tmp_path
+        cache_directory=tmp_path,
     )
 
 
@@ -508,7 +508,7 @@ def test_resource_integrity_remote_intact_cache(
     dynamic_config,
     ckan_entities,
     dynamic_ckan_setup_data,
-    large_file
+    large_file,
 ):
     meta = {
         "file": large_file,
@@ -532,8 +532,7 @@ def test_resource_integrity_remote_intact_cache(
         ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=large_file.name,
-        cache_directory=tmp_path
-
+        cache_directory=tmp_path,
     )
     dt_long = time.perf_counter() - st
 
@@ -544,7 +543,7 @@ def test_resource_integrity_remote_intact_cache(
         ckan_storage_path=dynamic_config["other"][0]["ckan_storage_path"],
         package_name=ckan_entities["test_package"],
         resource_id_or_name=large_file.name,
-        cache_directory=tmp_path
+        cache_directory=tmp_path,
     )
     dt_short = time.perf_counter() - st
     assert dt_long > dt_short * 10
@@ -570,7 +569,6 @@ def test_handle_resource_download_with_integrity_check(
         "hash": hasher(large_file),
         "format": large_file.suffix[1:],
         "hashtype": HASH_TYPE,
-
     }
     _ = dynamic_ckan_instance.create_resource_of_type_file(**meta)
     ckan_input_args = {
@@ -579,7 +577,7 @@ def test_handle_resource_download_with_integrity_check(
         "verify_certificate": dynamic_ckan_instance.verify,
     }
     meta = dynamic_ckan_instance.get_resource_meta(
-            ckan_entities["test_package"], large_file.name
+        ckan_entities["test_package"], large_file.name
     )
 
     st = time.perf_counter()
@@ -606,4 +604,4 @@ def test_handle_resource_download_with_integrity_check(
     if not re_download:
         assert dt_long > dt_short * 10
     else:
-        assert abs(1-dt_long/dt_short) < 0.1
+        assert abs(1 - dt_long / dt_short) < 0.1

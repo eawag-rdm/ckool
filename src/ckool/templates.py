@@ -11,10 +11,10 @@ from ckool import (
     HASH_TYPE,
     LOGGER,
     PACKAGE_META_DATA_FILE_ENDING,
+    PUBLICATION_INTEGRITY_CHECK_CACHE,
     TEMPORARY_DIRECTORY_NAME,
     UPLOAD_FUNC_FACTOR,
     UPLOAD_IN_PROGRESS_STRING,
-    PUBLICATION_INTEGRITY_CHECK_CACHE,
 )
 from ckool.ckan.ckan import CKAN, filter_resources
 from ckool.ckan.publishing import (
@@ -37,7 +37,6 @@ from ckool.other.file_management import (
 from ckool.other.hashing import get_hash_func
 from ckool.other.types import CompressionTypes, HashTypes
 from ckool.other.utilities import (
-    DataIntegrityError,
     collect_metadata,
     resource_is_link,
     upload_via_api,
@@ -231,7 +230,7 @@ def resource_integrity_remote_intact(
     ckan_storage_path: str,
     package_name: str,
     resource_id_or_name: str,
-    cache_directory: pathlib.Path
+    cache_directory: pathlib.Path,
 ):
     hash_remote_ = None
     cf = {}
@@ -275,7 +274,10 @@ def resource_integrity_remote_intact(
         )
         ckan.patch_resource_metadata(
             resource_id=resource_id_or_name,
-            resource_data_to_update={"hash": hash_remote_, "hashtype": meta["hashtype"]},
+            resource_data_to_update={
+                "hash": hash_remote_,
+                "hashtype": meta["hashtype"],
+            },
         )
         sys.exit()
     LOGGER.info("... resource integrity intact.")
@@ -291,7 +293,7 @@ def package_integrity_remote_intact(
     secure_interface_input: dict,
     ckan_storage_path: str,
     package_name: str,
-    cache_directory: pathlib.Path
+    cache_directory: pathlib.Path,
 ):
     LOGGER.info(f"... checking resource integrity for package '{package_name}'.")
     ckan = CKAN(**ckan_api_input)
@@ -305,7 +307,7 @@ def package_integrity_remote_intact(
             ckan_storage_path=ckan_storage_path,
             package_name=package_name,
             resource_id_or_name=resource["name"],
-            cache_directory=cache_directory
+            cache_directory=cache_directory,
         )
         if not intact:
             raise ValueError(
@@ -727,7 +729,9 @@ def handle_resource_download_with_integrity_check(
             cf = read_cache(integrity_cache_file)
 
         if (hash_local := cf.get(integrity_cache_key)) and not re_download:
-            LOGGER.info(f"... using cached local hash for resource '{resource['name']}'.")
+            LOGGER.info(
+                f"... using cached local hash for resource '{resource['name']}'."
+            )
         else:
             hash_func = get_hash_func(resource["hashtype"])
             hash_local = hash_func(temporary_resource_path)

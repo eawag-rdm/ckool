@@ -1,7 +1,5 @@
-import json
 import time
 
-import tqdm
 
 from ckool.ckan.ckan import CKAN
 
@@ -17,22 +15,19 @@ if __name__ == "__main__":
     to_fix = []
     for pkg in packages:
         if pkg["spatial"] == "{}":
-            to_fix.append({"id": pkg["id"], "name": pkg["name"], "spatial": pkg["spatial"]})
+            to_fix.append(
+                {"id": pkg["id"], "name": pkg["name"], "spatial": pkg["spatial"]}
+            )
     len_fixes = len(to_fix)
     for i, fix in enumerate(to_fix):
         try:
             print(f"{i}/{len_fixes}", fix)
             time.sleep(0.3)
-            ckan.patch_package_metadata(
-                package_id=fix["id"], data={"spatial": ""}
-            )
+            ckan.patch_package_metadata(package_id=fix["id"], data={"spatial": ""})
 
-        except Exception as e:
+        except Exception:
             print(fix)
             raise
 
     print("FIXED")
     print(to_fix)
-
-
-

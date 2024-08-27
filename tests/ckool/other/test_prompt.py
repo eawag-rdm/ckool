@@ -10,7 +10,6 @@ from ckool.other.prompt import (
     prompt_related_identifiers,
 )
 
-
 sp = SchemaParser(
     pathlib.Path(__file__).parent.parent.parent.parent
     / "src"
@@ -22,9 +21,7 @@ sp = SchemaParser(
 )
 
 
-@pytest.mark.parametrize(
-    "relationType", sp.get_schema_choices("relationType")
-)
+@pytest.mark.parametrize("relationType", sp.get_schema_choices("relationType"))
 def test_prompt_related_identifiers_check_all_relation_types(relationType):
     mock_prompt = Mock()
     mock_prompt.side_effect = [
@@ -50,9 +47,7 @@ def test_prompt_related_identifiers_check_all_relation_types(relationType):
     assert result == expected_result
 
 
-@pytest.mark.parametrize(
-    "doi", ["sdfsdfsfsd", "10.1016/j.abcdcddccdcdc.2024.121465 "]
-)
+@pytest.mark.parametrize("doi", ["sdfsdfsfsd", "10.1016/j.abcdcddccdcdc.2024.121465 "])
 def test_prompt_doi_exists_check_not_exists(doi):
     mock_prompt = Mock()
     mock_prompt.side_effect = [
