@@ -40,7 +40,7 @@ from ckool.other.utilities import (
     collect_metadata,
     resource_is_link,
     upload_via_api,
-    extract_resource_id
+    extract_resource_id_and_name
 )
 
 
@@ -105,8 +105,8 @@ def upload_resource_file_via_scp(
     )
 
     resource_id = ckan_instance.resolve_resource_id_or_name_to_id(
-        package_name=package_name, resource_id_or_name=extract_resource_id(filepath.name)
-    )["id"]
+        package_name=package_name, resource_id_or_name=extract_resource_id_and_name(filepath.name)
+    )["name"]
 
     ckan_instance.patch_resource_metadata(
         resource_id=resource_id, resource_data_to_update={"hash": real_hash}

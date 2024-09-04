@@ -119,11 +119,12 @@ def resource_is_link(resource_metadata: dict):
     return link
 
 
-def extract_resource_id(string: str):
+def extract_resource_id_and_name(string: str):
     found =  re.search(
         r'^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})',
         string
     )
     if found:
-        return found.group(1)
-    return string
+        _id = found.group(1)
+        return {"id": _id, "name": string.replace(_id, "")[1:]}
+    raise ValueError(f"Could not extract resource id  and name from '{string}'.")

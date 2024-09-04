@@ -1,4 +1,6 @@
-from ckool.other.utilities import upload_via_api, extract_resource_id
+import pytest
+
+from ckool.other.utilities import upload_via_api, extract_resource_id_and_name
 
 
 def test_upload_via_api():
@@ -16,6 +18,8 @@ def test_upload_via_api():
 
 
 def test_extract_resource_id():
-    assert extract_resource_id("0b6955ef-0d8a-4fed-a2b3-196185321d6d-scripts.zip") == "0b6955ef-0d8a-4fed-a2b3-196185321d6d"
-    assert extract_resource_id("abc") == "abc"
-    assert extract_resource_id("abc0b6955ef-0d8a-4fed-a2b3-196185321d6d-scripts.zip") == "abc0b6955ef-0d8a-4fed-a2b3-196185321d6d-scripts.zip"
+    assert extract_resource_id_and_name("0b6955ef-0d8a-4fed-a2b3-196185321d6d-scripts.zip") == {
+        "id": "0b6955ef-0d8a-4fed-a2b3-196185321d6d", "name": "scripts.zip"}
+    with pytest.raises(ValueError):
+        assert extract_resource_id_and_name("abc") == "abc"
+        assert extract_resource_id_and_name("abc0b6955ef-0d8a-4fed-a2b3-196185321d6d-scripts.zip") == "abc0b6955ef-0d8a-4fed-a2b3-196185321d6d-scripts.zip"
