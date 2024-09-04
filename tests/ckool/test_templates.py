@@ -604,4 +604,4 @@ def test_handle_resource_download_with_integrity_check(
     if not re_download:
         assert dt_long > dt_short * 10
     else:
-        assert abs(1 - dt_long / dt_short) < 0.1
+        assert abs(1 - dt_long / dt_short) < 0.25

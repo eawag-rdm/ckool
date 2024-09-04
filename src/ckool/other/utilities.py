@@ -4,6 +4,8 @@ import sys
 from functools import wraps
 from subprocess import PIPE, CalledProcessError, run
 
+import re
+
 from ckool.other.types import HashTypes
 
 
@@ -115,3 +117,13 @@ def resource_is_link(resource_metadata: dict):
     ):  # the resource is a link
         link = False
     return link
+
+
+def extract_resource_id(string: str):
+    found =  re.search(
+        r'^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})',
+        string
+    )
+    if found:
+        return found.group(1)
+    return string
