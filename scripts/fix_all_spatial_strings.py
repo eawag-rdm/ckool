@@ -1,6 +1,5 @@
 import time
 
-
 from ckool.ckan.ckan import CKAN
 
 if __name__ == "__main__":

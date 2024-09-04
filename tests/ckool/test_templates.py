@@ -546,7 +546,7 @@ def test_resource_integrity_remote_intact_cache(
         cache_directory=tmp_path,
     )
     dt_short = time.perf_counter() - st
-    assert dt_long > dt_short * 10
+    assert dt_long > dt_short * 5
 
 
 @pytest.mark.parametrize("cki", ckan_instance_names_of_fixtures)

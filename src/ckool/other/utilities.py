@@ -1,10 +1,9 @@
 import os
 import pathlib
+import re
 import sys
 from functools import wraps
 from subprocess import PIPE, CalledProcessError, run
-
-import re
 
 from ckool.other.types import HashTypes
 
@@ -120,11 +119,10 @@ def resource_is_link(resource_metadata: dict):
 
 
 def extract_resource_id_and_name(string: str):
-    found =  re.search(
-        r'^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})',
-        string
+    found = re.search(
+        r"^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})", string
     )
     if found:
         _id = found.group(1)
         return {"id": _id, "name": string.replace(_id, "")[1:]}
-    raise ValueError(f"Could not extract resource id  and name from '{string}'.")
+    return {"id": "", "name": string}
